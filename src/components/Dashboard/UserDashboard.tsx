@@ -30,6 +30,7 @@ interface Event {
   allowedRoles: string[];
   organizer: string;
   participants: string[];
+  imageUrl?: string; // Добавете това
   tickets?: {
     [userId: string]: {
       ticketId: string;
@@ -49,6 +50,7 @@ interface UserTicket {
   eventLocation: string;
   registrationDate: string;
   checkedIn: boolean;
+  eventImageUrl?: string; 
 }
 
 const UserDashboard: React.FC = () => {
@@ -61,13 +63,14 @@ const UserDashboard: React.FC = () => {
   const [processingEvent, setProcessingEvent] = useState<string | null>(null);
   const [showTicket, setShowTicket] = useState(false);
   const [currentTicket, setCurrentTicket] = useState<{
-    ticketId: string;
-    eventTitle: string;
-    eventDate: string;
-    eventTime: string;
-    endTime: string;
-    eventLocation: string;
-  } | null>(null);
+  ticketId: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  endTime: string;
+  eventLocation: string;
+  eventImageUrl?: string; // Добавете това
+} | null>(null);
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   
   const { user } = useAuth();
@@ -107,21 +110,22 @@ const UserDashboard: React.FC = () => {
       setLoading(true);
       const snapshot = await getDocs(collection(db, "events"));
       const eventsData: Event[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: data.title || '',
-          description: data.description || '',
-          date: data.date || '',
-          time: data.time || '',
-          endTime: data.endTime || '',
-          location: data.location || '',
-          maxParticipants: data.maxParticipants || 0,
-          currentParticipants: data.currentParticipants || 0,
-          allowedRoles: data.allowedRoles || [],
-          organizer: data.organizer || '',
-          participants: data.participants || [],
-          tickets: data.tickets || {}
+  const data = doc.data();
+  return {
+    id: doc.id,
+    title: data.title || '',
+    description: data.description || '',
+    date: data.date || '',
+    time: data.time || '',
+    endTime: data.endTime || '',
+    location: data.location || '',
+    maxParticipants: data.maxParticipants || 0,
+    currentParticipants: data.currentParticipants || 0,
+    allowedRoles: data.allowedRoles || [],
+    organizer: data.organizer || '',
+    participants: data.participants || [],
+    imageUrl: data.imageUrl || '', // Добавете това
+    tickets: data.tickets || {}
         };
       });
       
@@ -141,16 +145,17 @@ const UserDashboard: React.FC = () => {
         if (event.tickets && event.tickets[user.uid]) {
           const ticket = event.tickets[user.uid];
           tickets.push({
-            eventId: event.id,
-            ticketId: ticket.ticketId,
-            eventTitle: event.title,
-            eventDate: event.date,
-            eventTime: event.time,
-            endTime: event.endTime,
-            eventLocation: event.location,
-            registrationDate: ticket.registrationDate?.toDate?.().toLocaleDateString('bg-BG') || new Date().toLocaleDateString('bg-BG'),
-            checkedIn: ticket.checkedIn || false
-          });
+  eventId: event.id,
+  ticketId: ticket.ticketId,
+  eventTitle: event.title,
+  eventDate: event.date,
+  eventTime: event.time,
+  endTime: event.endTime,
+  eventLocation: event.location,
+  registrationDate: ticket.registrationDate?.toDate?.().toLocaleDateString('bg-BG') || new Date().toLocaleDateString('bg-BG'),
+  checkedIn: ticket.checkedIn || false,
+  eventImageUrl: event.imageUrl // Добавете това
+});
         }
       });
       setUserTickets(tickets);
@@ -244,13 +249,14 @@ const UserDashboard: React.FC = () => {
 
       // Показване на билета
       setCurrentTicket({
-        ticketId,
-        eventTitle: eventData.title,
-        eventDate: eventData.date,
-        eventTime: eventData.time,
-        endTime: eventData.endTime,
-        eventLocation: eventData.location
-      });
+  ticketId,
+  eventTitle: eventData.title,
+  eventDate: eventData.date,
+  eventTime: eventData.time,
+  endTime: eventData.endTime,
+  eventLocation: eventData.location,
+  eventImageUrl: eventData.imageUrl // Добавете това
+});
       setShowTicket(true);
       setShowRegistrationSuccess(true);
       
@@ -347,13 +353,14 @@ console.log("Unregistering Ticket ID:", ticketId);
 
     const ticket = event.tickets[user.uid];
     setCurrentTicket({
-      ticketId: ticket.ticketId,
-      eventTitle: event.title,
-      eventDate: event.date,
-      eventTime: event.time,
-      endTime: event.endTime,
-      eventLocation: event.location
-    });
+  ticketId: ticket.ticketId,
+  eventTitle: event.title,
+  eventDate: event.date,
+  eventTime: event.time,
+  endTime: event.endTime,
+  eventLocation: event.location,
+  eventImageUrl: event.imageUrl 
+});
     setShowTicket(true);
   };
 
@@ -771,13 +778,14 @@ console.log("Rendering UserDashboard with:", { handleEventRegistration});
                             <button
                               onClick={() => {
                                 setCurrentTicket({
-                                  ticketId: ticket.ticketId,
-                                  eventTitle: ticket.eventTitle,
-                                  eventDate: ticket.eventDate,
-                                  eventTime: ticket.eventTime,
-                                  endTime: ticket.endTime,
-                                  eventLocation: ticket.eventLocation
-                                });
+  ticketId: ticket.ticketId,
+  eventTitle: ticket.eventTitle,
+  eventDate: ticket.eventDate,
+  eventTime: ticket.eventTime,
+  endTime: ticket.endTime,
+  eventLocation: ticket.eventLocation,
+  eventImageUrl: ticket.eventImageUrl // Добавете това
+});
                                 setShowTicket(true);
                               }}
                               className="view-ticket-btn"
@@ -801,16 +809,17 @@ console.log("Rendering UserDashboard with:", { handleEventRegistration});
       {showTicket && currentTicket && user && (
         <EventTicketModal
           ticketId={currentTicket.ticketId}
-          eventTitle={currentTicket.eventTitle}
-          eventDate={currentTicket.eventDate}
-          eventTime={currentTicket.eventTime}
-          endTime={currentTicket.endTime}
-          eventLocation={currentTicket.eventLocation}
-          userName={user.displayName || "Потребител"}
-          userEmail={user.email || ""}
-          onClose={() => {
-            setShowTicket(false);
-            setCurrentTicket(null);
+    eventTitle={currentTicket.eventTitle}
+    eventDate={currentTicket.eventDate}
+    eventTime={currentTicket.eventTime}
+    endTime={currentTicket.endTime}
+    eventLocation={currentTicket.eventLocation}
+    userName={user.displayName || "Потребител"}
+    userEmail={user.email || ""}
+    eventImageUrl={currentTicket.eventImageUrl} // Това вече ще има стойност
+    onClose={() => {
+      setShowTicket(false);
+      setCurrentTicket(null);
           }}
         />
       )}

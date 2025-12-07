@@ -3133,3 +3133,34 @@
 .ticket-details-card {
   display: none;
 }
+
+.preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  margin-top: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.image-preview {
+  margin-top: 8px;
+}
+
+.image-preview p {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.image-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.event-has-image {
+  margin-left: 8px;
+  color: #4a90e2;
+  display: inline-flex;
+  align-items: center;
+}

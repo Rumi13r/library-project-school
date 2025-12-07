@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc, Timestamp} from "firebase/firestore";
-import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Bold, Italic, List, Type, Heading, AlignLeft, QrCode, Check, XCircle, CameraOff, BarChart3 } from "lucide-react";
+import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3, Image as ImageIcon } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Scanner } from '@yudiel/react-qr-scanner';
@@ -93,11 +93,11 @@ interface Event {
   allowedRoles: string[];
   createdAt: any;
   organizer: string;
+  imageUrl?: string;
   tickets?: {
     [userId: string]: Ticket;
   };
 }
-
 interface CheckTicketModalData {
   eventId: string;
   eventTitle: string;
@@ -132,74 +132,28 @@ interface TicketDetail {
 const EditorToolbar = ({ editor }: { editor: any }) => {
   if (!editor) return null;
 
+  const addImage = () => {
+    const url = window.prompt('Въведете URL на картинката:');
+    if (url) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  };
+
   return (
     <div className="editor-toolbar">
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
-        title="Удебелен"
-      >
-        <Bold size={16} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
-        title="Курсив"
-      >
-        <Italic size={16} />
-      </button>
+      {/* Останалите бутони... */}
       <div className="toolbar-divider"></div>
       <button
         type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
-        title="Заглавие 1"
+        onClick={addImage}
+        className="toolbar-btn"
+        title="Добави картинка"
       >
-        <Heading size={16} />
-        <span>1</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
-        title="Заглавие 2"
-      >
-        <Heading size={16} />
-        <span>2</span>
-      </button>
-      <div className="toolbar-divider"></div>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
-        title="Списък с точки"
-      >
-        <List size={16} />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
-        title="Номериран списък"
-      >
-        <List size={16} />
-        <span>1.</span>
-      </button>
-      <div className="toolbar-divider"></div>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setParagraph().run()}
-        className={`toolbar-btn ${editor.isActive('paragraph') ? 'active' : ''}`}
-        title="Нормален текст"
-      >
-        <AlignLeft size={16} />
+        <ImageIcon size={16} />
       </button>
     </div>
   );
 };
-
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -216,6 +170,7 @@ const AdminDashboard: React.FC = () => {
   const [selectedRoomForImport, setSelectedRoomForImport] = useState("1303");
   const [academicYear, setAcademicYear] = useState("2024-2025");
   const [semester, setSemester] = useState<"winter" | "summer">("winter");
+  const [cellEventImageUrl, setCellEventImageUrl] = useState<string>("");
 
   const [cellEventTitle, setCellEventTitle] = useState<string>("");
   const [cellEventDesc, setCellEventDesc] = useState<string>("");
@@ -231,16 +186,17 @@ const [cameraError, setCameraError] = useState<string>('');
   const [showEventModal, setShowEventModal] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [modalEventData, setModalEventData] = useState<Partial<Event>>({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    endTime: "",
-    location: "",
-    maxParticipants: 20,
-    organizer: "",
-    allowedRoles: ["reader", "librarian"]
-  });
+  title: "",
+  description: "",
+  date: "",
+  time: "",
+  endTime: "",
+  location: "",
+  maxParticipants: 20,
+  organizer: "",
+  allowedRoles: ["reader", "librarian"],
+  imageUrl: "" 
+});
 
   const [showCheckTicketModal, setShowCheckTicketModal] = useState<boolean>(false);
   const [ticketSearchTerm, setTicketSearchTerm] = useState<string>("");
@@ -357,7 +313,7 @@ const [cameraError, setCameraError] = useState<string>('');
   };
 
   const locationOptions = [
-    "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
+    "1303", "3310", "3301-EOП", "3305-АНП", "Библиотека", "Зала Европа", "Комп.каб.-ТЧ", 
     "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
     "1101", "1102", "1103", "1104", "1105", "1106", "1204", "1205", "1207", 
     "1209", "1301", "1302", "1304", "1305", "1307", "1309", "1401", "1402", 
@@ -1066,50 +1022,52 @@ const checkInTicket = async (): Promise<boolean> => {
   };
 
   const createEventFromCell = async () => {
-    if (!addingEventFromCell || !cellEventTitle.trim() || !selectedDate || !cellEventStartTime || !cellEventEndTime) return;
-    
-    if (!validateTime(cellEventStartTime) || !validateTime(cellEventEndTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
+  if (!addingEventFromCell || !cellEventTitle.trim() || !selectedDate || !cellEventStartTime || !cellEventEndTime) return;
+  
+  if (!validateTime(cellEventStartTime) || !validateTime(cellEventEndTime)) {
+    alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
+    return;
+  }
 
-    if (!validateTimeRange(cellEventStartTime, cellEventEndTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-    
-    if (hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-    
-    const eventData = {
-      title: cellEventTitle,
-      description: cellEventDesc,
-      date: selectedDate,
-      time: cellEventStartTime,
-      endTime: cellEventEndTime,
-      location: addingEventFromCell.room,
-      maxParticipants: cellEventMaxParticipants,
-      currentParticipants: 0,
-      allowedRoles: ["reader", "librarian"],
-      organizer: cellEventOrganizer,
-      createdAt: new Date(),
-      registrations: []
-    };
-
-    await addDoc(collection(db, "events"), eventData);
-    
-    setCellEventTitle("");
-    setCellEventDesc("");
-    setCellEventStartTime("");
-    setCellEventEndTime("");
-    setCellEventMaxParticipants(20);
-    setCellEventOrganizer("");
-    setAddingEventFromCell(null);
-    
-    fetchEvents();
+  if (!validateTimeRange(cellEventStartTime, cellEventEndTime)) {
+    alert("Крайният час трябва да е след началния час!");
+    return;
+  }
+  
+  if (hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)) {
+    alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
+    return;
+  }
+  
+  const eventData = {
+    title: cellEventTitle,
+    description: cellEventDesc,
+    date: selectedDate,
+    time: cellEventStartTime,
+    endTime: cellEventEndTime,
+    location: addingEventFromCell.room,
+    maxParticipants: cellEventMaxParticipants,
+    currentParticipants: 0,
+    allowedRoles: ["reader", "librarian"],
+    organizer: cellEventOrganizer,
+    imageUrl: cellEventImageUrl, 
+    createdAt: new Date(),
+    registrations: []
   };
+
+  await addDoc(collection(db, "events"), eventData);
+  
+  setCellEventTitle("");
+  setCellEventDesc("");
+  setCellEventStartTime("");
+  setCellEventEndTime("");
+  setCellEventMaxParticipants(20);
+  setCellEventOrganizer("");
+  setCellEventImageUrl(""); 
+  setAddingEventFromCell(null);
+  
+  fetchEvents();
+};
 
   const deleteBookingFromCell = async (booking: BookingInfo) => {
     if (!window.confirm("Сигурни ли сте, че искате да изтриете тази резервация?")) return;
@@ -1196,22 +1154,23 @@ console.log("events", toggleEventRole);
   };
 
   const openEditEventModal = (event: Event) => {
-    setModalMode('edit');
-    setModalEventData({
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      endTime: event.endTime,
-      location: event.location,
-      maxParticipants: event.maxParticipants,
-      organizer: event.organizer,
-      allowedRoles: event.allowedRoles,
-      currentParticipants: event.currentParticipants
-    });
-    setShowEventModal(true);
-  };
+  setModalMode('edit');
+  setModalEventData({
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    date: event.date,
+    time: event.time,
+    endTime: event.endTime,
+    location: event.location,
+    maxParticipants: event.maxParticipants,
+    organizer: event.organizer,
+    allowedRoles: event.allowedRoles,
+    currentParticipants: event.currentParticipants,
+    imageUrl: event.imageUrl || "" // ДОБАВЕТЕ ТОВА
+  });
+  setShowEventModal(true);
+};
 
   const closeEventModal = () => {
     setShowEventModal(false);
@@ -1226,60 +1185,60 @@ console.log("events", toggleEventRole);
   };
 
   const handleCreateEvent = async () => {
-    if (!modalEventData.title?.trim() || !modalEventData.date || 
-        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
-      alert("Моля, попълнете всички задължителни полета!");
-      return;
-    }
-    
-    if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
+  if (!modalEventData.title?.trim() || !modalEventData.date || 
+      !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
+    alert("Моля, попълнете всички задължителни полета!");
+    return;
+  }
+  
+  if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
+    alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
+    return;
+  }
 
-    if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-    
-    if (hasBookingConflict(
-      modalEventData.location, 
-      modalEventData.date, 
-      modalEventData.time, 
-      modalEventData.endTime
-    )) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-    
-    try {
-      const eventData = {
-        title: modalEventData.title,
-        description: modalEventData.description || "",
-        date: modalEventData.date,
-        time: modalEventData.time,
-        endTime: modalEventData.endTime,
-        location: modalEventData.location,
-        maxParticipants: modalEventData.maxParticipants || 20,
-        currentParticipants: 0,
-        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
-        organizer: modalEventData.organizer || "",
-        createdAt: new Date(),
-        registrations: []
-      };
+  if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
+    alert("Крайният час трябва да е след началния час!");
+    return;
+  }
+  
+  if (hasBookingConflict(
+    modalEventData.location, 
+    modalEventData.date, 
+    modalEventData.time, 
+    modalEventData.endTime
+  )) {
+    alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
+    return;
+  }
+  
+  try {
+    const eventData = {
+      title: modalEventData.title,
+      description: modalEventData.description || "",
+      date: modalEventData.date,
+      time: modalEventData.time,
+      endTime: modalEventData.endTime,
+      location: modalEventData.location,
+      maxParticipants: modalEventData.maxParticipants || 20,
+      currentParticipants: 0,
+      allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
+      organizer: modalEventData.organizer || "",
+      imageUrl: modalEventData.imageUrl || "", // ДОБАВЕТЕ ТОВА
+      createdAt: new Date(),
+      registrations: []
+    };
 
-      await addDoc(collection(db, "events"), eventData);
-      
-      closeEventModal();
-      fetchEvents();
-      alert("Събитието е създадено успешно!");
-      
-    } catch (error) {
-      console.error("Грешка при създаване на събитие:", error);
-      alert("Грешка при създаване на събитие!");
-    }
-  };
-
+    await addDoc(collection(db, "events"), eventData);
+    
+    closeEventModal();
+    fetchEvents();
+    alert("Събитието е създадено успешно!");
+    
+  } catch (error) {
+    console.error("Грешка при създаване на събитие:", error);
+    alert("Грешка при създаване на събитие!");
+  }
+};
   const handleUpdateEvent = async () => {
     if (!modalEventData.id) return;
     
@@ -1318,17 +1277,18 @@ console.log("events", toggleEventRole);
 
     try {
       await updateDoc(doc(db, "events", modalEventData.id), {
-        title: modalEventData.title,
-        description: modalEventData.description || "",
-        date: modalEventData.date,
-        time: modalEventData.time,
-        endTime: modalEventData.endTime,
-        location: modalEventData.location,
-        maxParticipants: modalEventData.maxParticipants || 20,
-        organizer: modalEventData.organizer || "",
-        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
-        updatedAt: new Date()
-      });
+  title: modalEventData.title,
+  description: modalEventData.description || "",
+  date: modalEventData.date,
+  time: modalEventData.time,
+  endTime: modalEventData.endTime,
+  location: modalEventData.location,
+  maxParticipants: modalEventData.maxParticipants || 20,
+  organizer: modalEventData.organizer || "",
+  allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
+  imageUrl: modalEventData.imageUrl || "", // Добавете това
+  updatedAt: new Date()
+});
       
       closeEventModal();
       fetchEvents();
@@ -1958,6 +1918,39 @@ console.log("events", toggleEventRole);
                       className="modal-form-input"
                     />
                   </div>
+                  <div className="modal-form-group">
+  <label>Линк към картинка</label>
+  <input
+    type="url"
+    placeholder="https://example.com/image.jpg"
+    value={modalEventData.imageUrl || ""}
+    onChange={(e) => handleModalInputChange('imageUrl', e.target.value)}
+    className="modal-form-input"
+  />
+  <small className="help-text">
+    Картинката ще се показва на генерираните билети за събитието
+  </small>
+  {modalEventData.imageUrl && (
+    <div className="image-preview">
+      <p>Преглед на картинката:</p>
+      <img 
+        src={modalEventData.imageUrl} 
+        alt="Preview" 
+        className="preview-image"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+          const parent = (e.target as HTMLImageElement).parentElement;
+          if (parent) {
+            const errorMsg = document.createElement('p');
+            errorMsg.className = 'image-error';
+            errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
+            parent.appendChild(errorMsg);
+          }
+        }}
+      />
+    </div>
+  )}
+</div>
                   
                   <div className="modal-form-group">
                     <label>Разрешени роли</label>
@@ -2133,16 +2126,23 @@ console.log("events", toggleEventRole);
                     {filteredEvents.map(event => (
                       <tr key={event.id} className={isEventFull(event) ? 'event-full' : ''}>
                         <td className="event-info-cell">
-                          <div className="event-title-section">
-                            <div className="event-title">{event.title}</div>
-                            {event.description && (
-                              <div 
-                                className="event-desc-html"
-                                dangerouslySetInnerHTML={{ __html: event.description }}
-                              />
-                            )}
-                          </div>
-                        </td>
+  <div className="event-title-section">
+    <div className="event-title">
+      {event.title}
+      {event.imageUrl && (
+        <span className="event-has-image" title="Има прикачена картинка">
+          <ImageIcon size={14} />
+        </span>
+      )}
+    </div>
+    {event.description && (
+      <div 
+        className="event-desc-html"
+        dangerouslySetInnerHTML={{ __html: event.description }}
+      />
+    )}
+  </div>
+</td>
                         <td className="event-time-cell">
                           <div className="event-time-display">
                             <div className="event-date">
@@ -2311,126 +2311,165 @@ console.log("events", toggleEventRole);
             )}
             
             {addingEventFromCell && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h3>Добавяне на събитие</h3>
-                    <button 
-                      onClick={() => setAddingEventFromCell(null)}
-                      className="close-btn"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="modal-body">
-                    <div className="cell-info">
-                      <p><strong>Стая:</strong> {addingEventFromCell.room}</p>
-                      <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
-                      <p><strong>Час:</strong> {addingEventFromCell.timeSlot}</p>
-                    </div>
-                    
-                    <div className="event-form-grid">
-                      <div className="form-group">
-                        <label>Заглавие на събитието *</label>
-                        <input
-                          type="text"
-                          placeholder="Напр. Среща с писател"
-                          value={cellEventTitle}
-                          onChange={(e) => setCellEventTitle(e.target.value)}
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Описание</label>
-                        <textarea
-                          placeholder="Кратко описание на събитието"
-                          value={cellEventDesc}
-                          onChange={(e) => setCellEventDesc(e.target.value)}
-                          className="form-input textarea"
-                          rows={5}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Начален час *</label>
-                        <select
-                          value={cellEventStartTime}
-                          onChange={(e) => setCellEventStartTime(e.target.value)}
-                          className="form-input"
-                        >
-                          <option value="">Изберете начален час</option>
-                          {timeOptionsWithMinutes.map(time => (
-                            <option key={time} value={time}>{time}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Краен час *</label>
-                        <select
-                          value={cellEventEndTime}
-                          onChange={(e) => setCellEventEndTime(e.target.value)}
-                          className="form-input"
-                        >
-                          <option value="">Изберете краен час</option>
-                          {timeOptionsWithMinutes.map(time => (
-                            <option key={time} value={time}>{time}</option>
-                          ))}
-                        </select>
-                        {cellEventStartTime && cellEventEndTime && !validateTimeRange(cellEventStartTime, cellEventEndTime) && (
-                          <div className="validation-error">
-                            Крайният час трябва да е след началния!
-                          </div>
-                        )}
-                      </div>
-                      <div className="form-group">
-                        <label>Брой места</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          value={cellEventMaxParticipants}
-                          onChange={(e) => setCellEventMaxParticipants(parseInt(e.target.value) || 1)}
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Организатор</label>
-                        <input
-                          type="text"
-                          placeholder="Име на организатора"
-                          value={cellEventOrganizer}
-                          onChange={(e) => setCellEventOrganizer(e.target.value)}
-                          className="form-input"
-                        />
-                      </div>
-                      
-                      <div className="modal-actions">
-                        <button 
-                          onClick={createEventFromCell}
-                          disabled={
-                            !cellEventTitle.trim() || 
-                            !cellEventStartTime || 
-                            !cellEventEndTime || 
-                            !validateTimeRange(cellEventStartTime, cellEventEndTime) ||
-                            hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)
-                          }
-                          className="primary-btn"
-                        >
-                          <Plus size={16} />
-                          Създай Събитие
-                        </button>
-                        <button 
-                          onClick={() => setAddingEventFromCell(null)}
-                          className="secondary-btn"
-                        >
-                          Отказ
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <div className="modal-header">
+        <h3>Добавяне на събитие</h3>
+        <button 
+          onClick={() => setAddingEventFromCell(null)}
+          className="close-btn"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="modal-body">
+        <div className="cell-info">
+          <p><strong>Стая:</strong> {addingEventFromCell.room}</p>
+          <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
+          <p><strong>Час:</strong> {addingEventFromCell.timeSlot}</p>
+        </div>
+        
+        <div className="event-form-grid">
+          <div className="form-group">
+            <label>Заглавие на събитието *</label>
+            <input
+              type="text"
+              placeholder="Напр. Среща с писател"
+              value={cellEventTitle}
+              onChange={(e) => setCellEventTitle(e.target.value)}
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label>Описание</label>
+            <textarea
+              placeholder="Кратко описание на събитието"
+              value={cellEventDesc}
+              onChange={(e) => setCellEventDesc(e.target.value)}
+              className="form-input textarea"
+              rows={5}
+            />
+          </div>
+          <div className="form-group">
+            <label>Начален час *</label>
+            <select
+              value={cellEventStartTime}
+              onChange={(e) => setCellEventStartTime(e.target.value)}
+              className="form-input"
+            >
+              <option value="">Изберете начален час</option>
+              {timeOptionsWithMinutes.map(time => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Краен час *</label>
+            <select
+              value={cellEventEndTime}
+              onChange={(e) => setCellEventEndTime(e.target.value)}
+              className="form-input"
+            >
+              <option value="">Изберете краен час</option>
+              {timeOptionsWithMinutes.map(time => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+            {cellEventStartTime && cellEventEndTime && !validateTimeRange(cellEventStartTime, cellEventEndTime) && (
+              <div className="validation-error">
+                Крайният час трябва да е след началния!
               </div>
             )}
+          </div>
+          <div className="form-group">
+            <label>Брой места</label>
+            <input
+              type="number"
+              min="1"
+              max="1000"
+              value={cellEventMaxParticipants}
+              onChange={(e) => setCellEventMaxParticipants(parseInt(e.target.value) || 1)}
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label>Организатор</label>
+            <input
+              type="text"
+              placeholder="Име на организатора"
+              value={cellEventOrganizer}
+              onChange={(e) => setCellEventOrganizer(e.target.value)}
+              className="form-input"
+            />
+          </div>
+          
+          {/* ДОБАВЕТЕ ТОВА ПОЛЕ ЗА КАРТИНКА */}
+          <div className="form-group">
+            <label>Линк към картинка</label>
+            <input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={cellEventImageUrl}
+              onChange={(e) => setCellEventImageUrl(e.target.value)}
+              className="form-input"
+            />
+            <small className="help-text">
+              Картинката ще се показва на генерираните билети
+            </small>
+            {cellEventImageUrl && (
+              <div className="image-preview">
+                <p>Преглед:</p>
+                <img 
+                  src={cellEventImageUrl} 
+                  alt="Preview" 
+                  className="preview-image"
+                  style={{ maxWidth: '100%', maxHeight: '150px' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      const errorMsg = document.createElement('p');
+                      errorMsg.className = 'image-error';
+                      errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
+                      parent.appendChild(errorMsg);
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          
+          <div className="modal-actions">
+            <button 
+              onClick={createEventFromCell}
+              disabled={
+                !cellEventTitle.trim() || 
+                !cellEventStartTime || 
+                !cellEventEndTime || 
+                !validateTimeRange(cellEventStartTime, cellEventEndTime) ||
+                hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)
+              }
+              className="primary-btn"
+            >
+              <Plus size={16} />
+              Създай Събитие
+            </button>
+            <button 
+              onClick={() => {
+                setAddingEventFromCell(null);
+                setCellEventImageUrl(""); // Ресетване на картинката при отказ
+              }}
+              className="secondary-btn"
+            >
+              Отказ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
             
             {editingCell && (
               <div className="modal-overlay">
@@ -2708,27 +2747,7 @@ console.log("events", toggleEventRole);
   <div className="content-section">
     <div className="tickets-header">
       <h2>Проверка на Билети</h2>
-      <p>Използвайте тази секция за сканиране и проверка на билети от посетители</p>
-      
-      <div className="ticket-header-buttons">
-        <button 
-          onClick={openQrScanner}
-          className="primary-btn"
-        >
-          <QrCode size={18} />
-          Сканирай QR код
-        </button>
-        
-        <button 
-          onClick={openTodayStats}
-          className="secondary-btn"
-        >
-          <BarChart3 size={18} />
-          Статистика за днес
-        </button>
-      </div>
     </div>
-    
     <div className="ticket-options-grid">
       <div className="ticket-option-card" onClick={openCheckTicketModal}>
         <div className="option-icon">
@@ -2761,42 +2780,6 @@ console.log("events", toggleEventRole);
         <button className="secondary-btn option-btn">
           Виж статистика
         </button>
-      </div>
-    </div>
-    
-    <div className="quick-stats-section">
-      <h3>Бърза статистика</h3>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-label">Общо билети</div>
-          <div className="stat-value">
-            {events.reduce((total, event) => 
-              total + (event.tickets ? Object.keys(event.tickets).length : 0), 0
-            )}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Регистрирани</div>
-          <div className="stat-value">
-            {events.reduce((total, event) => {
-              if (!event.tickets) return total;
-              return total + Object.values(event.tickets).filter(ticket => 
-                ticket.checkedIn
-              ).length;
-            }, 0)}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Очакващи</div>
-          <div className="stat-value">
-            {events.reduce((total, event) => {
-              if (!event.tickets) return total;
-              return total + Object.values(event.tickets).filter(ticket => 
-                !ticket.checkedIn
-              ).length;
-            }, 0)}
-          </div>
-        </div>
       </div>
     </div>
   </div>

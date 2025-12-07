@@ -1,7 +1,7 @@
 // src/components/EventTicketModal.tsx
 import React from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { X, Calendar, MapPin, Clock, User } from "lucide-react";
+import { X, Calendar, MapPin, Clock, User, Image as _ImageIcon } from "lucide-react";
 import "./EventTicketModal.css";
 
 interface EventTicketModalProps {
@@ -13,6 +13,7 @@ interface EventTicketModalProps {
   eventLocation: string;
   userName: string;
   userEmail: string;
+  eventImageUrl?: string;
   onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
   eventLocation,
   userName,
   userEmail,
+  eventImageUrl,
   onClose
 }) => {
   const ticketData = JSON.stringify({
@@ -59,10 +61,21 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
         </div>
 
         <div className="ticket-content">
+          {/* Заден фон с картинка ако има */}
+          {eventImageUrl && (
+            <div className="ticket-background">
+              <img 
+                src={eventImageUrl} 
+                alt={eventTitle} 
+                className="background-image"
+              />
+            </div>
+          )}
+
           {/* Хедър на билета */}
           <div className="ticket-header">
             <div className="ticket-logo">
-              <Calendar size={32} />
+              <Calendar size={28} />
               <span>Библиотека Билет</span>
             </div>
             <div className="ticket-id">
@@ -76,7 +89,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
             
             <div className="event-details">
               <div className="event-detail">
-                <Calendar size={16} />
+                <Calendar size={18} />
                 <div>
                   <strong>Дата:</strong>
                   <span>{new Date(eventDate).toLocaleDateString('bg-BG', {
@@ -89,7 +102,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
               </div>
 
               <div className="event-detail">
-                <Clock size={16} />
+                <Clock size={18} />
                 <div>
                   <strong>Час:</strong>
                   <span>{eventTime} - {endTime}</span>
@@ -97,7 +110,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
               </div>
 
               <div className="event-detail">
-                <MapPin size={16} />
+                <MapPin size={18} />
                 <div>
                   <strong>Място:</strong>
                   <span>{eventLocation}</span>
@@ -112,9 +125,11 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
               <QRCodeCanvas 
                 id="ticket-qr"
                 value={ticketData}
-                size={180}
+                size={200}
                 level="H"
                 includeMargin={true}
+                bgColor="#ffffff"
+                fgColor="#1e40af"
               />
               <div className="qr-instructions">
                 Покажете този QR код при входа на събитието
@@ -124,7 +139,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
             {/* Информация за посетителя */}
             <div className="attendee-info">
               <div className="attendee-detail">
-                <User size={16} />
+                <User size={18} />
                 <div>
                   <strong>Посетител:</strong>
                   <span>{userName}</span>

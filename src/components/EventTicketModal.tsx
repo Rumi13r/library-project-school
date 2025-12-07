@@ -263,7 +263,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
             <div className="instruction-item">
               <div className="instruction-number">3</div>
               <div className="instruction-text">
-                Пристигнете 15 минути преди началото
+                Елате поне 5 минути преди началото на събитието, за да запазите мястото си
               </div>
             </div>
           </div>

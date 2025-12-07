@@ -692,3 +692,37 @@
   background: var(--neutral-600);
 }
 
+/* Specific fix for password requirements list */
+.password-requirements {
+  color: var(--neutral-800) !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+
+[data-theme='dark'] .password-requirements {
+  color: var(--neutral-200) !important;
+}
+
+@media (max-width: 768px) {
+  .password-requirements {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+  }
+}
+/* Fix for CAPTCHA text */
+.captcha-label,
+.captcha-question,
+.security-question,
+.verification-label {
+  color: var(--neutral-800) !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .captcha-label,
+[data-theme='dark'] .captcha-question,
+[data-theme='dark'] .security-question {
+  color: var(--neutral-100) !important;
+}

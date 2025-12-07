@@ -1,7 +1,7 @@
 // src/components/EventTicketModal.tsx
-import React from "react";
+import React, { useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { X, Calendar, MapPin, Clock, User, Image as _ImageIcon } from "lucide-react";
+import { X, Calendar, MapPin, Clock, User, Image as _ImageIcon, Download, Printer } from "lucide-react";
 import "./EventTicketModal.css";
 
 interface EventTicketModalProps {
@@ -29,6 +29,8 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
   eventImageUrl,
   onClose
 }) => {
+  const ticketRef = useRef<HTMLDivElement>(null);
+  
   const ticketData = JSON.stringify({
     ticketId,
     eventTitle,
@@ -50,8 +52,41 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
     }
   };
 
+  const printFullTicket = () => {
+    // Временно скриваме бутоните за принтиране
+    const downloadButton = document.querySelector('.download-ticket-btn');
+    const printButton = document.querySelector('.print-ticket-btn');
+    const closeButton = document.querySelector('.ticket-close-btn');
+    
+    if (downloadButton) {
+      (downloadButton as HTMLElement).style.display = 'none';
+    }
+    if (printButton) {
+      (printButton as HTMLElement).style.display = 'none';
+    }
+    if (closeButton) {
+      (closeButton as HTMLElement).style.display = 'none';
+    }
+
+    // Принтираме целия билет
+    window.print();
+
+    // Възстановяваме бутоните след принтиране
+    setTimeout(() => {
+      if (downloadButton) {
+        (downloadButton as HTMLElement).style.display = '';
+      }
+      if (printButton) {
+        (printButton as HTMLElement).style.display = '';
+      }
+      if (closeButton) {
+        (closeButton as HTMLElement).style.display = '';
+      }
+    }, 100);
+  };
+
   return (
-    <div className="ticket-modal-overlay">
+    <div className="ticket-modal-overlay" ref={ticketRef}>
       <div className="ticket-modal">
         <div className="ticket-modal-header">
           <h2>Вашият билет за събитие</h2>
@@ -181,9 +216,11 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
 
         <div className="ticket-actions">
           <button onClick={downloadTicket} className="download-ticket-btn">
+            <Download size={16} />
             Изтегли билет (PNG)
           </button>
-          <button onClick={() => window.print()} className="print-ticket-btn">
+          <button onClick={printFullTicket} className="print-ticket-btn">
+            <Printer size={16} />
             Принтирай билет
           </button>
         </div>

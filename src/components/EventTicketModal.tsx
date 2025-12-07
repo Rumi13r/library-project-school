@@ -1,7 +1,10 @@
 // src/components/EventTicketModal.tsx
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { X, Calendar, MapPin, Clock, User, Image as _ImageIcon, Download, Printer } from "lucide-react";
+import { X, Calendar, MapPin, Clock, User, Download, Printer } from "lucide-react";
+import { auth, db } from '../firebase/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import "./EventTicketModal.css";
 
 interface EventTicketModalProps {
@@ -11,10 +14,16 @@ interface EventTicketModalProps {
   eventTime: string;
   endTime: string;
   eventLocation: string;
-  userName: string;
   userEmail: string;
   eventImageUrl?: string;
   onClose: () => void;
+}
+
+interface UserData {
+  role?: 'admin' | 'librarian' | 'reader';
+  profile?: {
+    displayName?: string;
+  };
 }
 
 const EventTicketModal: React.FC<EventTicketModalProps> = ({
@@ -24,20 +33,60 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
   eventTime,
   endTime,
   eventLocation,
-  userName,
   userEmail,
   eventImageUrl,
   onClose
 }) => {
   const ticketRef = useRef<HTMLDivElement>(null);
-  
+  const [userDisplayName, setUserDisplayName] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  // Зареждане на потребителските данни
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as UserData;
+            
+            // Определяне на displayName
+            let displayName = 'Потребител';
+            
+            if (userData?.profile?.displayName) {
+              displayName = userData.profile.displayName;
+            } else if (user.email) {
+              displayName = user.email.split('@')[0];
+            }
+            
+            setUserDisplayName(displayName);
+          } else {
+            // Ако няма запис в users, използваме email
+            const displayName = user.email?.split('@')[0] || 'Потребител';
+            setUserDisplayName(displayName);
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          // При грешка използваме email
+          const displayName = user.email?.split('@')[0] || 'Потребител';
+          setUserDisplayName(displayName);
+        }
+      } else {
+        setUserDisplayName('Потребител');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const ticketData = JSON.stringify({
     ticketId,
     eventTitle,
     eventDate,
     eventTime,
     eventLocation,
-    userName,
+    userName: userDisplayName,
     userEmail,
     timestamp: new Date().toISOString()
   });
@@ -46,14 +95,13 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
     const canvas = document.getElementById("ticket-qr") as HTMLCanvasElement;
     if (canvas) {
       const link = document.createElement("a");
-      link.download = `билет-${eventTitle}-${ticketId.substring(0, 8)}.png`;
+      link.download = `билет-${eventTitle.substring(0, 20)}-${ticketId.substring(0, 8)}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
   };
 
   const printFullTicket = () => {
-    // Временно скриваме бутоните за принтиране
     const downloadButton = document.querySelector('.download-ticket-btn');
     const printButton = document.querySelector('.print-ticket-btn');
     const closeButton = document.querySelector('.ticket-close-btn');
@@ -68,10 +116,8 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
       (closeButton as HTMLElement).style.display = 'none';
     }
 
-    // Принтираме целия билет
     window.print();
 
-    // Възстановяваме бутоните след принтиране
     setTimeout(() => {
       if (downloadButton) {
         (downloadButton as HTMLElement).style.display = '';
@@ -85,6 +131,13 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
     }, 100);
   };
 
+  const formatEventTitle = (title: string): string => {
+    if (title.length > 50) {
+      return title.substring(0, 47) + '...';
+    }
+    return title;
+  };
+
   return (
     <div className="ticket-modal-overlay" ref={ticketRef}>
       <div className="ticket-modal">
@@ -96,7 +149,6 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
         </div>
 
         <div className="ticket-content">
-          {/* Заден фон с картинка ако има */}
           {eventImageUrl && (
             <div className="ticket-background">
               <img 
@@ -107,25 +159,25 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
             </div>
           )}
 
-          {/* Хедър на билета */}
           <div className="ticket-header">
             <div className="ticket-logo">
               <Calendar size={28} />
-              <span>Библиотека Билет</span>
+              <span>Билет</span>
             </div>
             <div className="ticket-id">
               БИЛЕТ №: {ticketId.substring(0, 8).toUpperCase()}
             </div>
           </div>
 
-          {/* Информация за събитието */}
           <div className="event-info-section">
-            <h3 className="event-title">{eventTitle}</h3>
+            <h3 className="event-title" title={eventTitle}>
+              {formatEventTitle(eventTitle)}
+            </h3>
             
             <div className="event-details">
               <div className="event-detail">
                 <Calendar size={18} />
-                <div>
+                <div className="detail-content">
                   <strong>Дата:</strong>
                   <span>{new Date(eventDate).toLocaleDateString('bg-BG', {
                     weekday: 'long',
@@ -138,7 +190,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
 
               <div className="event-detail">
                 <Clock size={18} />
-                <div>
+                <div className="detail-content">
                   <strong>Час:</strong>
                   <span>{eventTime} - {endTime}</span>
                 </div>
@@ -146,7 +198,7 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
 
               <div className="event-detail">
                 <MapPin size={18} />
-                <div>
+                <div className="detail-content">
                   <strong>Място:</strong>
                   <span>{eventLocation}</span>
                 </div>
@@ -154,7 +206,6 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
             </div>
           </div>
 
-          {/* QR код секция */}
           <div className="qr-section">
             <div className="qr-container">
               <QRCodeCanvas 
@@ -171,27 +222,31 @@ const EventTicketModal: React.FC<EventTicketModalProps> = ({
               </div>
             </div>
 
-            {/* Информация за посетителя */}
             <div className="attendee-info">
               <div className="attendee-detail">
                 <User size={18} />
-                <div>
+                <div className="detail-content">
                   <strong>Посетител:</strong>
-                  <span>{userName}</span>
+                  <span className="user-name">
+                    {loading ? 'Зареждане...' : userDisplayName}
+                  </span>
                 </div>
               </div>
               <div className="attendee-detail">
-                <strong>Имейл:</strong>
-                <span>{userEmail}</span>
+                <div className="detail-content">
+                  <strong>Имейл:</strong>
+                  <span className="user-email">{userEmail}</span>
+                </div>
               </div>
               <div className="attendee-detail">
-                <strong>Дата на регистрация:</strong>
-                <span>{new Date().toLocaleDateString('bg-BG')}</span>
+                <div className="detail-content">
+                  <strong>Дата на регистрация:</strong>
+                  <span>{new Date().toLocaleDateString('bg-BG')}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Инструкции */}
           <div className="ticket-instructions">
             <div className="instruction-item">
               <div className="instruction-number">1</div>

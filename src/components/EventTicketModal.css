@@ -18,7 +18,7 @@
   background: white;
   border-radius: 16px;
   width: 100%;
-  max-width: 500px;
+  max-width: 650px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -107,7 +107,14 @@
   font-size: 1.5rem;
   color: #111827;
   margin: 0 0 16px 0;
-  line-height: 1.3;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  padding: 0 1rem;
+  font-weight: 700;
 }
 
 .event-details {
@@ -132,20 +139,23 @@
   margin-top: 2px;
 }
 
-.event-detail div {
+.detail-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
 }
 
-.event-detail strong {
+.detail-content strong {
   color: #4b5563;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 
-.event-detail span {
+.detail-content span {
   color: #111827;
   font-weight: 500;
+  font-size: 1rem;
+  word-break: break-word;
 }
 
 .qr-section {
@@ -181,8 +191,15 @@
 
 .attendee-detail {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.attendee-detail:first-child {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .attendee-detail strong {
@@ -193,13 +210,6 @@
 .attendee-detail span {
   color: #111827;
   font-weight: 500;
-}
-
-.attendee-detail:first-child {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
 }
 
 .ticket-instructions {
@@ -289,11 +299,12 @@
     box-shadow: none;
     max-width: none;
     max-height: none;
+    margin: 0;
   }
 
   .ticket-close-btn,
   .ticket-actions {
-    display: none;
+    display: none !important;
   }
 
   .qr-container {
@@ -303,6 +314,12 @@
   .ticket-modal-header {
     background: #3b82f6 !important;
     -webkit-print-color-adjust: exact;
+  }
+
+  .event-title {
+    font-size: 1.8rem;
+    white-space: normal;
+    line-height: 1.3;
   }
 }
 
@@ -322,5 +339,22 @@
 
   .event-title {
     font-size: 1.25rem;
+    white-space: normal;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 768px) {
+  .event-title {
+    white-space: normal;
+    line-height: 1.3;
+  }
+  
+  .event-details {
+    gap: 0.5rem;
+  }
+  
+  .detail-content span {
+    font-size: 0.9rem;
   }
 }

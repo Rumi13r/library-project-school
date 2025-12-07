@@ -726,3 +726,59 @@
 [data-theme='dark'] .security-question {
   color: var(--neutral-100) !important;
 }
+
+/* URGENT FIX FOR ALL TEXT ELEMENTS IN LOGIN FORM */
+.login-form-section * {
+  color: var(--neutral-800) !important;
+  opacity: 1 !important;
+}
+
+[data-theme='dark'] .login-form-section * {
+  color: var(--neutral-100) !important;
+}
+
+/* Specific fix for ALL labels and text in form */
+.login-form-section label,
+.login-form-section .input-label,
+.login-form-section .form-subtitle,
+.login-form-section span,
+.login-form-section p,
+.login-form-section div:not(.form-input):not(.login-button) {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
+}
+
+/* Mobile-specific override - MOST IMPORTANT */
+@media (max-width: 768px) {
+  .login-form-section * {
+    color: #000000 !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+  
+  [data-theme='dark'] .login-form-section * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  
+  /* Remove all transparency effects on mobile */
+  .login-form-section {
+    background: white !important;
+    opacity: 1 !important;
+  }
+  
+  [data-theme='dark'] .login-form-section {
+    background: #1a1a1a !important;
+  }
+  
+  /* Make sure text is visible */
+  .login-form-section label,
+  .login-form-section .input-label,
+  .login-form-section span {
+    color: #000000 !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+  }
+}

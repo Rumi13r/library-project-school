@@ -806,20 +806,19 @@ console.log("Rendering UserDashboard with:", { handleEventRegistration});
 
       {/* Ticket Modal */}
       {showTicket && currentTicket && user && (
-        <EventTicketModal
-          ticketId={currentTicket.ticketId}
+  <EventTicketModal
+    ticketId={currentTicket.ticketId}
     eventTitle={currentTicket.eventTitle}
     eventDate={currentTicket.eventDate}
     eventTime={currentTicket.eventTime}
     endTime={currentTicket.endTime}
     eventLocation={currentTicket.eventLocation}
-    userName={user.displayName || "Потребител"}
-    userEmail={user.email || ""}
-    eventImageUrl={currentTicket.eventImageUrl} // Това вече ще има стойност
+    userEmail={user.email || ""} // Подавате само userEmail
+    eventImageUrl={currentTicket.eventImageUrl}
     onClose={() => {
       setShowTicket(false);
       setCurrentTicket(null);
-          }}
+    }}
         />
       )}
     </div>

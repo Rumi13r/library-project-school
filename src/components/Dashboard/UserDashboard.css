@@ -2037,3 +2037,177 @@
     padding: 1rem;
   }
 }
+
+/* Registration Success Banner */
+.registration-success-banner {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 320px;
+  max-width: 90%;
+  animation: slideDown 0.4s ease forwards;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.registration-success-banner svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.registration-success-banner span {
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-grow: 1;
+}
+
+.close-banner-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.close-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Mobile responsive styles for banner */
+@media (max-width: 768px) {
+  .registration-success-banner {
+    top: 80px;
+    padding: 0.875rem 1.25rem;
+    min-width: 280px;
+    max-width: calc(100% - 32px);
+    border-radius: 10px;
+  }
+  
+  .registration-success-banner svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .registration-success-banner span {
+    font-size: 0.875rem;
+  }
+  
+  .close-banner-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .registration-success-banner {
+    top: 70px;
+    padding: 0.75rem 1rem;
+    min-width: 250px;
+    max-width: calc(100% - 24px);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .registration-success-banner span {
+    font-size: 0.85rem;
+    order: 2;
+    width: 100%;
+    text-align: center;
+    padding-top: 4px;
+  }
+  
+  .registration-success-banner svg {
+    order: 1;
+  }
+  
+  .close-banner-btn {
+    order: 1;
+  }
+}
+
+/* Fix for text visibility - override any inherited styles */
+.registration-success-banner * {
+  color: white !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: white !important;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .registration-success-banner {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 32px rgba(5, 150, 105, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .close-banner-btn {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .close-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Additional mobile visibility fixes */
+@media (max-width: 768px) {
+  /* Nuclear option for mobile visibility */
+  .registration-success-banner,
+  .registration-success-banner *,
+  .registration-success-banner span,
+  .registration-success-banner svg {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    opacity: 1 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Force white text with dark background */
+  .registration-success-banner {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  }
+  
+  /* Ensure text is readable */
+  .registration-success-banner span {
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+  }
+}

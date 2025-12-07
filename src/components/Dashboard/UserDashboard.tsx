@@ -472,7 +472,6 @@ console.log("Rendering UserDashboard with:", { handleEventRegistration});
         {/* Header */}
         <div className="dashboard-header">
           <h1>Моят Профил</h1>
-          <p>Добре дошли, {user?.displayName || 'Потребителю'}</p>
           
           {/* Банер за успешно записване */}
           {showRegistrationSuccess && (

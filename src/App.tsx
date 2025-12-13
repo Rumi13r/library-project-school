@@ -14,6 +14,7 @@ import Bookcatalog from "./pages/BookLibraryPage";
 import Archived from "./pages/ArchivedEventsPage"; 
 import OnlineBook from "./pages/OnlineBooksPage"; 
 import ReadersClubPage from "./pages/ReadersClubPage";
+import StudyMaterialsPage from "./pages/StudyMaterialsPage";
 
 function App() {
   // Protected route за всички логнати потребители
@@ -130,6 +131,14 @@ function App() {
               </Layout>
             }
           />  
+          <Route
+            path="/studyMaterials"
+            element={
+              <Layout>
+                <StudyMaterialsPage />
+              </Layout>
+            }
+          />
           {/* Auto-redirect route based on role */}
           <Route path="/redirect" element={<RoleBasedRedirect />} />
 

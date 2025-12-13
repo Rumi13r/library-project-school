@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { 
-  Calendar, 
   Clock, 
   MapPin, 
   User, 
@@ -12,7 +11,6 @@ import {
   Filter,
   History,
   Eye,
-  BookOpen,
   Download,
   Trash2,
   RotateCcw
@@ -344,27 +342,18 @@ console.log(formatFullDate);
         {/* Stats Summary */}
         <div className="archive-stats">
           <div className="stat-card">
-            <div className="stat-icon-wrapper">
-              <Archive className="stat-icon" />
-            </div>
             <div className="stat-content">
               <div className="stat-number">{archivedEvents.length}</div>
               <div className="stat-label">Общо архивирани събития</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon-wrapper">
-              <Calendar className="stat-icon" />
-            </div>
             <div className="stat-content">
               <div className="stat-number">{availableYears.length}</div>
               <div className="stat-label">Години в архива</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon-wrapper">
-              <Users className="stat-icon" />
-            </div>
             <div className="stat-content">
               <div className="stat-number">{availableOrganizers.length}</div>
               <div className="stat-label">Организатори</div>
@@ -632,7 +621,6 @@ console.log(formatFullDate);
         {/* Footer Information */}
         <div className="archive-footer">
           <div className="archive-info">
-            <BookOpen className="info-icon" />
             <div className="info-content">
               <h4>Информация за архива</h4>
               <p>

@@ -11,8 +11,7 @@ import {
   Filter,
   BookOpen,
   LogIn,
-  ArrowRight,
-  Eye
+  ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './EventsPage.css';
@@ -226,7 +225,7 @@ const EventsPage: React.FC = () => {
   const handleViewDetails = (eventId: string) => {
     navigate(`/event/${eventId}`);
   };
-
+console.log(handleViewDetails);
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
@@ -505,14 +504,7 @@ const EventsPage: React.FC = () => {
                           {/* Actions Column */}
                           <td className="event-table-cell actions-col">
                             <div className="event-actions">
-                              <button 
-                                className="view-details-btn"
-                                onClick={() => handleViewDetails(event.id)}
-                                title="Виж детайли"
-                              >
-                                <Eye size={16} />
-                                <span>Детайли</span>
-                              </button>
+                             
                               
                               <button 
                                 className={`event-register-btn ${!user || isFull ? 'event-btn-disabled' : ''}`}

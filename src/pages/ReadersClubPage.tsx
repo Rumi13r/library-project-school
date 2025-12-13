@@ -16,7 +16,6 @@ import {
   Search,
   Filter,
   Award,
-  Quote,
   Users as _UsersIcon,
   Book,
   ExternalLink,
@@ -953,7 +952,6 @@ const ReadersClubPage: React.FC = () => {
 
         {/* Quote of the Day */}
         <div className="quote-section">
-          <Quote className="quote-icon" />
           <blockquote>
             "Един читател живее хиляди животи, преди да умре. Човекът, който никога не чете, живее само един."
           </blockquote>

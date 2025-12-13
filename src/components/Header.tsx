@@ -114,7 +114,7 @@ const Header: React.FC = () => {
 
   const quickLinks = [
     { name: 'Електронни книги', href: '/onlineBooks' },
-    { name: 'Учебни помагала', href: '#' },
+    { name: 'Учебни помагала', href: '/studyMaterials' },
     { name: 'ИИ ресурси за учители', href: '/ai-resources' },
     { name: 'Читателски клуб', href: '/readersClub' },
     { name: 'Архив събития', href: '/archivedEvents' },

@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
-import { Calendar, Clock, MapPin, User, Users, ArrowRight, BookOpen, Search, LogIn } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  User, 
+  Users, 
+  Search, 
+  Filter,
+  BookOpen,
+  LogIn,
+  ArrowRight,
+  Eye
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './EventsPage.css';
-import { useAuth } from '../contexts/AuthContext'; // Импортирай useAuth
+import { useAuth } from '../contexts/AuthContext';
 
 interface Event {
   id: string;
@@ -27,9 +39,12 @@ const EventsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'full'>('all');
-  const navigate = useNavigate();
+  const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [organizerFilter, setOrganizerFilter] = useState<string>('all');
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  const [availableOrganizers, setAvailableOrganizers] = useState<string[]>([]);
   
-  // Използвай AuthContext вместо localStorage
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -38,7 +53,7 @@ const EventsPage: React.FC = () => {
 
   useEffect(() => {
     filterEvents();
-  }, [events, searchTerm, statusFilter]);
+  }, [events, searchTerm, statusFilter, monthFilter, organizerFilter]);
 
   const fetchEvents = async () => {
     try {
@@ -59,12 +74,72 @@ const EventsPage: React.FC = () => {
         });
       
       setEvents(futureEvents);
+      extractFiltersData(futureEvents);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching events:", error);
       setEvents([]);
       setLoading(false);
     }
+  };
+
+  const extractFiltersData = (events: Event[]) => {
+    const months = new Set<string>();
+    const organizers = new Set<string>();
+    
+    events.forEach(event => {
+      // Extract month
+      const date = parseEventDate(event.date);
+      const month = date.getMonth();
+      const monthName = getMonthName(month);
+      months.add(`${month}-${monthName}`);
+      
+      // Extract organizer
+      if (event.organizer) {
+        organizers.add(event.organizer);
+      }
+    });
+    
+    setAvailableMonths(Array.from(months).sort((a, b) => {
+      const [aMonth] = a.split('-').map(Number);
+      const [bMonth] = b.split('-').map(Number);
+      return aMonth - bMonth;
+    }));
+    
+    setAvailableOrganizers(Array.from(organizers).sort());
+  };
+
+  const parseEventDate = (dateString: string): Date => {
+    if (dateString.includes('-')) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    
+    const months: { [key: string]: number } = {
+      'януари': 0, 'февруари': 1, 'март': 2, 'април': 3,
+      'май': 4, 'юни': 5, 'юли': 6, 'август': 7,
+      'септември': 8, 'октомври': 9, 'ноември': 10, 'декември': 11
+    };
+    
+    const parts = dateString.split(' ');
+    if (parts.length === 2) {
+      const day = parseInt(parts[0]);
+      const month = months[parts[1].toLowerCase()];
+      if (day && month !== undefined) {
+        const currentYear = new Date().getFullYear();
+        return new Date(currentYear, month, day);
+      }
+    }
+    
+    return new Date();
+  };
+
+  const getMonthName = (monthNumber: number) => {
+    const months = [
+      'Януари', 'Февруари', 'Март', 'Април', 'Май', 'Юни',
+      'Юли', 'Август', 'Септември', 'Октомври', 'Ноември', 'Декември'
+    ];
+    return months[monthNumber];
   };
 
   const filterEvents = () => {
@@ -87,6 +162,19 @@ const EventsPage: React.FC = () => {
       filtered = filtered.filter(event => event.currentParticipants >= event.maxParticipants);
     }
 
+    // Month filter
+    if (monthFilter !== 'all') {
+      filtered = filtered.filter(event => {
+        const date = parseEventDate(event.date);
+        return date.getMonth().toString() === monthFilter;
+      });
+    }
+
+    // Organizer filter
+    if (organizerFilter !== 'all') {
+      filtered = filtered.filter(event => event.organizer === organizerFilter);
+    }
+
     setFilteredEvents(filtered);
   };
 
@@ -99,29 +187,26 @@ const EventsPage: React.FC = () => {
   };
 
   const formatCalendarDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseEventDate(dateString);
     return {
       day: date.getDate(),
       month: date.toLocaleDateString('bg-BG', { month: 'short' }),
-      weekday: date.toLocaleDateString('bg-BG', { weekday: 'short' })
+      weekday: date.toLocaleDateString('bg-BG', { weekday: 'short' }),
+      year: date.getFullYear()
     };
   };
 
   const handleEventRegistration = (event: Event) => {
-    // Навигира към дашборда за записване
     navigate('/dashboard', { 
       state: { 
         eventId: event.id,
-        eventTitle: event.title,
-        eventDate: event.date,
-        eventTime: event.time,
-        eventLocation: event.location
+        action: 'register',
+        fromEventsPage: true
       }
     });
   };
 
   const handleLoginRedirect = () => {
-    // Навигира към страницата за вход
     navigate('/login', { 
       state: { 
         redirectTo: '/events',
@@ -132,19 +217,23 @@ const EventsPage: React.FC = () => {
 
   const handleParticipantsClick = (e: React.MouseEvent, event: Event) => {
     e.stopPropagation();
-    alert(`Информация за участниците:\n\nЗаглавие: ${event.title}\nЗаписани: ${event.currentParticipants}\nМаксимум: ${event.maxParticipants}\nСвободни: ${getAvailableSpots(event)}`);
+    const availableSpots = getAvailableSpots(event);
+    const fillPercentage = Math.round((event.currentParticipants / event.maxParticipants) * 100);
+    
+    alert(`📊 Информация за участниците:\n\n🏷️ Заглавие: ${event.title}\n👥 Записани: ${event.currentParticipants}\n🎯 Максимум: ${event.maxParticipants}\n✅ Свободни: ${availableSpots}\n📈 Попълненост: ${fillPercentage}%`);
   };
 
-  const handleStatusClick = (e: React.MouseEvent, event: Event) => {
-    e.stopPropagation();
-    if (isEventFull(event)) {
-      alert(`Заглавие: ${event.title}\nТова събитие е пълно. Можете да се запишете в списъка за изчакване.`);
-    } else {
-      alert(`Заглавие: ${event.title}\nИма ${getAvailableSpots(event)} свободни места. Можете да се запишете.`);
-    }
+  const handleViewDetails = (eventId: string) => {
+    navigate(`/event/${eventId}`);
   };
-console.log(handleStatusClick)
-  // Ако все още зареждаме
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setMonthFilter('all');
+    setOrganizerFilter('all');
+  };
+
   if (loading || authLoading) {
     return (
       <div className="events-page">
@@ -162,14 +251,49 @@ console.log(handleStatusClick)
         {/* Header */}
         <div className="events-header">
           <div className="events-title-section">
-            <div className="title-icon-wrapper">
-              <Calendar className="events-title-icon" />
-            </div>
             <div className="title-content">
               <h1 className="handwritten-title">Предстоящи Събития</h1>
               <p className="events-subtitle">
-                Всички предстоящи събития в библиотеката
+                Всички предстоящи събития в библиотеката - запишете се още сега!
               </p>
+            </div>
+          </div>
+
+          {user && (user.role === 'admin' || user.role === 'librarian') && (
+            <div className="events-actions">
+              <button 
+                className="add-event-btn"
+                onClick={() => navigate('/events/add')}
+                title="Добави ново събитие"
+              >
+                <span>+ Добави събитие</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Stats Summary */}
+        <div className="events-stats">
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-number">{events.length}</div>
+              <div className="stat-label">Предстоящи събития</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-number">
+                {events.filter(e => e.currentParticipants < e.maxParticipants).length}
+              </div>
+              <div className="stat-label">Със свободни места</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-number">
+                {events.reduce((sum, event) => sum + event.currentParticipants, 0)}
+              </div>
+              <div className="stat-label">Общо записани</div>
             </div>
           </div>
         </div>
@@ -180,31 +304,77 @@ console.log(handleStatusClick)
             <Search className="search-icon" />
             <input
               type="text"
-              placeholder="Търсете събития по име, описание, място..."
+              placeholder="Търсете събития по име, описание, място, организатор..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
           </div>
-          <div className="filter-buttons">
-            <button 
-              className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('all')}
+
+          <div className="advanced-filters">
+            <div className="filter-group">
+              <Filter size={16} />
+              <span className="filter-label">Филтри:</span>
+            </div>
+
+            <div className="filter-buttons">
+              <button 
+                className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('all')}
+              >
+                Всички
+              </button>
+              <button 
+                className={`filter-btn ${statusFilter === 'available' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('available')}
+              >
+                Свободни места
+              </button>
+              <button 
+                className={`filter-btn ${statusFilter === 'full' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('full')}
+              >
+                Пълни
+              </button>
+            </div>
+
+            <select 
+              className="filter-select"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
             >
-              Всички
-            </button>
-            <button 
-              className={`filter-btn ${statusFilter === 'available' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('available')}
+              <option value="all">Всички месеци</option>
+              {availableMonths.map(month => {
+                const [monthNum, monthName] = month.split('-');
+                return (
+                  <option key={monthNum} value={monthNum}>
+                    {monthName}
+                  </option>
+                );
+              })}
+            </select>
+
+            <select 
+              className="filter-select"
+              value={organizerFilter}
+              onChange={(e) => setOrganizerFilter(e.target.value)}
             >
-              Свободни места
-            </button>
-            <button 
-              className={`filter-btn ${statusFilter === 'full' ? 'active' : ''}`}
-              onClick={() => setStatusFilter('full')}
-            >
-              Пълни
-            </button>
+              <option value="all">Всички организатори</option>
+              {availableOrganizers.map(organizer => (
+                <option key={organizer} value={organizer}>
+                  {organizer}
+                </option>
+              ))}
+            </select>
+
+            {(searchTerm || statusFilter !== 'all' || monthFilter !== 'all' || organizerFilter !== 'all') && (
+              <button 
+                className="clear-filters-btn"
+                onClick={clearFilters}
+              >
+                Изчисти филтрите
+              </button>
+            )}
           </div>
         </div>
 
@@ -212,10 +382,10 @@ console.log(handleStatusClick)
         <div className="events-content">
           {filteredEvents.length > 0 ? (
             <>
-              <div className="events-stats">
+              <div className="events-stats-header">
                 <BookOpen className="stats-icon" />
                 <span className="events-count">
-                  {filteredEvents.length} от {events.length} събития
+                  Показани {filteredEvents.length} от {events.length} събития
                 </span>
                 {searchTerm && (
                   <span className="search-results">
@@ -225,7 +395,7 @@ console.log(handleStatusClick)
                 {!user && (
                   <div className="login-reminder">
                     <LogIn size={16} />
-                    <span>Влезте, за да се запишете за събитие</span>
+                    <span>Влезте в профила си, за да се запишете за събитие</span>
                   </div>
                 )}
               </div>
@@ -237,8 +407,8 @@ console.log(handleStatusClick)
                       <th className="date-col">Дата</th>
                       <th className="title-col">Събитие</th>
                       <th className="details-col">Детайли</th>
-                      <th className="participants-col">Участници</th>
-                      <th className="action-col">Записване</th>
+                      <th className="stats-col">Статистика</th>
+                      <th className="actions-col">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -247,8 +417,8 @@ console.log(handleStatusClick)
                       const availableSpots = getAvailableSpots(event);
                       const isFull = isEventFull(event);
                       
-                      // Color variants for rows
-                      const colorVariants = ['event-green', 'event-yellow', 'event-red', 'event-blue'];
+                      // Цветови варианти за редове
+                      const colorVariants = ['event-green', 'event-blue', 'event-purple', 'event-orange'];
                       const colorClass = colorVariants[index % colorVariants.length];
                       
                       return (
@@ -262,19 +432,20 @@ console.log(handleStatusClick)
                               <div className="calendar-date">
                                 <div className="calendar-day">{calendarDate.day}</div>
                                 <div className="calendar-month">{calendarDate.month}</div>
-                                <div className="calendar-weekday">{calendarDate.weekday}</div>
+                                <div className="calendar-year">{calendarDate.year}</div>
                               </div>
                               <div className="time-info">
                                 <Clock size={14} />
                                 <span>{event.time} - {event.endTime}</span>
                               </div>
+                              
                             </div>
                           </td>
 
                           {/* Title Column */}
                           <td className="event-table-cell title-col">
                             <div className="event-title-section">
-                              <h1 className="event-title">{event.title}</h1>
+                              <h3 className="event-title">{event.title}</h3>
                               <div 
                                 className="event-description"
                                 dangerouslySetInnerHTML={{ __html: event.description }}
@@ -296,22 +467,28 @@ console.log(handleStatusClick)
                             </div>
                           </td>
 
-                          {/* Participants Column */}
-                          <td className="event-table-cell participants-col">
-                            <div 
-                              className="event-participants"
-                              onClick={(e) => handleParticipantsClick(e, event)}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              <div className="participants-info">
+                          {/* Stats Column */}
+                          <td className="event-table-cell stats-col">
+                            <div className="event-stats">
+                              <div 
+                                className="participants-info"
+                                onClick={(e) => handleParticipantsClick(e, event)}
+                                style={{ cursor: 'pointer' }}
+                              >
                                 <Users className="participants-icon" />
-                                <span>{event.currentParticipants} / {event.maxParticipants}</span>
+                                <span className="participants-count">
+                                  {event.currentParticipants} / {event.maxParticipants}
+                                </span>
+                                <span className="attendance-rate">
+                                  ({Math.round((event.currentParticipants / event.maxParticipants) * 100)}%)
+                                </span>
                               </div>
                               <div className="participants-progress">
                                 <div 
                                   className="participants-progress-bar"
                                   style={{ 
-                                    width: `${(event.currentParticipants / event.maxParticipants) * 100}%` 
+                                    width: `${(event.currentParticipants / event.maxParticipants) * 100}%`,
+                                    backgroundColor: isFull ? '#ef4444' : '#10b981'
                                   }}
                                 />
                               </div>
@@ -325,33 +502,44 @@ console.log(handleStatusClick)
                             </div>
                           </td>
 
-                          {/* Action Column */}
-                          <td className="event-table-cell action-col">
-                            <button 
-                              className={`event-register-btn ${!user || isFull ? 'event-btn-disabled' : ''}`}
-                              disabled={isFull}
-                              onClick={() => {
-                                if (!user) {
-                                  handleLoginRedirect();
-                                } else if (!isFull) {
-                                  handleEventRegistration(event);
-                                }
-                              }}
-                            >
-                              {!user ? (
-                                <>
-                                  <LogIn size={16} />
-                                  <span>Вход за записване</span>
-                                </>
-                              ) : isFull ? (
-                                <span>Събитието е пълно</span>
-                              ) : (
-                                <>
-                                  <span>Запиши се</span>
-                                  <ArrowRight className="register-icon" />
-                                </>
-                              )}
-                            </button>
+                          {/* Actions Column */}
+                          <td className="event-table-cell actions-col">
+                            <div className="event-actions">
+                              <button 
+                                className="view-details-btn"
+                                onClick={() => handleViewDetails(event.id)}
+                                title="Виж детайли"
+                              >
+                                <Eye size={16} />
+                                <span>Детайли</span>
+                              </button>
+                              
+                              <button 
+                                className={`event-register-btn ${!user || isFull ? 'event-btn-disabled' : ''}`}
+                                disabled={isFull}
+                                onClick={() => {
+                                  if (!user) {
+                                    handleLoginRedirect();
+                                  } else if (!isFull) {
+                                    handleEventRegistration(event);
+                                  }
+                                }}
+                              >
+                                {!user ? (
+                                  <>
+                                    <LogIn size={16} />
+                                    <span>Вход</span>
+                                  </>
+                                ) : isFull ? (
+                                  <span>Пълно</span>
+                                ) : (
+                                  <>
+                                    <span>Запиши се</span>
+                                    <ArrowRight className="register-icon" />
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -364,29 +552,44 @@ console.log(handleStatusClick)
             <div className="no-events">
               <Calendar size={80} className="no-events-icon" />
               <h3 className="handwritten-title-small">
-                {searchTerm || statusFilter !== 'all' ? 'Няма намерени събития' : 'Няма предстоящи събития'}
+                {searchTerm || statusFilter !== 'all' || monthFilter !== 'all' ? 
+                  'Няма намерени събития' : 
+                  'Няма предстоящи събития'
+                }
               </h3>
               <p>
                 {searchTerm 
                   ? `Няма резултати за "${searchTerm}". Опитайте с различна ключова дума.`
-                  : statusFilter !== 'all'
-                  ? 'Няма събития, отговарящи на избрания филтър.'
+                  : statusFilter !== 'all' || monthFilter !== 'all' || organizerFilter !== 'all'
+                  ? 'Няма събития, отговарящи на избраните филтри.'
                   : 'В момента няма предстоящи събития. Проверете отново по-късно за нови събития в учебната библиотека.'
                 }
               </p>
-              {(searchTerm || statusFilter !== 'all') && (
+              {(searchTerm || statusFilter !== 'all' || monthFilter !== 'all' || organizerFilter !== 'all') && (
                 <button 
                   className="clear-filters-btn"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                  }}
+                  onClick={clearFilters}
                 >
                   Изчисти филтрите
                 </button>
               )}
             </div>
           )}
+        </div>
+
+        {/* Footer Information */}
+        <div className="events-footer">
+          <div className="events-info">
+            <div className="info-content">
+              <h4>Как да се запишете за събитие?</h4>
+              <p>
+                1. Влезте в профила си<br />
+                2. Изберете желаното събитие<br />
+                3. Натиснете бутона "Запиши се"<br />
+                4. Потвърдете участието си
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

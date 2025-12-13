@@ -2228,11 +2228,30 @@
    =========================================== */
 
 .book-animation-section {
+  position: relative;
   padding: 60px 0;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  margin: 60px 0;
   overflow: hidden;
+  /* Светла тема */
+  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
 }
 
+/* Тъмна тема със media query */
+@media (prefers-color-scheme: dark) {
+  .book-animation-section {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+}
+
+/* Тъмна тема с атрибут data-theme */
+[data-theme="dark"] .book-animation-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* Тъмна тема с клас dark-theme-compatible */
+.dark-theme-compatible .book-animation-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+}
 /* Bookshelf */
 .bookshelf {
   position: relative;
@@ -2271,7 +2290,7 @@
   box-shadow: 
     -8px 8px 20px rgba(0,0,0,0.25),
     inset 0 0 0 3px rgba(255,255,255,0.15);
-  animation: float 4s ease-in-out infinite;
+  animation: bookFloat 4s ease-in-out infinite;
 }
 
 /* Book Spine */
@@ -2315,7 +2334,7 @@
 }
 
 /* Floating Animation */
-@keyframes float {
+@keyframes bookFloat {
   0%, 100% {
     transform: translateY(0) rotateY(0);
   }
@@ -4380,5 +4399,122 @@
 
 [data-theme="dark"] .about-section {
   background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-section) 100%);
+}
+
+/* Стилове само за ръкописни заглавия във Features секцията */
+.features-section .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+
+.features-section .handwritten-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+  border-radius: 2px;
+}
+
+/* Стилове само за ръкописни заглавия в Catalog секцията */
+.catalog-section .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+
+/* Добави подобни блокове за новини*/
+.news-section .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+
+/* Добави подобни блокове за events-section*/
+.events-section .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+/* Добави подобни блокове за testimonials-section*/
+.testimonials-section .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+/* Добави подобни блокове за about-section dark-theme-compatible*/
+
+.about-section .section-header .handwritten-title {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+}
+
+.about-section .section-header .handwritten-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+  border-radius: 2px;
 }
 

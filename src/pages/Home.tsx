@@ -340,13 +340,12 @@ const Home: React.FC = () => {
   // Промени тази функция в Home компонента
 const handleEventRegistration = (event: Event) => {
   if (!user) {
-    // Ако не е логнат, води към логин страница с флаг за връщане към събития
+    // Ако не е логнат, води към логин страница
     navigate('/login', { 
       state: { 
-        redirectTo: '/events',
+        redirectTo: '/dashboard',
         message: 'Моля, влезте в профила си, за да се запишете за събитие.',
-        fromEventRegistration: true,
-        eventId: event.id // Запазваме ID на събитието за автоматично записване
+        eventId: event.id // Запазваме ID на събитието
       }
     });
     return;
@@ -357,12 +356,12 @@ const handleEventRegistration = (event: Event) => {
     return;
   }
 
-  // Ако е логнат, води към дашборда с флаг за автоматично записване
+  // Ако е логнат, води към дашборда с флаг за автоматично отваряне на модала
   navigate('/dashboard', { 
     state: { 
       eventId: event.id,
       action: 'register',
-      fromEventsPage: true
+      fromHomePage: true // ДОБАВЕНО: Флаг, че идваме от HomePage
     }
   });
 };
@@ -606,8 +605,8 @@ const handleEventRegistration = (event: Event) => {
 
       {/* Features Section */}
       <section className="features-section">
-        <div className="container">
-          <div className="section-header">
+  <div className="container">
+    <div className="section-header">
             <h2 className="handwritten-title">Защо да изберете нашата библиотека?</h2>
             <p className="section-subtitle">
               Предлагаме модерни услуги и богата колекция, които правят четенето 
@@ -634,8 +633,8 @@ const handleEventRegistration = (event: Event) => {
 
       {/* Book Catalog Section */}
       <section className="catalog-section">
-        <div className="container">
-          <div className="section-header">
+  <div className="container">
+    <div className="section-header">
             <h2 className="handwritten-title">Препоръчани книги</h2>
             <p className="section-subtitle">
               Открийте най-популярните заглавия в нашата библиотека
@@ -788,7 +787,7 @@ const handleEventRegistration = (event: Event) => {
       </section>
 
    {/* Book Animation Section - ОПРАВЕН ЗА МОБИЛНИ */}
-<section className="book-animation-section">
+<section className="book-animation-section dark-theme-compatible">
   <div className="bookshelf-container">
     <div className="bookshelf">
       <div className="books">

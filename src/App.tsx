@@ -10,7 +10,10 @@ import UserDashboard from "./components/Dashboard/UserDashboard";
 import EventsPage from "./pages/EventsPage"; 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AIResourcesPage from "./pages/AIResourcesPage"; 
-import Bookcatalog from "./pages/BookCatalog"; 
+import Bookcatalog from "./pages/BookLibraryPage"; 
+import Archived from "./pages/ArchivedEventsPage"; 
+import OnlineBook from "./pages/OnlineBooksPage"; 
+import ReadersClubPage from "./pages/ReadersClubPage";
 
 function App() {
   // Protected route за всички логнати потребители
@@ -103,7 +106,30 @@ function App() {
               </Layout>
             }
           />
-
+          <Route
+            path="/archivedEvents"
+            element={
+              <Layout>
+                <Archived />
+              </Layout>
+            }
+          />
+          <Route
+            path="/onlineBooks"
+            element={
+              <Layout>
+                <OnlineBook />
+              </Layout>
+            }
+          />
+          <Route
+            path="/readersClub"
+            element={
+              <Layout>
+                <ReadersClubPage />
+              </Layout>
+            }
+          />  
           {/* Auto-redirect route based on role */}
           <Route path="/redirect" element={<RoleBasedRedirect />} />
 

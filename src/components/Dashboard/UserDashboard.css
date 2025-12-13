@@ -2211,3 +2211,292 @@
     letter-spacing: 0.3px !important;
   }
 }
+
+/* Стилове за новите табове и таблици */
+
+/* Табове */
+.tabs-section {
+  display: flex;
+  overflow-x: auto;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 5px;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  color: #4b6cb7;
+  border-bottom-color: #dee2e6;
+}
+
+.tab-button.active {
+  color: #4b6cb7;
+  font-weight: 600;
+  border-bottom-color: #4b6cb7;
+  background-color: rgba(75, 108, 183, 0.05);
+}
+
+/* Изтекли събития - специфични стилове */
+.past-event-row {
+  background-color: #f8f9fa;
+  opacity: 0.9;
+}
+
+.past-event-row:hover {
+  background-color: #e9ecef;
+}
+
+.past-event-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #6c757d;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+/* Статус за изтекли събития */
+.status-past {
+  background: #6c757d !important;
+  color: white !important;
+}
+
+/* Бутон за изтекло събитие */
+.disabled-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Индикатор за изтекъл билет */
+.past-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #e9ecef;
+  color: #6c757d;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* Участници колона за изтекли събития */
+.event-participants-cell {
+  text-align: center;
+}
+
+.participants-count {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Адаптивност за малки екрани */
+@media (max-width: 768px) {
+  .tabs-section {
+    flex-wrap: wrap;
+  }
+  
+  .tab-button {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  
+  .past-event-badge {
+    margin-left: 5px;
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+}
+/* ========== DARK THEME ========== */
+[data-theme="dark"] {
+  /* Заглавия на събития в тъмна тема */
+  .event-title-text {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+  }
+
+  /* Стилове за таблици в тъмна тема */
+  .data-table {
+    background-color: #1e293b;
+  }
+  
+  .data-table th {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+  
+  .data-table td {
+    color: #cbd5e1;
+    border-bottom-color: #334155;
+    background-color: #1e293b;
+  }
+  
+  .data-table tr:hover {
+    background-color: #2d3748 !important;
+  }
+
+  /* Изтекли събития в тъмна тема */
+  .past-event-row {
+    background-color: rgba(30, 41, 59, 0.7) !important;
+  }
+  
+  .past-event-row:hover {
+    background-color: rgba(45, 55, 72, 0.9) !important;
+  }
+
+  /* Описание на събития в тъмна тема */
+  .event-description {
+    color: #cbd5e1 !important;
+  }
+  
+  .event-description p,
+  .event-description li {
+    color: #cbd5e1 !important;
+  }
+  
+  .event-description strong,
+  .event-description b {
+    color: #f1f5f9 !important;
+  }
+  
+  .event-description h1,
+  .event-description h2,
+  .event-description h3,
+  .event-description h4,
+  .event-description h5,
+  .event-description h6 {
+    color: #f1f5f9 !important;
+  }
+
+  /* Дати и време в тъмна тема */
+  .event-date-text {
+    color: #e2e8f0 !important;
+  }
+  
+  .event-time {
+    color: #94a3b8 !important;
+  }
+
+  /* Места в тъмна тема */
+  .spots-count {
+    background-color: rgba(30, 41, 59, 0.8);
+    color: #cbd5e1;
+    border: 1px solid #475569;
+  }
+
+  .spots-full {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  /* Билети в тъмна тема */
+  .ticket-id {
+    color: #e2e8f0 !important;
+  }
+  
+  .ticket-date,
+  .ticket-time {
+    color: #cbd5e1 !important;
+  }
+
+  /* Индикатори за изтекли събития */
+  .past-event-badge {
+    background-color: #475569;
+    color: #e2e8f0;
+  }
+  
+  .past-indicator {
+    background-color: #475569;
+    color: #cbd5e1;
+  }
+
+  /* Други елементи */
+  .book-title,
+  .book-author {
+    color: #cbd5e1 !important;
+  }
+  
+  .due-date {
+    color: #94a3b8 !important;
+  }
+  
+  .location-icon,
+  .date-icon {
+    color: #94a3b8 !important;
+  }
+}
+
+/* ========== ОБЩИ СТИЛОВЕ ЗА ЗАГЛАВИЯ ========== */
+/* Заглавия в светла тема */
+.event-title-text {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+/* Заглавия в таблиците */
+.event-title-cell .event-title-text,
+.ticket-event-cell .event-title-text {
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Ховер ефект за заглавия */
+.event-title-text:hover {
+  color: #3b82f6;
+}
+
+[data-theme="dark"] .event-title-text:hover {
+  color: #60a5fa;
+}
+
+/* Специфични стилове за таблиците */
+.data-table .event-title-text {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+/* Уникален клас за заглавията на събития в dashboard */
+.dashboard-event-title {
+  font-weight: 600;
+  color: var(--dashboard-text-primary);
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .dashboard-event-title {
+  color: #e2e8f0;
+}

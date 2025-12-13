@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc, Timestamp} from "firebase/firestore";
-import { Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3, Image as ImageIcon } from "lucide-react";
+import { 
+  Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3, Image as ImageIcon,
+  Shield 
+} from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
 import './AdminDashboard.css';
+import '../../pages/EventsPage.css';
 
 const now = Timestamp.fromDate(new Date());
 
@@ -313,7 +317,7 @@ const [cameraError, setCameraError] = useState<string>('');
   };
 
   const locationOptions = [
-    "1303", "3310", "3301-EOП", "3305-АНП", "Библиотека", "Зала Европа", "Комп.каб.-ТЧ", 
+    "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Зала Европа", "Комп.каб.-ТЧ", 
     "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
     "1101", "1102", "1103", "1104", "1105", "1106", "1204", "1205", "1207", 
     "1209", "1301", "1302", "1304", "1305", "1307", "1309", "1401", "1402", 
@@ -1323,9 +1327,18 @@ console.log("events", toggleEventRole);
   return (
     <div className="admin-dashboard">
       <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h1>Административен Панел</h1>
-          <p>Управление на потребители и събития</p>
+        <div className="events-header"> 
+          <div className="events-title-section">
+            <div className="title-icon-wrapper">
+              <Shield className="events-title-icon" />
+            </div>
+            <div className="title-content">
+              <h1 className="handwritten-title">Административен Панел</h1> 
+              <p className="events-subtitle">
+                Управление на потребители, събития и проверка на билети
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="search-section">
@@ -1639,7 +1652,7 @@ console.log("events", toggleEventRole);
                       setShowTodayStats(false);
                       setShowCheckTicketModal(true);
                     }}
-                    className="secondary-btn"
+                    className="primary-btn option-btn"
                   >
                     Назад към проверка
                   </button>
@@ -2756,7 +2769,7 @@ console.log("events", toggleEventRole);
         <h3>Ръчно търсене</h3>
         <p>Въведете номер на билет или сканирайте QR код</p>
         <button className="primary-btn option-btn">
-          Отвори проверка
+          Проверка
         </button>
       </div>
       
@@ -2767,7 +2780,7 @@ console.log("events", toggleEventRole);
         <h3>Директно сканиране</h3>
         <p>Директно сканиране на QR код от билет</p>
         <button className="primary-btn option-btn">
-          Отвори сканер
+          Сканирай QR код
         </button>
       </div>
       
@@ -2777,7 +2790,7 @@ console.log("events", toggleEventRole);
         </div>
         <h3>Статистика</h3>
         <p>Преглед на регистрираните посетители за днес</p>
-        <button className="secondary-btn option-btn">
+        <button className="primary-btn option-btn">
           Виж статистика
         </button>
       </div>

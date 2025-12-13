@@ -1085,4 +1085,323 @@
     padding-bottom: 2rem !important;
   }
 }
+/* Стилове за падащото меню */
+.user-dropdown {
+  position: relative;
+  cursor: pointer;
+}
 
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-trigger:hover {
+  background: #e9ecef;
+  border-color: #ced4da;
+}
+
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.user-info-small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-name-small {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-chevron {
+  width: 16px;
+  height: 16px;
+  color: #6c757d;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* Падащо меню */
+.user-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 240px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dee2e6;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.dropdown-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dropdown-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.dropdown-user-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.dropdown-user-role {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: #495057;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+.dropdown-item span {
+  flex: 1;
+  margin: 0 12px;
+}
+
+.item-chevron {
+  width: 16px;
+  height: 16px;
+  color: #adb5bd;
+}
+
+.logout-item {
+  color: #dc3545;
+}
+
+.logout-item:hover {
+  background: #fff5f5;
+}
+
+/* Guest бутони */
+.guest-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.login-btn {
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.login-btn:hover {
+  background: #e9ecef;
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+  color: white;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(75, 108, 183, 0.4);
+}
+
+/* Mobile стилове */
+.mobile-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: #495057;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.mobile-dropdown-item:hover {
+  background: #f8f9fa;
+}
+
+.mobile-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 8px 0;
+}
+
+/* Адаптивност */
+@media (max-width: 768px) {
+  .user-name-small {
+    max-width: 80px;
+  }
+  
+  .guest-actions .btn-text {
+    display: none; /* Скриваме текста на малки екрани */
+  }
+  
+  .auth-btn {
+    padding: 8px;
+  }
+  
+  .user-dropdown-menu {
+    min-width: 200px;
+    right: -10px;
+  }
+}
+
+/* Тъмна тема */
+[data-theme="dark"] .user-trigger {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .user-trigger:hover {
+  background: #4a5568;
+}
+
+[data-theme="dark"] .user-dropdown-menu {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .dropdown-header {
+  background: #1a202c;
+  border-color: #4a5568;
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background: #4a5568;
+}
+
+[data-theme="dark"] .dropdown-divider {
+  background: #4a5568;
+}
+
+[data-theme="dark"] .login-btn {
+  background: #2d3748;
+  color: #e2e8f0;
+  border-color: #4a5568;
+}
+
+[data-theme="dark"] .login-btn:hover {
+  background: #4a5568;
+}
+
+/* Тъмна тема за user dropdown */
+[data-theme="dark"] .user-trigger {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .user-trigger:hover {
+  background: var(--bg-primary);
+}
+
+[data-theme="dark"] .user-name-small {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .dropdown-chevron {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user-avatar-icon {
+  color: var(--text-primary) !important;
+}

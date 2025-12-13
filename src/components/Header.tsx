@@ -9,7 +9,11 @@ import {
   Calendar, 
   LogOut,
   Sun,
-  Moon
+  Moon,
+  LayoutDashboard,
+  Shield,
+  Settings,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase/firebase';
@@ -37,6 +41,7 @@ const Header: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,6 +93,19 @@ const Header: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Затваряне на падащите менюта при клик извън тях
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-dropdown') && !target.closest('.mobile-menu')) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const navigation: NavigationItem[] = [
     { name: 'Начало', href: '/', icon: Home },
     { name: 'Каталог', href: '/catalog', icon: BookOpen },
@@ -95,10 +113,11 @@ const Header: React.FC = () => {
   ];
 
   const quickLinks = [
-    { name: 'Електронни книги', href: '#' },
+    { name: 'Електронни книги', href: '/onlineBooks' },
     { name: 'Учебни помагала', href: '#' },
-    { name: 'ИИ ресурси за учители', href: '/ai-resources' }, // Променено тук
-    { name: 'Читателски клуб', href: '#' },
+    { name: 'ИИ ресурси за учители', href: '/ai-resources' },
+    { name: 'Читателски клуб', href: '/readersClub' },
+    { name: 'Архив събития', href: '/archivedEvents' },
     { name: 'Работно време', href: '#' },
     { name: 'За нас', href: '#за-нас' },
   ];
@@ -119,6 +138,7 @@ const Header: React.FC = () => {
       setCurrentUser(null);
       setUserData(null);
       setIsMenuOpen(false);
+      setIsUserDropdownOpen(false);
       navigate('/');
     } catch (error) {
       console.error("Error signing out:", error);
@@ -136,22 +156,22 @@ const Header: React.FC = () => {
       navigate(href);
       setIsMenuOpen(false);
     } else if (href.startsWith('#')) {
-      // Обработка на anchor линкове
       window.location.hash = href;
       setIsMenuOpen(false);
     }
   }, [navigate]);
 
   const handleDashboardClick = useCallback(() => {
-    if (userData?.role === 'admin') {
-      navigate('/admin');
-    } else if (userData?.role === 'librarian') {
-      navigate('/librarian');
-    } else {
-      navigate('/dashboard');
-    }
+    navigate('/dashboard');
     setIsMenuOpen(false);
-  }, [userData?.role, navigate]);
+    setIsUserDropdownOpen(false);
+  }, [navigate]);
+
+  const handleAdminPanelClick = useCallback(() => {
+    navigate('/admin');
+    setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
+  }, [navigate]);
 
   const getUserDisplayName = useCallback((): string => {
     if (userData?.profile?.displayName) {
@@ -176,6 +196,11 @@ const Header: React.FC = () => {
   const isActiveLink = useCallback((href: string): boolean => {
     return location.pathname === href || location.hash === href;
   }, [location]);
+
+  const toggleUserDropdown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsUserDropdownOpen(prev => !prev);
+  }, []);
 
   return (
     <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
@@ -260,36 +285,82 @@ const Header: React.FC = () => {
           {!loading && (
             <div className="auth-section">
               {currentUser ? (
-                <div className="user-menu">
-                  <div className="user-info">
-                    <div className="user-avatar">
+                <div className="user-dropdown" onClick={toggleUserDropdown}>
+                  {/* User Avatar Trigger */}
+                  <button 
+                    className="user-trigger"
+                    aria-expanded={isUserDropdownOpen}
+                    aria-haspopup="true"
+                  >
+                    <div className="user-avatar-small">
                       <User className="user-avatar-icon" />
                     </div>
-                    <div className="user-details">
-                      <span className="user-name">{getUserDisplayName()}</span>
-                      <span className="user-role">{getUserRoleText()}</span>
+                    <div className="user-info-small">
+                      <span className="user-name-small">{getUserDisplayName()}</span>
+                      <ChevronDown className={`dropdown-chevron ${isUserDropdownOpen ? 'rotated' : ''}`} />
                     </div>
-                  </div>
-                  <div className="user-actions">
-                    <button 
-                      className="auth-btn dashboard-btn"
-                      onClick={handleDashboardClick}
-                      title="Моят профил"
-                    >
-                      Моят профил
-                    </button>
-                    <button 
-                      className="auth-btn logout-btn"
-                      onClick={handleLogoutClick}
-                      title="Изход"
-                    >
-                      <LogOut className="logout-icon" />
-                      <span>Изход</span>
-                    </button>
-                  </div>
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {isUserDropdownOpen && (
+                    <div className="user-dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                      <div className="dropdown-header">
+                        <div className="dropdown-user-info">
+                          <div className="dropdown-avatar">
+                            <User size={24} />
+                          </div>
+                          <div>
+                            <div className="dropdown-user-name">{getUserDisplayName()}</div>
+                            <div className="dropdown-user-role">{getUserRoleText()}</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="dropdown-divider"></div>
+                      
+                      <button 
+                        className="dropdown-item"
+                        onClick={handleDashboardClick}
+                      >
+                        <LayoutDashboard size={16} />
+                        <span>Моят Профил</span>
+                        <ChevronRight className="item-chevron" />
+                      </button>
+                      
+                      {userData?.role === 'admin' && (
+                        <button 
+                          className="dropdown-item"
+                          onClick={handleAdminPanelClick}
+                        >
+                          <Shield size={16} />
+                          <span>Админ Панел</span>
+                          <ChevronRight className="item-chevron" />
+                        </button>
+                      )}
+                      
+                      <button 
+                        className="dropdown-item"
+                        onClick={() => navigate('/settings')}
+                      >
+                        <Settings size={16} />
+                        <span>Настройки</span>
+                        <ChevronRight className="item-chevron" />
+                      </button>
+                      
+                      <div className="dropdown-divider"></div>
+                      
+                      <button 
+                        className="dropdown-item logout-item"
+                        onClick={handleLogoutClick}
+                      >
+                        <LogOut size={16} />
+                        <span>Изход</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <>
+                <div className="guest-actions">
                   <button 
                     className="auth-btn login-btn"
                     onClick={handleLoginClick}
@@ -302,9 +373,9 @@ const Header: React.FC = () => {
                     onClick={handleRegisterClick}
                   >
                     <BookOpen className="user-icon" />
-                    <span className="btn-text">Стани читател</span>
+                    <span className="btn-text">Регистрация</span>
                   </button>
-                </>
+                </div>
               )}
             </div>
           )}
@@ -325,6 +396,7 @@ const Header: React.FC = () => {
       <div 
         className={`mobile-menu ${isMenuOpen ? 'mobile-menu-open' : ''}`}
         aria-hidden={!isMenuOpen}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav">
           {/* Theme Toggle in Mobile */}
@@ -387,17 +459,42 @@ const Header: React.FC = () => {
                 </div>
                 <div className="mobile-user-actions">
                   <button 
-                    className="mobile-auth-btn dashboard-btn"
+                    className="mobile-dropdown-item"
                     onClick={handleDashboardClick}
                   >
-                    Моят профил
+                    <LayoutDashboard size={16} />
+                    <span>Моят Профил</span>
+                    <ChevronRight className="item-chevron" />
                   </button>
+                  
+                  {userData?.role === 'admin' && (
+                    <button 
+                      className="mobile-dropdown-item"
+                      onClick={handleAdminPanelClick}
+                    >
+                      <Shield size={16} />
+                      <span>Админ Панел</span>
+                      <ChevronRight className="item-chevron" />
+                    </button>
+                  )}
+                  
                   <button 
-                    className="mobile-auth-btn logout-btn"
+                    className="mobile-dropdown-item"
+                    onClick={() => navigate('/settings')}
+                  >
+                    <Settings size={16} />
+                    <span>Настройки</span>
+                    <ChevronRight className="item-chevron" />
+                  </button>
+                  
+                  <div className="mobile-divider"></div>
+                  
+                  <button 
+                    className="mobile-dropdown-item logout-item"
                     onClick={handleLogoutClick}
                   >
-                    <LogOut className="mobile-logout-icon" />
-                    Изход
+                    <LogOut size={16} />
+                    <span>Изход</span>
                   </button>
                 </div>
               </div>

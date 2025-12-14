@@ -1,15 +1,18 @@
+/* EventDetailsModal.css - Лилава Тема */
+
 .event-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(8px);
 }
 
 @keyframes fadeIn {
@@ -19,14 +22,14 @@
 
 .event-modal-container {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
   animation: slideUp 0.3s ease;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(139, 92, 246, 0.3);
 }
 
 @keyframes slideUp {
@@ -43,13 +46,19 @@
 .event-modal-header {
   position: sticky;
   top: 0;
-  background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
-  padding: 20px 30px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  padding: 25px 30px;
   color: white;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-radius: 24px 24px 0 0;
+}
+
+.modal-sparkle-icon {
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.7;
 }
 
 .close-modal-btn {
@@ -76,6 +85,7 @@
   font-size: 1.5rem;
   flex: 1;
   text-align: center;
+  font-weight: 600;
 }
 
 .event-modal-content {
@@ -93,9 +103,9 @@
 }
 
 .modal-loading .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
+  border: 4px solid rgba(139, 92, 246, 0.1);
   border-radius: 50%;
-  border-top: 4px solid #4b6cb7;
+  border-top: 4px solid #8b5cf6;
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
@@ -109,42 +119,55 @@
 
 /* Success Message */
 .registration-success-modal {
-  background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
-  padding: 20px;
-  border-radius: 15px;
+  padding: 25px;
+  border-radius: 16px;
   text-align: center;
   margin-bottom: 30px;
   animation: fadeInUp 0.5s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.registration-success-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  100% { left: 100%; }
+}
+
+.ticket-icon {
+  margin-top: 10px;
+  opacity: 0.8;
 }
 
 .registration-success-modal h3 {
   margin: 10px 0;
   font-size: 1.3rem;
+  font-weight: 600;
 }
 
 /* Event Title Section */
 .modal-event-title-section h1 {
-  color: #182848;
+  color: #2c3e50;
   font-size: 1.8rem;
   margin-bottom: 15px;
+  font-weight: 700;
 }
 
 .event-meta-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 12px;
   margin-bottom: 25px;
 }
 
@@ -152,11 +175,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f8f9fa;
+  background: #f8fafc;
   padding: 8px 15px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.9rem;
-  color: #495057;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 /* Description Section */
@@ -165,36 +189,46 @@
 }
 
 .modal-description-section h3 {
-  color: #182848;
-  margin-bottom: 10px;
+  color: #2c3e50;
+  margin-bottom: 12px;
   font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .modal-description-content {
   line-height: 1.6;
-  color: #495057;
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 10px;
+  color: #475569;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
   max-height: 200px;
   overflow-y: auto;
+  border: 1px solid #e2e8f0;
 }
 
 /* Participants Section */
 .modal-participants-section h3 {
-  color: #182848;
+  color: #2c3e50;
   margin-bottom: 15px;
   font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .participants-info-modal {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f8f9fa;
+  background: #f8fafc;
   padding: 20px;
   border-radius: 15px;
   margin-bottom: 25px;
+  border: 1px solid #e2e8f0;
 }
 
 .participants-stats-modal {
@@ -209,16 +243,16 @@
 }
 
 .stats-numbers-modal .current {
-  color: #4b6cb7;
+  color: #8b5cf6;
 }
 
 .stats-numbers-modal .separator {
-  color: #6c757d;
+  color: #94a3b8;
   margin: 0 5px;
 }
 
 .stats-numbers-modal .max {
-  color: #182848;
+  color: #2c3e50;
 }
 
 .status-badge-modal {
@@ -230,27 +264,28 @@
 }
 
 .status-badge-modal.full {
-  background: #ff6b6b;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
 }
 
 .status-badge-modal.available {
-  background: #51cf66;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
 }
 
 /* Registration Section */
 .modal-registration-section {
-  border-top: 2px solid #e9ecef;
+  border-top: 2px solid #e2e8f0;
   padding-top: 25px;
 }
 
 /* Login Required */
 .login-required-modal {
   text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
+  padding: 25px;
+  background: #f8fafc;
   border-radius: 15px;
+  border: 1px solid #e2e8f0;
 }
 
 .login-icon-text {
@@ -259,11 +294,11 @@
   justify-content: center;
   gap: 10px;
   margin-bottom: 15px;
-  color: #495057;
+  color: #475569;
 }
 
 .login-btn-modal {
-  background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
   padding: 12px 30px;
@@ -272,30 +307,45 @@
   cursor: pointer;
   margin-top: 15px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .login-btn-modal:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
 }
 
 /* Already Registered */
 .already-registered-modal {
   text-align: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  color: white; /* Текстът вече е бял */
+  padding: 25px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
   border-radius: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.already-registered-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
 }
 
 .already-registered-modal h4 {
   margin: 15px 0;
   font-size: 1.2rem;
-  font-weight: 600; /* Удебеляване на заглавието */
+  font-weight: 600;
 }
 
 .already-registered-modal p {
-  color: rgba(255, 255, 255, 0.9); /* Малко по-светъл нюанс на бяло за параграфа */
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .close-success-btn {
@@ -311,6 +361,7 @@
 
 .close-success-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 /* Registration Form */
@@ -321,27 +372,29 @@
 }
 
 .user-info-modal {
-  background: #e7f5ff;
+  background: #ede9fe;
   padding: 15px;
   border-radius: 10px;
   text-align: center;
-  color: #1864ab;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
 }
 
 .registration-summary-modal {
-  background: #f8f9fa;
+  background: #f8fafc;
   padding: 20px;
   border-radius: 15px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .summary-item-modal {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .summary-item-modal:last-child {
@@ -350,27 +403,31 @@
 
 .summary-item-modal .label {
   font-weight: 500;
-  color: #495057;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .summary-item-modal .value {
   font-weight: 600;
+  color: #2c3e50;
 }
 
 .summary-item-modal .value.full {
-  color: #ff6b6b;
+  color: #dc2626;
 }
 
 .summary-item-modal .value.available {
-  color: #51cf66;
+  color: #8b5cf6;
 }
 
 .register-btn-modal {
-  background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -379,17 +436,39 @@
   justify-content: center;
   gap: 10px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-btn-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.register-btn-modal:hover::before {
+  left: 100%;
 }
 
 .register-btn-modal:hover:not(.disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(81, 207, 102, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
 }
 
 .register-btn-modal.disabled {
-  background: #868e96;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.register-btn-modal.disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .spinner-small {
@@ -402,11 +481,12 @@
 }
 
 .registration-note-modal {
-  background: #fff3bf;
+  background: #fef3c7;
   padding: 15px;
   border-radius: 10px;
-  color: #5c3c00;
+  color: #92400e;
   font-size: 0.9rem;
+  border: 1px solid #fcd34d;
 }
 
 /* No Event Found */
@@ -416,18 +496,26 @@
 }
 
 .modal-no-event h3 {
-  color: #182848;
+  color: #2c3e50;
   margin-bottom: 15px;
+  font-size: 1.3rem;
 }
 
 .close-btn-modal {
-  background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
   padding: 12px 30px;
   border-radius: 10px;
   cursor: pointer;
   margin-top: 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.close-btn-modal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
 }
 
 /* Responsive */
@@ -435,10 +523,11 @@
   .event-modal-container {
     width: 95%;
     margin: 10px;
+    border-radius: 20px;
   }
 
   .event-modal-header {
-    padding: 15px 20px;
+    padding: 20px;
   }
 
   .event-modal-content {
@@ -463,42 +552,156 @@
   .stats-numbers-modal {
     font-size: 1.5rem;
   }
-}
 
-/* Вече съществува в CSS файла - проверете дали работи добре */
-@media (max-width: 768px) {
-  .event-modal-container {
-    width: 95%;
-    margin: 10px;
-    max-height: 85vh; /* Осигурява по-добро разпределение на височината */
-  }
-
-  .event-modal-content {
-    padding: 15px;
-  }
-
-  .modal-event-title-section h1 {
-    font-size: 1.4rem; /* Малко по-малко заглавие */
-    line-height: 1.3;
-  }
-
-  .event-meta-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .participants-info-modal {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-
-  /* Важно: Уверете се, че бутоните са лесни за натискане */
   .register-btn-modal,
   .login-btn-modal,
   .close-success-btn {
     padding: 14px;
     font-size: 1rem;
-    min-height: 48px; /* Минимална височина за леснодостъпни бутони */
+    min-height: 48px;
   }
+}
+
+/* Тъмна тема */
+[data-theme="dark"] .event-modal-container {
+  background: #1e293b;
+  color: #e2e8f0;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .event-modal-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+[data-theme="dark"] .close-modal-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .modal-loading .spinner {
+  border: 4px solid rgba(124, 58, 237, 0.1);
+  border-top-color: #7c3aed;
+}
+
+[data-theme="dark"] .registration-success-modal {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+[data-theme="dark"] .modal-event-title-section h1 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .meta-item {
+  background: #2d3748;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .modal-description-section h3 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .modal-description-content {
+  background: #2d3748;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .modal-participants-section h3 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .participants-info-modal {
+  background: #2d3748;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .stats-numbers-modal .current {
+  color: #a78bfa;
+}
+
+[data-theme="dark"] .stats-numbers-modal .separator {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .stats-numbers-modal .max {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .status-badge-modal.full {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+[data-theme="dark"] .status-badge-modal.available {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+[data-theme="dark"] .modal-registration-section {
+  border-top-color: #475569;
+}
+
+[data-theme="dark"] .login-required-modal {
+  background: #2d3748;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .login-icon-text {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .already-registered-modal {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+[data-theme="dark"] .user-info-modal {
+  background: #312e81;
+  color: #c4b5fd;
+  border-color: #5b21b6;
+}
+
+[data-theme="dark"] .registration-summary-modal {
+  background: #2d3748;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .summary-item-modal {
+  border-bottom-color: #475569;
+}
+
+[data-theme="dark"] .summary-item-modal .label {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .summary-item-modal .value {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .summary-item-modal .value.full {
+  color: #f87171;
+}
+
+[data-theme="dark"] .summary-item-modal .value.available {
+  color: #a78bfa;
+}
+
+[data-theme="dark"] .register-btn-modal {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+[data-theme="dark"] .register-btn-modal.disabled {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+}
+
+[data-theme="dark"] .registration-note-modal {
+  background: #78350f;
+  color: #fde68a;
+  border-color: #92400e;
+}
+
+[data-theme="dark"] .modal-no-event h3 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .close-btn-modal {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
 }

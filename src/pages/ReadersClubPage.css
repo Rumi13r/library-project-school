@@ -30,18 +30,6 @@
   overflow: hidden;
 }
 
-.readers-club-header::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-  animation: float 20s linear infinite;
-  z-index: 0;
-}
-
 .readers-club-title-section {
   display: flex;
   align-items: center;
@@ -55,12 +43,6 @@
   padding: 15px;
   border-radius: 15px;
   backdrop-filter: blur(10px);
-  animation: iconFloat 3s ease-in-out infinite;
-}
-
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .readers-club-title-icon {
@@ -81,12 +63,6 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: textGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes textGlow {
-  from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
-  to { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
 }
 
 .readers-club-subtitle {
@@ -151,7 +127,6 @@
 .view-btn.active {
   background: white;
   color: #059669;
-  transform: scale(1.05);
 }
 
 /* Stats Section */
@@ -161,18 +136,6 @@
   gap: 20px;
   padding: 30px 40px;
   background: #f8fafc;
-  animation: slideDown 0.8s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .stat-card.club {
@@ -185,24 +148,6 @@
   gap: 20px;
   transition: all 0.3s ease;
   cursor: pointer;
-  animation: cardFloat 0.5s ease-out forwards;
-  opacity: 0;
-}
-
-.stat-card.club:nth-child(1) { animation-delay: 0.1s; }
-.stat-card.club:nth-child(2) { animation-delay: 0.2s; }
-.stat-card.club:nth-child(3) { animation-delay: 0.3s; }
-.stat-card.club:nth-child(4) { animation-delay: 0.4s; }
-
-@keyframes cardFloat {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .stat-card.club:hover {
@@ -240,18 +185,6 @@
   margin: 30px 40px;
   padding: 30px;
   border: 1px solid #fde68a;
-  animation: slideUp 0.8s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .book-of-month-header {
@@ -314,22 +247,6 @@
   overflow: hidden;
 }
 
-.book-cover-placeholder::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-  animation: shine 3s infinite;
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-}
-
 .cover-icon {
   width: 50px;
   height: 50px;
@@ -354,12 +271,7 @@
   height: 100%;
   background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
   border-radius: 4px;
-  animation: progressAnimation 2s ease-out;
-}
-
-@keyframes progressAnimation {
-  from { width: 0%; }
-  to { width: 45%; }
+  width: 45%;
 }
 
 .progress-text {
@@ -488,12 +400,6 @@
   padding: 30px 40px;
   background: white;
   border-bottom: 1px solid #e2e8f0;
-  animation: fadeIn 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .search-box {
@@ -661,18 +567,6 @@
   padding: 20px 0;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 25px;
-  animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .header-left {
@@ -728,18 +622,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 25px;
-  animation: gridAppear 0.6s ease-out;
-}
-
-@keyframes gridAppear {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .meeting-card {
@@ -750,39 +632,6 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  animation: cardAppear 0.5s ease-out forwards;
-  opacity: 0;
-}
-
-.meeting-card:nth-child(1) { animation-delay: 0.1s; }
-.meeting-card:nth-child(2) { animation-delay: 0.2s; }
-.meeting-card:nth-child(3) { animation-delay: 0.3s; }
-.meeting-card:nth-child(4) { animation-delay: 0.4s; }
-
-@keyframes cardAppear {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.meeting-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.05), transparent);
-  transition: left 0.6s ease;
-}
-
-.meeting-card:hover::before {
-  left: 100%;
 }
 
 .meeting-card:hover {
@@ -937,22 +786,8 @@
   padding: 20px;
   margin-bottom: 20px;
   border: 1px solid #e5e7eb;
-  animation: expandAnimation 0.3s ease-out;
   position: relative;
   z-index: 1;
-}
-
-@keyframes expandAnimation {
-  from {
-    opacity: 0;
-    max-height: 0;
-    transform: scaleY(0);
-  }
-  to {
-    opacity: 1;
-    max-height: 500px;
-    transform: scaleY(1);
-  }
 }
 
 .discussion-points h5,
@@ -1028,12 +863,6 @@
   transition: all 0.3s ease;
   flex: 1;
   max-width: 200px;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
 }
 
 .join-btn:hover:not(:disabled) {
@@ -1044,7 +873,6 @@
 .join-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  animation: none;
 }
 
 .action-buttons {
@@ -1070,7 +898,6 @@
   background: #f3f4f6;
   border-color: #059669;
   color: #059669;
-  transform: rotate(10deg);
 }
 
 /* Discussions Grid */
@@ -1078,7 +905,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 25px;
-  animation: gridAppear 0.6s ease-out;
 }
 
 .discussion-card {
@@ -1089,21 +915,6 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-}
-
-.discussion-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent);
-  transition: left 0.6s ease;
-}
-
-.discussion-card:hover::before {
-  left: 100%;
 }
 
 .discussion-card:hover {
@@ -1233,7 +1044,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 25px;
-  animation: gridAppear 0.6s ease-out;
 }
 
 .member-card {
@@ -1244,21 +1054,6 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-}
-
-.member-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.05), transparent);
-  transition: left 0.6s ease;
-}
-
-.member-card:hover::before {
-  left: 100%;
 }
 
 .member-card:hover {
@@ -1453,7 +1248,6 @@
   background: white;
   border-radius: 20px;
   border: 2px dashed #e5e7eb;
-  animation: fadeIn 0.5s ease-out;
 }
 
 .no-meetings svg,
@@ -1488,13 +1282,11 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  animation: pulse 2s infinite;
 }
 
 .organize-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-  animation: none;
 }
 
 .start-discussion-btn-large {
@@ -1510,13 +1302,11 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin: 0 auto;
-  animation: pulse 2s infinite;
 }
 
 .start-discussion-btn-large:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(236, 72, 153, 0.4);
-  animation: none;
 }
 
 /* Quote Section */
@@ -1529,35 +1319,6 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  animation: quoteFloat 0.8s ease-out;
-}
-
-@keyframes quoteFloat {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.quote-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
-              radial-gradient(circle at 70% 70%, rgba(255,255,255,0.05) 0%, transparent 50%);
-  animation: sparkle 8s infinite alternate;
-}
-
-@keyframes sparkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
 }
 
 .quote-icon {
@@ -1567,12 +1328,6 @@
   opacity: 0.8;
   position: relative;
   z-index: 1;
-  animation: iconSpin 20s linear infinite;
-}
-
-@keyframes iconSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .quote-section blockquote {
@@ -1599,7 +1354,6 @@
 /* Benefits Section */
 .benefits-section {
   margin: 40px;
-  animation: fadeIn 0.8s ease-out;
 }
 
 .benefits-section h3 {
@@ -1701,7 +1455,6 @@
   justify-content: center;
   min-height: 400px;
   gap: 20px;
-  animation: fadeIn 0.5s ease-out;
 }
 
 .spinner {
@@ -1737,7 +1490,6 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease-out;
 }
 
 .meeting-modal,
@@ -1748,19 +1500,7 @@
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalSlideUp 0.3s ease;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-}
-
-@keyframes modalSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .modal-header {
@@ -1796,7 +1536,6 @@
 .close-modal-btn:hover {
   background: #f3f4f6;
   color: #1f2937;
-  transform: rotate(90deg);
 }
 
 .modal-content {
@@ -1805,24 +1544,6 @@
 
 .modal-section {
   margin-bottom: 24px;
-  animation: slideIn 0.4s ease-out forwards;
-  opacity: 0;
-}
-
-.modal-section:nth-child(1) { animation-delay: 0.1s; }
-.modal-section:nth-child(2) { animation-delay: 0.2s; }
-.modal-section:nth-child(3) { animation-delay: 0.3s; }
-.modal-section:nth-child(4) { animation-delay: 0.4s; }
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .modal-section h4 {
@@ -1888,25 +1609,17 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  animation: pulse 2s infinite;
 }
 
 .modal-join-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4);
-  animation: none;
 }
 
 /* Form Styles */
 .form-group {
   margin-bottom: 20px;
-  animation: slideIn 0.4s ease-out forwards;
-  opacity: 0;
 }
-
-.form-group:nth-child(1) { animation-delay: 0.1s; }
-.form-group:nth-child(2) { animation-delay: 0.2s; }
-.form-group:nth-child(3) { animation-delay: 0.3s; }
 
 .form-group label {
   display: block;
@@ -1956,8 +1669,6 @@
   border-radius: 12px;
   padding: 20px;
   margin-top: 24px;
-  animation: slideIn 0.4s ease-out 0.4s forwards;
-  opacity: 0;
 }
 
 .meeting-info-summary h5 {
@@ -2802,23 +2513,7 @@
   background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
 }
 
-/* Book Cover Placeholder Animation Dark Theme */
-[data-theme="dark"] .book-cover-placeholder::before {
-  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
-}
-
-/* Book Cover Icon Dark Theme */
-[data-theme="dark"] .cover-icon {
-  color: #e2e8f0;
-}
-
 /* Animation Adjustments for Dark Theme */
-[data-theme="dark"] .meeting-card::before,
-[data-theme="dark"] .discussion-card::before,
-[data-theme="dark"] .member-card::before {
-  background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.1), transparent);
-}
-
 [data-theme="dark"] .benefit-card::before {
   background: linear-gradient(90deg, #059669, #10b981);
 }
@@ -2840,18 +2535,9 @@
   color: #78350f;
 }
 
-/* Join Button Pulse Animation Dark Theme */
+/* Join Button Dark Theme */
 [data-theme="dark"] .join-btn {
   background: linear-gradient(135deg, #065f46 0%, #059669 100%);
-}
-
-/* Clear Focus States for Dark Theme */
-[data-theme="dark"] button:focus,
-[data-theme="dark"] input:focus,
-[data-theme="dark"] select:focus,
-[data-theme="dark"] .view-resource-btn:focus {
-  outline: 2px solid #059669;
-  outline-offset: 2px;
 }
 
 /* Placeholder Dark Theme */
@@ -2921,15 +2607,6 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  .title-icon-wrapper.club,
-  .handwritten-title,
-  .meeting-card,
-  .discussion-card,
-  .member-card,
-  .stat-card.club,
-  .benefit-card,
-  .book-cover-placeholder::before,
-  .quote-icon,
   .benefit-icon,
   .close-modal-btn,
   .action-btn,
@@ -2937,11 +2614,6 @@
   .modal-join-btn,
   .organize-btn,
   .start-discussion-btn-large,
-  .meeting-card::before,
-  .discussion-card::before,
-  .member-card::before,
-  .readers-club-header::before,
-  .quote-section::before,
   .progress-fill,
   .material-link,
   .genre-btn,
@@ -2959,7 +2631,6 @@
   .join-club-btn,
   .view-btn,
   .add-resource-btn {
-    animation: none !important;
     transition: none !important;
   }
   
@@ -2971,13 +2642,12 @@
     transform: none !important;
   }
   
-  .meeting-card::before,
-  .discussion-card::before,
-  .member-card::before,
-  .readers-club-header::before,
-  .quote-section::before,
-  .book-cover-placeholder::before {
-    display: none;
+  .benefit-card:hover .benefit-icon {
+    transform: none !important;
+  }
+  
+  .spinner {
+    animation: none !important;
   }
 }
 

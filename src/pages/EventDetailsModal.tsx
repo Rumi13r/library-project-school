@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
-import { Calendar, Clock, MapPin, User, Users, X, BookOpen, LogIn, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Users, X, BookOpen, LogIn, CheckCircle, Sparkles, Ticket } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -210,6 +210,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             <X size={24} />
           </button>
           <h2 className="modal-title">Детайли за събитието</h2>
+          <Sparkles className="modal-sparkle-icon" />
         </div>
 
         <div className="event-modal-content">
@@ -224,8 +225,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               {registrationSuccess && (
                 <div className="registration-success-modal">
                   <CheckCircle size={24} />
-                  <h3>Успешно записване!</h3>
-                  <p>Записахте се за "{event.title}". Вашият билет е генериран.</p>
+                  <h3>Успешно записване! 🎉</h3>
+                  <p>Записахте се за "{event.title}". Вашият билет е генериран в профила ви.</p>
+                  <Ticket size={20} className="ticket-icon" />
                 </div>
               )}
 
@@ -254,7 +256,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
               {/* Event Description */}
               <div className="modal-description-section">
-                <h3>Описание</h3>
+                <h3>📝 Описание</h3>
                 <div 
                   className="modal-description-content"
                   dangerouslySetInnerHTML={{ __html: event.description }}
@@ -263,7 +265,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
               {/* Participants Info */}
               <div className="modal-participants-section">
-                <h3>Участници</h3>
+                <h3>👥 Участници</h3>
                 <div className="participants-info-modal">
                   <div className="participants-stats-modal">
                     <Users size={20} />
@@ -317,7 +319,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 ) : isUserRegistered() ? (
                   <div className="already-registered-modal">
                     <CheckCircle size={20} />
-                    <h4>Вече сте записани за това събитие</h4>
+                    <h4>🎫 Вече сте записани за това събитие</h4>
                     <p>Можете да видите билета си в таба "Моите Билети".</p>
                     <button 
                       onClick={onClose}
@@ -334,15 +336,15 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     
                     <div className="registration-summary-modal">
                       <div className="summary-item-modal">
-                        <span className="label">Дата:</span>
+                        <span className="label">📅 Дата:</span>
                         <span className="value">{formatDate(event.date)}</span>
                       </div>
                       <div className="summary-item-modal">
-                        <span className="label">Час:</span>
+                        <span className="label">🕐 Час:</span>
                         <span className="value">{event.time} - {event.endTime}</span>
                       </div>
                       <div className="summary-item-modal">
-                        <span className="label">Места:</span>
+                        <span className="label">🎟️ Места:</span>
                         <span className={`value ${isEventFull() ? 'full' : 'available'}`}>
                           {isEventFull() ? '0 (Пълно)' : `${getAvailableSpots()} свободни`}
                         </span>
@@ -370,7 +372,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     </button>
 
                     <div className="registration-note-modal">
-                      <p>Забележка: Записването е задължително. Ако не можете да присъствате, моля отпишете се от таба "Събития".</p>
+                      <p>💡 Забележка: Записването е задължително. Ако не можете да присъствате, моля отпишете се от таба "Събития".</p>
                     </div>
                   </div>
                 )}

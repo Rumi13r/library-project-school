@@ -212,7 +212,7 @@ const Home: React.FC = () => {
     }
     return dateString;
   };
-
+console.log(formatDateForDisplay);
   const formatDateForCalendar = (dateString: string) => {
     const date = parseEventDate(dateString);
     return {

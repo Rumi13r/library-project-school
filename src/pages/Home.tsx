@@ -1428,9 +1428,6 @@ console.log(formatDateForDisplay);
                             e.currentTarget.src = '/api/placeholder/400/250';
                           }}
                         />
-                        {index === 0 && (
-                          <div className="image-label">Основна снимка</div>
-                        )}
                       </div>
                     ))}
                   </div>

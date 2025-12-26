@@ -5,7 +5,7 @@ import type { BookLibrary } from "../../lib/services/bookTypes";
 import * as bookService from "../../lib/services/bookService";
 import { 
   Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3, Image as ImageIcon,
-  Shield, BookOpen, Package, List, Grid,
+  Shield, BookOpen, List, Grid,
   Tag,
   Copy,
   Bookmark,

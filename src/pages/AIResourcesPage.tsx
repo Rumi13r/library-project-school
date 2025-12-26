@@ -19,8 +19,7 @@ import {
   Star,
   BookMarked,
   GraduationCap,
-  Cpu,
-  ChevronDown
+  Cpu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './AIResourcesPage.css';

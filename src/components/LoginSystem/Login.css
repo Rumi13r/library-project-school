@@ -782,3 +782,308 @@
     background: transparent !important;
   }
 }
+/* С новия span */
+.dark-theme .checkbox-label,
+[data-theme="dark"] .checkbox-label {
+  color: #f3f4f6 !important;
+}
+
+.dark-theme .checkmark,
+[data-theme="dark"] .checkmark {
+  border-color: #4b5563;
+  background: #2d2d2d;
+}
+
+/* Base styles */
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-input {
+  display: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  color: #333; /* Светла тема */
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  background-color: white;
+  border-radius: 4px;
+  display: inline-block;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.checkbox-input:checked + .checkbox-label .checkmark {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.checkbox-input:checked + .checkbox-label .checkmark::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-text {
+  font-size: 14px;
+}
+
+/* Dark theme styles */
+.dark-theme .checkbox-label,
+[data-theme="dark"] .checkbox-label {
+  color: #f3f4f6 !important;
+}
+
+.dark-theme .checkbox-text,
+[data-theme="dark"] .checkbox-text {
+  color: #f3f4f6 !important;
+}
+
+.dark-theme .checkmark,
+[data-theme="dark"] .checkmark {
+  border-color: #4b5563 !important;
+  background: #2d2d2d !important;
+}
+
+.dark-theme .checkbox-input:checked + .checkbox-label .checkmark,
+[data-theme="dark"] .checkbox-input:checked + .checkbox-label .checkmark {
+  background-color: #60a5fa !important;
+  border-color: #60a5fa !important;
+}
+
+/* Forgot password link */
+.forgot-password {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.dark-theme .forgot-password,
+[data-theme="dark"] .forgot-password {
+  color: #60a5fa !important;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.dark-theme .forgot-password:hover,
+[data-theme="dark"] .forgot-password:hover {
+  color: #93c5fd !important;
+}
+
+/* Hover effects */
+.checkbox-label:hover .checkmark {
+  border-color: #888;
+}
+
+.dark-theme .checkbox-label:hover .checkmark,
+[data-theme="dark"] .checkbox-label:hover .checkmark {
+  border-color: #6b7280 !important;
+}
+
+/* Focus styles for accessibility */
+.checkbox-input:focus + .checkbox-label .checkmark {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.dark-theme .checkbox-input:focus + .checkbox-label .checkmark,
+[data-theme="dark"] .checkbox-input:focus + .checkbox-label .checkmark {
+  outline: 2px solid #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+/* Password strength indicator - dark mode */
+.password-strength {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .password-strength,
+[data-theme="dark"] .password-strength {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.strength-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+/* MINIMAL FIX - Add this at the VERY END of your CSS file */
+body [data-theme='dark'] .strength-title,
+body .dark-theme .strength-title {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+}
+
+body [data-theme='dark'] .password-strength .strength-check,
+body .dark-theme .password-strength .strength-check {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+
+body [data-theme='dark'] .password-strength .strength-check.valid,
+body .dark-theme .password-strength .strength-check.valid {
+  color: #34d399 !important;
+  -webkit-text-fill-color: #34d399 !important;
+}
+.strength-checks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.strength-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.dark-theme .strength-check,
+[data-theme="dark"] .strength-check {
+  color: #9ca3af !important;
+}
+
+.strength-check.valid {
+  color: #10b981;
+}
+
+.dark-theme .strength-check.valid,
+[data-theme="dark"] .strength-check.valid {
+  color: #34d399 !important;
+}
+
+.strength-check svg {
+  opacity: 0.5;
+}
+
+.strength-check.valid svg {
+  opacity: 1;
+  color: inherit;
+}
+
+/* Terms checkbox - dark mode */
+.checkbox-wrapper {
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.dark-theme .checkbox-label,
+[data-theme="dark"] .checkbox-label {
+  color: #d1d5db !important;
+  font-size: 0.875rem;
+}
+
+.terms-link {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dark-theme .terms-link,
+[data-theme="dark"] .terms-link {
+  color: #60a5fa !important;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+  color: #2563eb;
+}
+
+.dark-theme .terms-link:hover,
+[data-theme="dark"] .terms-link:hover {
+  color: #93c5fd !important;
+}
+
+/* Spacer with proper margin */
+.spacer {
+  height: 0.5rem;
+  margin: 0.5rem 0;
+  display: block;
+}
+
+/* CAPTCHA spacing fix */
+.captcha-container {
+  margin-top: 0.5rem;
+}
+
+.captcha-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #374151;
+  font-weight: 500;
+}
+
+.dark-theme .captcha-question,
+[data-theme="dark"] .captcha-question {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #d1d5db !important;
+}
+
+/* Password mismatch styling */
+.password-mismatch {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dark-theme .password-mismatch,
+[data-theme="dark"] .password-mismatch {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Captcha error styling */
+.captcha-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dark-theme .captcha-error,
+[data-theme="dark"] .captcha-error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+

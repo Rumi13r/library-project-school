@@ -76,7 +76,6 @@
 
 [data-theme="dark"] .header {
   background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid var(--border-color);
 }
 
 [data-theme="dark"] .header-scrolled {
@@ -436,14 +435,183 @@
   box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
 }
 
-.user-icon {
+.user-icon,
+.logout-icon {
   width: 16px;
   height: 16px;
 }
 
-.logout-icon {
+/* User Menu Styles */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.user-info:hover {
+  background: var(--bg-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient-logo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-avatar-icon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* User Dropdown Menu */
+.user-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 240px;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dropdown-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gradient-logo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-user-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.dropdown-user-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.dropdown-item span {
+  flex: 1;
+  margin: 0 12px;
+}
+
+.item-chevron {
   width: 16px;
   height: 16px;
+  color: var(--text-secondary);
+}
+
+.logout-item {
+  color: #dc3545;
+}
+
+.logout-item:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* Guest actions */
+.guest-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* Enhanced Mobile Menu */
@@ -614,155 +782,6 @@
   gap: 0.75rem;
 }
 
-/* Мобилни бутони - същите стилове като десктоп */
-.mobile-auth-btn {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.125rem 1.5rem;
-  text-decoration: none;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  text-align: center;
-  justify-content: center;
-  font-family: inherit;
-  border: 2px solid transparent;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-/* MOBILE LOGIN BUTTON - очертан зелен */
-.mobile-auth-btn.login-btn {
-  color: var(--primary-green);
-  background: transparent;
-  border-color: var(--primary-green);
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
-}
-
-.mobile-auth-btn.login-btn:hover {
-  background: var(--primary-green);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
-}
-
-/* MOBILE REGISTER BUTTON - пълен зелен */
-.mobile-auth-btn.register-btn {
-  background: var(--primary-green);
-  color: white;
-  border: 2px solid var(--primary-green);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-}
-
-.mobile-auth-btn.register-btn:hover {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
-}
-
-/* MOBILE DASHBOARD BUTTON - пълен зелен */
-.mobile-auth-btn.dashboard-btn {
-  background: var(--primary-green);
-  color: white;
-  border: 2px solid var(--primary-green);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-}
-
-.mobile-auth-btn.dashboard-btn:hover {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.4);
-}
-
-/* MOBILE LOGOUT BUTTON - очертан червен */
-.mobile-auth-btn.logout-btn {
-  color: #dc2626;
-  background: transparent;
-  border-color: #dc2626;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
-}
-
-.mobile-auth-btn.logout-btn:hover {
-  background: #dc2626;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
-}
-
-/* User Menu Styles - ОПРАВЕНО ПОДРЕЖДАНЕ */
-.user-menu {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 12px;
-  transition: background-color 0.3s ease;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-}
-
-.user-info:hover {
-  background: var(--bg-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--gradient-logo);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-avatar-icon {
-  width: 20px;
-  height: 20px;
-  color: white;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.user-role {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 /* Mobile User Info */
 .mobile-user-info {
   padding: 1.5rem;
@@ -813,227 +832,152 @@
   gap: 0.75rem;
 }
 
+/* Mobile Dropdown Items */
+.mobile-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.mobile-dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.mobile-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .header-container {
-    padding: 1rem 1.25rem;
-    height: 75px;
-    gap: 1rem;
-  }
-  
-  .logo-icon-wrapper {
-    width: 42px;
-    height: 42px;
-    padding: 7px;
-  }
-  
-  .logo-icon {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .logo-text {
-    font-size: 1.2rem;
-  }
-  
-  .logo-subtitle {
-    font-size: 0.65rem;
-    margin-top: 1px;
-  }
-
-  .auth-btn {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.85rem;
-  }
-
-  .user-info {
-    padding: 0.4rem 0.6rem;
-  }
-
-  .user-avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  .user-avatar-icon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .user-name {
-    font-size: 0.85rem;
-  }
-
-  .user-role {
-    font-size: 0.7rem;
-  }
-
-  .header-actions {
-    gap: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-container {
-    padding: 0.875rem 1rem;
-    height: 70px;
-  }
-  
-  .logo-icon-wrapper {
-    width: 38px;
-    height: 38px;
-    padding: 6px;
-  }
-  
-  .logo-icon {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .logo-text {
-    font-size: 1.1rem;
-  }
-  
-  .logo-subtitle {
-    font-size: 0.6rem;
-    margin-top: 1px;
-  }
-
-  .auth-section {
-    gap: 0.5rem;
-  }
-
-  .auth-btn {
     padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .user-menu {
+    height: 58px;
     gap: 0.5rem;
   }
-
-  .user-info {
-    padding: 0.3rem 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .user-avatar {
+  
+  .logo-icon-wrapper {
     width: 32px;
     height: 32px;
-  }
-
-  .user-avatar-icon {
-    width: 16px;
-    height: 16px;
-  }
-
-  .user-name {
-    font-size: 0.8rem;
-  }
-
-  .user-role {
-    font-size: 0.65rem;
-  }
-
-  .header-actions {
-    gap: 0.5rem;
-  }
-}
-
-/* Focus states for accessibility */
-.nav-link:focus-visible,
-.auth-btn:focus-visible,
-.mobile-menu-btn:focus-visible,
-.dropdown-btn:focus-visible,
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--primary-yellow);
-  outline-offset: 2px;
-}
-
-/* Performance optimizations */
-.header {
-  will-change: transform, backdrop-filter;
-}
-
-.logo-icon-wrapper,
-.nav-link,
-.auth-btn {
-  will-change: transform;
-}
-
-/* Tailwind Compatibility */
-@layer utilities {
-  .backdrop-blur-lg {
-    backdrop-filter: blur(16px);
+    padding: 4px;
   }
   
-  .backdrop-blur-xl {
-    backdrop-filter: blur(24px);
+  .logo-icon {
+    width: 18px;
+    height: 18px;
   }
-}
-/* ============================================
-   MOBILE IMPROVEMENTS (ВАРИАНТ B)
-   ============================================ */
-
-/* --- Основен мобилен хедър --- */
-@media (max-width: 768px) {
-
-  .header-container {
-    padding: 0.5rem 1rem !important;
-    height: 58px !important;
-    gap: 0.5rem !important;
+  
+  .logo-text {
+    font-size: 1rem;
+  }
+  
+  .logo-subtitle {
+    display: none;
   }
 
-  /* Премахваме всичко излишно от хедъра */
   .auth-section,
   .user-menu,
   .desktop-nav {
     display: none !important;
   }
 
-  /* ---- Лого (намалено) ---- */
-  .logo-icon-wrapper {
-    width: 32px !important;
-    height: 32px !important;
-    padding: 4px !important;
-  }
-
-  .logo-icon {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  .logo-text {
-    font-size: 1rem !important;
-  }
-
-  .logo-subtitle {
-    display: none !important;
-  }
-
-  /* ---- Бутон за меню ---- */
   .mobile-menu-btn {
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0.5rem !important;
-    border-radius: 8px !important;
+    width: 36px;
+    height: 36px;
+    padding: 0.5rem;
+    border-radius: 8px;
   }
 
-  /* ---- Backdrop оптимизация ---- */
   .header {
     backdrop-filter: blur(10px) saturate(120%) !important;
   }
+
+  /* Mobile menu improvements */
+  .mobile-menu {
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .mobile-nav {
+    padding: 0.5rem 0 !important;
+  }
+
+  .mobile-auth-section {
+    margin-top: 0.5rem !important;
+    padding: 1rem !important;
+  }
+
+  .mobile-user-info {
+    padding: 1rem !important;
+    margin: 0 !important;
+    background: transparent;
+  }
+
+  .mobile-user-details {
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-user-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobile-dropdown-item {
+    padding: 0.75rem 1rem !important;
+    margin: 0.125rem 0 !important;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+
+  .mobile-dropdown-item:hover {
+    background: var(--gradient-glass);
+  }
+
+  .mobile-divider {
+    margin: 0.5rem 0 !important;
+  }
+
+  .mobile-dropdown-item.logout-item {
+    color: #dc2626;
+    margin-top: 0.25rem;
+  }
+
+  .mobile-dropdown-item.logout-item:hover {
+    background: rgba(220, 38, 38, 0.1);
+  }
+
+  .mobile-quick-links {
+    margin-top: 0.5rem !important;
+    padding: 0.75rem 1.5rem !important;
+  }
+
+  .mobile-quick-link {
+    padding: 0.5rem 0 !important;
+  }
+
+  .mobile-theme-section {
+    padding: 0.75rem 1.5rem !important;
+  }
 }
 
-/* --- Малки телефони (iPhone SE, Galaxy A3 и др.) --- */
 @media (max-width: 480px) {
-
   .header-container {
     padding: 0.4rem 0.8rem !important;
     height: 54px !important;
   }
 
-  /* Само иконка на лого — текстът изчезва */
   .logo-text-container {
     display: none !important;
   }
@@ -1049,359 +993,233 @@
     height: 32px !important;
     padding: 0.45rem !important;
   }
+
+  .mobile-menu {
+    max-height: 75vh !important;
+  }
+
+  .mobile-nav-link {
+    padding: 0.875rem 1.25rem !important;
+  }
+
+  .mobile-dropdown-item {
+    padding: 0.625rem 0.875rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Focus states for accessibility */
+.nav-link:focus-visible,
+.auth-btn:focus-visible,
+.mobile-menu-btn:focus-visible,
+.dropdown-btn:focus-visible,
+.theme-toggle:focus-visible,
+.mobile-dropdown-item:focus-visible {
+  outline: 2px solid var(--primary-yellow);
+  outline-offset: 2px;
+}
+
+/* Performance optimizations */
+.header,
+.logo-icon-wrapper,
+.nav-link,
+.auth-btn {
+  will-change: transform;
+}
+
+.header {
+  will-change: backdrop-filter;
+}
+
+/* Tailwind Compatibility */
+.backdrop-blur-lg {
+  backdrop-filter: blur(16px);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(24px);
 }
 
 /* ============================================
-   FIX: Mobile menu scroll + section spacing
+   USER PROFILE DESIGN - MATCHING NAVIGATION
    ============================================ */
 
-@media (max-width: 768px) {
-
-  /* Правим мобилното меню скролируемо */
-  .mobile-menu {
-    max-height: 100vh !important;
-    overflow-y: auto !important;
-    padding-bottom: 2rem !important; /* за да се виждат auth бутоните */
-  }
-
-  /* Правим QUICK LINKS по-компактни */
-  .mobile-quick-links {
-    margin-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-
-  .mobile-quick-link {
-    padding: 0.6rem 0 !important;
-  }
-
-  /* AUTH SECTION да не се притиска */
-  .mobile-auth-section {
-    margin-top: 1.5rem !important;
-    padding-bottom: 2rem !important;
-  }
-
-  /* Регистрация бутонът да е винаги видим */
-  .mobile-auth-buttons {
-    padding-bottom: 2rem !important;
-  }
-}
-/* Стилове за падащото меню */
-.user-dropdown {
+.user-profile-container {
   position: relative;
-  cursor: pointer;
 }
 
+/* Профил бутон - същия стил като навигационните */
 .user-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 20px;
-  cursor: pointer;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.925rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .user-trigger:hover {
-  background: #e9ecef;
-  border-color: #ced4da;
-}
-
-.user-avatar-small {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.user-info-small {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.user-name-small {
-  font-size: 14px;
-  font-weight: 500;
-  color: #2c3e50;
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dropdown-chevron {
-  width: 16px;
-  height: 16px;
-  color: #6c757d;
-  transition: transform 0.3s ease;
-}
-
-.dropdown-chevron.rotated {
-  transform: rotate(180deg);
-}
-
-/* Падащо меню */
-.user-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
-  min-width: 240px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dee2e6;
-  z-index: 1000;
-  overflow: hidden;
-  animation: slideDown 0.2s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.dropdown-header {
-  padding: 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.dropdown-user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dropdown-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.dropdown-user-name {
-  font-weight: 600;
-  color: #2c3e50;
-  font-size: 14px;
-}
-
-.dropdown-user-role {
-  font-size: 12px;
-  color: #6c757d;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: #dee2e6;
-  margin: 8px 0;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  color: #495057;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background: #f8f9fa;
-  color: #2c3e50;
-}
-
-.dropdown-item span {
-  flex: 1;
-  margin: 0 12px;
-}
-
-.item-chevron {
-  width: 16px;
-  height: 16px;
-  color: #adb5bd;
-}
-
-.logout-item {
-  color: #dc3545;
-}
-
-.logout-item:hover {
-  background: #fff5f5;
-}
-
-/* Guest бутони */
-.guest-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.auth-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.login-btn {
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-}
-
-.login-btn:hover {
-  background: #e9ecef;
-}
-
-.register-btn {
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  color: white;
-}
-
-.register-btn:hover {
+  background: var(--gradient-glass);
+  color: var(--primary-green);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(75, 108, 183, 0.4);
+  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.15);
+  border-color: var(--green-light);
 }
 
-/* Mobile стилове */
-.mobile-dropdown-item {
+/* Аватар - по-малък, като иконите */
+.user-avatar-container {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gradient-logo);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  color: #495057;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
-.mobile-dropdown-item:hover {
-  background: #f8f9fa;
+.user-trigger:hover .user-avatar-container {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  border-color: var(--green-light);
 }
 
-.mobile-divider {
-  height: 1px;
-  background: #dee2e6;
-  margin: 8px 0;
+.user-avatar-icon {
+  width: 12px;
+  height: 12px;
+  color: white;
 }
 
-/* Адаптивност */
-@media (max-width: 768px) {
-  .user-name-small {
-    max-width: 80px;
-  }
-  
-  .guest-actions .btn-text {
-    display: none; /* Скриваме текста на малки екрани */
-  }
-  
-  .auth-btn {
-    padding: 8px;
-  }
-  
-  .user-dropdown-menu {
-    min-width: 200px;
-    right: -10px;
-  }
+/* Име на потребителя - същия стил като линковете */
+.user-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.925rem;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.user-trigger:hover .user-name {
+  color: var(--primary-green);
+}
+
+.user-role {
+  display: none; /* Скриваме ролята в десктоп версията */
+}
+
+/* Dropdown arrow - същия стил като dropdown иконите */
+.dropdown-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-green);
+  transition: all 0.3s ease;
+  margin-left: 4px;
+}
+
+.user-trigger:hover .dropdown-arrow {
+  color: var(--primary-yellow);
+}
+
+/* Online статус - малък и дискретен */
+.online-status {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border: 2px solid var(--bg-primary);
+  border-radius: 50%;
+  z-index: 2;
+}
+
+/* Notification badge - малък */
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.5rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-primary);
+  z-index: 2;
 }
 
 /* Тъмна тема */
-[data-theme="dark"] .user-trigger {
-  background: #2d3748;
-  border-color: #4a5568;
-  color: #e2e8f0;
-}
-
 [data-theme="dark"] .user-trigger:hover {
-  background: #4a5568;
+  background: var(--gradient-glass);
 }
 
-[data-theme="dark"] .user-dropdown-menu {
-  background: #2d3748;
-  border-color: #4a5568;
-  color: #e2e8f0;
-}
-
-[data-theme="dark"] .dropdown-header {
-  background: #1a202c;
-  border-color: #4a5568;
-}
-
-[data-theme="dark"] .dropdown-item {
-  color: #e2e8f0;
-}
-
-[data-theme="dark"] .dropdown-item:hover {
-  background: #4a5568;
-}
-
-[data-theme="dark"] .dropdown-divider {
-  background: #4a5568;
-}
-
-[data-theme="dark"] .login-btn {
-  background: #2d3748;
-  color: #e2e8f0;
-  border-color: #4a5568;
-}
-
-[data-theme="dark"] .login-btn:hover {
-  background: #4a5568;
-}
-
-/* Тъмна тема за user dropdown */
-[data-theme="dark"] .user-trigger {
-  background: var(--bg-secondary);
+[data-theme="dark"] .user-avatar-container {
   border-color: var(--border-color);
 }
 
-[data-theme="dark"] .user-trigger:hover {
-  background: var(--bg-primary);
+[data-theme="dark"] .user-trigger:hover .user-avatar-container {
+  border-color: var(--green-light);
 }
 
-[data-theme="dark"] .user-name-small {
-  color: var(--text-primary) !important;
-  font-weight: 500;
+[data-theme="dark"] .online-status {
+  border-color: var(--bg-primary);
 }
 
-[data-theme="dark"] .dropdown-chevron {
-  color: var(--text-primary) !important;
+[data-theme="dark"] .notification-badge {
+  border-color: var(--bg-primary);
 }
 
-[data-theme="dark"] .user-avatar-icon {
-  color: var(--text-primary) !important;
+/* Focus state */
+.user-trigger:focus-visible {
+  outline: 2px solid var(--primary-yellow);
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .user-trigger {
+    padding: 0.75rem 1rem;
+  }
+  
+  .user-name {
+    font-size: 0.875rem;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-profile-container {
+    display: none; /* В мобилна версия скриваме */
+  }
+}
+
+/* Ако искаш да покажеш ролята в dropdown, но не в главния бутон */
+.user-role.visible-in-dropdown {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
 }

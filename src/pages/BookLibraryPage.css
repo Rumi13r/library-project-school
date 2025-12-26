@@ -2197,3 +2197,373 @@
 [data-theme="dark"] .book-status[style*="color: #ef4444"] {
   background: rgba(248, 113, 113, 0.1) !important;
 }
+
+/* Bookshelf View Styles */
+.bookshelf-view {
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.bookshelf-title {
+  text-align: center;
+  color: white;
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+.bookshelf-subtitle {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 30px;
+  font-size: 16px;
+}
+
+.bookshelf-container {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #826c59;
+  background-image: url("https://www.transparenttextures.com/patterns/wood-pattern.png");
+  border-radius: 8px;
+  padding: 20px;
+  overflow-x: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.book-3d {
+  width: 50px;
+  height: 280px;
+  position: relative;
+  margin-left: 5px;
+  margin-right: 10px;
+  top: 60px;
+  transform-style: preserve-3d;
+  transform: translateZ(0) rotateY(0);
+  transition: transform 0.5s ease, z-index 0.5s;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.book-3d:hover {
+  z-index: 100;
+  transform: rotateX(-25deg) rotateY(-40deg) rotateZ(-15deg) translateY(50px)
+    translateX(-30px);
+}
+
+.book-side {
+  position: absolute;
+  border: 2px solid #333;
+  border-radius: 3px;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  transform-origin: center left;
+}
+
+.book-spine {
+  position: relative;
+  width: 50px;
+  height: 280px;
+  background-color: var(--spine-color);
+  background-image: var(--spine-pattern);
+  transform: rotateY(0deg) translateZ(0px);
+}
+
+.spine-title {
+  margin: 2px;
+  position: absolute;
+  top: 5px;
+  left: 0px;
+  font-size: 12px;
+  color: gold;
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 90%;
+}
+
+.spine-author {
+  position: absolute;
+  color: goldenrod;
+  bottom: 5px;
+  left: 0%;
+  font-size: 10px;
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 30%;
+}
+
+.book-top {
+  width: 50px;
+  height: 190px;
+  top: -2px;
+  background-image: linear-gradient(90deg, white 90%, #aaa 10%);
+  background-size: 5px 5px;
+  transform: rotateX(90deg) translateZ(95px) translateY(-95px);
+}
+
+.book-cover {
+  width: 190px;
+  height: 280px;
+  top: 0px;
+  background-image: var(--book-cover-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  left: 50px;
+  transform: rotateY(90deg) translateZ(0);
+  transition: transform 0.5s;
+  border: 2px solid #333;
+}
+
+.shelf-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.shelf-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid #667eea;
+  background: white;
+  color: #333;
+  font-weight: 500;
+  min-width: 200px;
+}
+
+.shelf-select:focus {
+  outline: none;
+  border-color: #764ba2;
+}
+
+.empty-shelf {
+  width: 100%;
+  text-align: center;
+  color: white;
+  padding: 40px;
+  font-size: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+/* Spine patterns */
+.spine-pattern-1 {
+  --spine-pattern: linear-gradient(
+    315deg,
+    transparent 75%,
+    rgba(255, 255, 255, 0.1) 0
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      rgba(255, 255, 255, 0.1) 0
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 166px,
+      transparent 0
+    ),
+    linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.1) 75%,
+      transparent 0
+    );
+    background-size: 20px 20px;
+}
+
+.spine-pattern-2 {
+  --spine-pattern: repeating-linear-gradient(
+      63deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 3px,
+      transparent 0
+    ),
+    linear-gradient(
+      127deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.1) 90px,
+      transparent 55%,
+      transparent 0
+    ),
+    linear-gradient(
+      transparent 51%,
+      rgba(0, 0, 0, 0.1) 170px
+    );
+    background-size: 70px 120px;
+}
+
+.spine-pattern-3 {
+  --spine-pattern: repeating-linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px,
+      transparent 60px
+    ),
+    repeating-linear-gradient(
+      60deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px,
+      transparent 60px
+    ),
+    linear-gradient(
+      60deg,
+      rgba(0, 0, 0, 0.1) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(0, 0, 0, 0.1) 75%,
+      rgba(0, 0, 0, 0.1)
+    ),
+    linear-gradient(
+      120deg,
+      rgba(0, 0, 0, 0.1) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(0, 0, 0, 0.1) 75%,
+      rgba(0, 0, 0, 0.1)
+    );
+  background-size: 70px 120px;
+}
+
+/* Natural Wood Bookshelf Styles */
+.bookshelf-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+}
+
+.shelf-section {
+  background-color: #826c59;
+  background-image: url("https://www.transparenttextures.com/patterns/wood-pattern.png");
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 2px solid #6b5746;
+  transition: transform 0.3s ease;
+}
+
+.shelf-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.shelf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #6b5746;
+}
+
+.shelf-title-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shelf-title {
+  color: #fff8e1;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.shelf-type-badge {
+  background: rgba(107, 87, 70, 0.8);
+  color: #fff8e1;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #a38b72;
+}
+
+.shelf-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff8e1;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(107, 87, 70, 0.6);
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid #a38b72;
+}
+
+
+
+/* Spine colors - fix background color */
+.spine-color-maroon { background-color: #800000; }
+.spine-color-darkgreen { background-color: #006400; }
+.spine-color-darkolivegreen { background-color: #556b2f; }
+.spine-color-brown { background-color: #8b4513; }
+.spine-color-saddlebrown { background-color: #8b4513; }
+.spine-color-sienna { background-color: #a0522d; }
+.spine-color-midnightblue { background-color: #191970; }
+.spine-color-darkred { background-color: #8b0000; }
+.spine-color-darkblue { background-color: #00008b; }
+.spine-color-darkgoldenrod { background-color: #b8860b; }
+
+/* Book spine - ensure solid background with pattern overlay */
+.book-spine {
+  position: relative;
+  width: 50px;
+  height: 280px;
+  transform: rotateY(0deg) translateZ(0px);
+  /* Ensure solid color base */
+  background-color: var(--spine-color, #8b4513);
+  /* Pattern will overlay on top */
+  background-image: var(--spine-pattern, none);
+  /* Make sure pattern blends properly */
+  background-blend-mode: overlay;
+}
+
+.book-spine.compact {
+  width: 36px;
+  height: 230px;
+  background-color: var(--spine-color, #8b4513);
+  background-image: var(--spine-pattern, none);
+  background-blend-mode: overlay;
+}
+
+/* Add fallback pattern class for browsers that don't support CSS variables */
+.book-spine[class*="spine-pattern-"] {
+  /* This ensures patterns work even if CSS vars fail */
+}
+
+/* Ensure patterns have proper stacking */
+.spine-pattern-1,
+.spine-pattern-2,
+.spine-pattern-3,
+.spine-pattern-4 {
+  /* These now have direct background-image definitions above */
+}
+
+/* Fix for compact spines */
+.book-spine.compact[class*="spine-pattern-"] {
+  background-size: 15px 15px; /* Smaller patterns for compact books */
+}

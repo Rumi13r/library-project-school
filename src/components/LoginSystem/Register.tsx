@@ -3,7 +3,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/firebase";
-import { BookOpen, Eye, EyeOff, Shield, CheckCircle, RefreshCw, UserCircle, ArrowRight } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Shield, CheckCircle, RefreshCw, UserCircle, ArrowRight, XCircle } from "lucide-react";
 import './Login.css';
 
 const Register: React.FC = () => {
@@ -38,6 +38,16 @@ const Register: React.FC = () => {
     setCaptchaError(false);
   };
 
+  // Изчисляване на силата на паролата
+  const passwordStrength = {
+    hasMinLength: password.length >= 6,
+    hasUpperCase: /[A-Z]/.test(password),
+    hasLowerCase: /[a-z]/.test(password),
+    hasNumbers: /[0-9]/.test(password),
+  };
+
+  const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -69,6 +79,13 @@ const Register: React.FC = () => {
 
     if (password.length < 6) {
       setErrorMessage("Паролата трябва да е поне 6 символа");
+      setIsLoading(false);
+      return;
+    }
+
+    // Допълнителна проверка за сила на паролата
+    if (!isPasswordStrong) {
+      setErrorMessage("Паролата не отговаря на всички изисквания за сигурност");
       setIsLoading(false);
       return;
     }
@@ -119,15 +136,6 @@ const Register: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  const passwordStrength = {
-    hasMinLength: password.length >= 6,
-    hasUpperCase: /[A-Z]/.test(password),
-    hasLowerCase: /[a-z]/.test(password),
-    hasNumbers: /[0-9]/.test(password),
-  };
-
-  const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
 
   return (
     <div className="login-container">
@@ -200,7 +208,7 @@ const Register: React.FC = () => {
             <form onSubmit={handleRegister} className="login-form">
               <div className="form-header">
                 <h2 className="form-title">Създаване на акаунт</h2>
-                <p className="form-subtitle">Попълнете данните си за регистрация</p>
+                <p className="alternative-actions">Попълнете данните си за регистрация</p>
               </div>
 
               {errorMessage && (
@@ -213,7 +221,7 @@ const Register: React.FC = () => {
               {/* First Name and Last Name Fields */}
               <div className="name-fields">
                 <div className="input-group">
-                  <label htmlFor="firstName" className="input-label">
+                  <label htmlFor="firstName" className="alternative-actions">
                     Име
                   </label>
                   <div className="input-container">
@@ -231,7 +239,7 @@ const Register: React.FC = () => {
                 </div>
 
                 <div className="input-group">
-                  <label htmlFor="lastName" className="input-label">
+                  <label htmlFor="lastName" className="alternative-actions">
                     Фамилия
                   </label>
                   <div className="input-container">
@@ -250,7 +258,7 @@ const Register: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label htmlFor="email" className="input-label">
+                <label htmlFor="email" className="alternative-actions">
                   Имейл адрес
                 </label>
                 <div className="input-container">
@@ -268,7 +276,7 @@ const Register: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label htmlFor="password" className="input-label">
+                <label htmlFor="password" className="alternative-actions">
                   Парола
                 </label>
                 <div className="input-container">
@@ -293,24 +301,40 @@ const Register: React.FC = () => {
                 </div>
 
                 {/* Password Strength Indicator */}
+                <label className="alternative-actions">Сигурност на паролата:</label>
                 {password && (
                   <div className="password-strength">
-                    <div className="strength-title">Сигурност на паролата:</div>
                     <div className="strength-checks">
-                      <div className={`strength-check ${passwordStrength.hasMinLength ? 'valid' : ''}`}>
-                        <CheckCircle size={16} />
+                      <div className={`strength-check ${passwordStrength.hasMinLength ? 'valid' : 'invalid'}`}>
+                        {passwordStrength.hasMinLength ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
                         <span>Поне 6 символа</span>
                       </div>
-                      <div className={`strength-check ${passwordStrength.hasUpperCase ? 'valid' : ''}`}>
-                        <CheckCircle size={16} />
+                      <div className={`strength-check ${passwordStrength.hasUpperCase ? 'valid' : 'invalid'}`}>
+                        {passwordStrength.hasUpperCase ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
                         <span>Главна буква</span>
                       </div>
-                      <div className={`strength-check ${passwordStrength.hasLowerCase ? 'valid' : ''}`}>
-                        <CheckCircle size={16} />
+                      <div className={`strength-check ${passwordStrength.hasLowerCase ? 'valid' : 'invalid'}`}>
+                        {passwordStrength.hasLowerCase ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
                         <span>Малка буква</span>
                       </div>
-                      <div className={`strength-check ${passwordStrength.hasNumbers ? 'valid' : ''}`}>
-                        <CheckCircle size={16} />
+                      <div className={`strength-check ${passwordStrength.hasNumbers ? 'valid' : 'invalid'}`}>
+                        {passwordStrength.hasNumbers ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
                         <span>Цифра</span>
                       </div>
                     </div>
@@ -319,7 +343,7 @@ const Register: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label htmlFor="confirmPassword" className="input-label">
+                <label htmlFor="confirmPassword" className="alternative-actions">
                   Потвърдете паролата
                 </label>
                 <div className="input-container">
@@ -351,7 +375,7 @@ const Register: React.FC = () => {
 
               {/* CAPTCHA Section */}
               <div className="input-group">
-                <label className="input-label">
+                <label className="alternative-actions">
                   Въпрос за сигурност
                 </label>
                 <div className="captcha-container">
@@ -385,9 +409,9 @@ const Register: React.FC = () => {
                 </div>
               </div>
 
-              <div className="form-options">
-                <label className="checkbox-container">
-                  <input type="checkbox" required />
+              <div className="checkbox-wrapper">
+                <input type="checkbox" id="remember-me" className="checkbox-input" />
+                <label htmlFor="remember-me" className="checkbox-label">
                   <span className="checkmark"></span>
                   Приемам <a href="/terms" className="terms-link">Условията за ползване</a> и <a href="/privacy" className="terms-link">Политиката за поверителност</a>
                 </label>

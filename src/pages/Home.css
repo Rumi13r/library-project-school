@@ -2224,10 +2224,10 @@
 }
 
 /* ===========================================
-   BOOK ANIMATION SECTION - ОПРАВЕН ЗА МОБИЛНИ
+   HOME BOOK ANIMATION SECTION - ИЗОЛИРАН СТИЛ
    =========================================== */
 
-.book-animation-section {
+.home-book-animation-section {
   position: relative;
   padding: 60px 0;
   margin: 60px 0;
@@ -2238,22 +2238,23 @@
 
 /* Тъмна тема със media query */
 @media (prefers-color-scheme: dark) {
-  .book-animation-section {
+  .home-book-animation-section {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   }
 }
 
 /* Тъмна тема с атрибут data-theme */
-[data-theme="dark"] .book-animation-section {
+[data-theme="dark"] .home-book-animation-section {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 /* Тъмна тема с клас dark-theme-compatible */
-.dark-theme-compatible .book-animation-section {
+.dark-theme-compatible .home-book-animation-section {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
 }
+
 /* Bookshelf */
-.bookshelf {
+.home-bookshelf {
   position: relative;
   width: 100%;
   height: 300px;
@@ -2264,7 +2265,7 @@
 }
 
 /* Books Container */
-.books {
+.home-books {
   position: relative;
   display: flex;
   justify-content: center;
@@ -2275,7 +2276,7 @@
 }
 
 /* Individual Books - ОРИГИНАЛЕН РАЗМЕР */
-.book {
+.home-book {
   width: 150px;
   height: 230px;
   position: relative;
@@ -2290,11 +2291,11 @@
   box-shadow: 
     -8px 8px 20px rgba(0,0,0,0.25),
     inset 0 0 0 3px rgba(255,255,255,0.15);
-  animation: bookFloat 4s ease-in-out infinite;
+  animation: home-bookFloat 4s ease-in-out infinite;
 }
 
 /* Book Spine */
-.book::before {
+.home-book::before {
   content: '';
   position: absolute;
   top: 0;
@@ -2307,7 +2308,7 @@
 }
 
 /* Book Pages Effect */
-.book::after {
+.home-book::after {
   content: '';
   position: absolute;
   top: 0;
@@ -2319,13 +2320,13 @@
 }
 
 /* Different Animation Delays */
-.book:nth-child(1) { animation-delay: 0s; }
-.book:nth-child(2) { animation-delay: 0.5s; }
-.book:nth-child(3) { animation-delay: 1s; }
-.book:nth-child(4) { animation-delay: 1.5s; }
+.home-book:nth-child(1) { animation-delay: 0s; }
+.home-book:nth-child(2) { animation-delay: 0.5s; }
+.home-book:nth-child(3) { animation-delay: 1s; }
+.home-book:nth-child(4) { animation-delay: 1.5s; }
 
 /* Hover Effects */
-.book:hover {
+.home-book:hover {
   transform: rotateY(-25deg) translateY(-15px);
   box-shadow: 
     -20px 20px 40px rgba(0,0,0,0.4),
@@ -2334,7 +2335,7 @@
 }
 
 /* Floating Animation */
-@keyframes bookFloat {
+@keyframes home-bookFloat {
   0%, 100% {
     transform: translateY(0) rotateY(0);
   }
@@ -2349,16 +2350,16 @@
 
 /* Desktop - default големина */
 @media (min-width: 1025px) {
-  .bookshelf {
+  .home-bookshelf {
     max-width: 1200px;
     margin: 0 auto;
   }
   
-  .books {
+  .home-books {
     gap: 40px;
   }
   
-  .book {
+  .home-book {
     width: 150px;
     height: 230px;
   }
@@ -2366,62 +2367,62 @@
 
 /* Tablets - леко намаляване */
 @media (max-width: 1024px) and (min-width: 769px) {
-  .bookshelf {
+  .home-bookshelf {
     height: 280px;
   }
   
-  .books {
+  .home-books {
     gap: 25px;
     height: 260px;
   }
   
-  .book {
+  .home-book {
     width: 130px;
     height: 200px;
   }
   
-  .book::before {
+  .home-book::before {
     width: 18px;
   }
   
-  .book::after {
+  .home-book::after {
     width: 12px;
   }
 }
 
 /* Mobile - още по-малко намаляване */
 @media (max-width: 768px) and (min-width: 481px) {
-  .book-animation-section {
+  .home-book-animation-section {
     padding: 40px 0;
   }
   
-  .bookshelf {
+  .home-bookshelf {
     height: 250px;
   }
   
-  .books {
+  .home-books {
     gap: 15px;
     height: 220px;
   }
   
-  .book {
+  .home-book {
     width: 100px;
     height: 180px;
   }
   
-  .book::before {
+  .home-book::before {
     width: 15px;
   }
   
-  .book::after {
+  .home-book::after {
     width: 10px;
   }
   
-  .book:hover {
+  .home-book:hover {
     transform: rotateY(-20deg) translateY(-10px);
   }
   
-  @keyframes float {
+  @keyframes home-bookFloat {
     0%, 100% {
       transform: translateY(0) rotateY(0);
     }
@@ -2433,15 +2434,15 @@
 
 /* Small Mobile - минимално намаляване */
 @media (max-width: 480px) {
-  .book-animation-section {
+  .home-book-animation-section {
     padding: 30px 0;
   }
   
-  .bookshelf {
+  .home-bookshelf {
     height: 220px;
   }
   
-  .books {
+  .home-books {
     gap: 8px;
     height: 200px;
     flex-wrap: wrap;
@@ -2449,25 +2450,25 @@
     padding: 0 10px;
   }
   
-  .book {
+  .home-book {
     width: 80px;
     height: 150px;
     margin-bottom: 10px;
   }
   
-  .book::before {
+  .home-book::before {
     width: 12px;
   }
   
-  .book::after {
+  .home-book::after {
     width: 8px;
   }
   
-  .book:hover {
+  .home-book:hover {
     transform: rotateY(-15deg) translateY(-8px);
   }
   
-  @keyframes float {
+  @keyframes home-bookFloat {
     0%, 100% {
       transform: translateY(0) rotateY(0);
     }
@@ -2479,36 +2480,36 @@
 
 /* Very Small Mobile - все още видими книги */
 @media (max-width: 360px) {
-  .books {
+  .home-books {
     gap: 6px;
   }
   
-  .book {
+  .home-book {
     width: 70px;
     height: 130px;
   }
   
-  .book::before {
+  .home-book::before {
     width: 10px;
   }
 }
 
 /* Landscape Mode - поддръжка */
 @media (max-height: 500px) and (orientation: landscape) {
-  .book-animation-section {
+  .home-book-animation-section {
     padding: 30px 0;
   }
   
-  .bookshelf {
+  .home-bookshelf {
     height: 200px;
   }
   
-  .books {
+  .home-books {
     height: 180px;
     gap: 15px;
   }
   
-  .book {
+  .home-book {
     width: 90px;
     height: 160px;
   }
@@ -2516,37 +2517,24 @@
 
 /* Touch Device Optimizations */
 @media (hover: none) {
-  .book:hover {
+  .home-book:hover {
     transform: none;
     animation-play-state: running;
   }
   
-  .book:active {
+  .home-book:active {
     transform: rotateY(-15deg) translateY(-8px);
   }
 }
 
 /* Safari specific fixes */
 @supports (-webkit-touch-callout: none) {
-  .book {
+  .home-book {
     -webkit-transform-style: preserve-3d;
     -webkit-transform-origin: left center;
   }
 }
 
-/* Добавете и контейнер за центриране ако нямате */
-.bookshelf-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* За да използвате контейнера, обвийте bookshelf в него */
-.book-animation-section > .bookshelf-container > .bookshelf {
-  width: 100%;
-  height: 300px;
-    
-}
 /* Modern Library Design System - Green, Yellow, Red Theme */
 :root {
   /* Цветова палитра */
@@ -2673,7 +2661,7 @@
 
 .news-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(680px, 1fr)); /* Увеличена минимална ширина за картата */
   gap: 2.5rem;
   margin-bottom: 3rem;
 }
@@ -2686,6 +2674,8 @@
   border: 1px solid var(--border-light);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  display: flex; /* Промяна: използваме flex за подреждане в редица */
+  flex-direction: row; /* Снимка и съдържание са едно до друго */
 }
 
 .news-card:hover {
@@ -2696,14 +2686,16 @@
 
 .news-image-container {
   position: relative;
-  height: 240px;
+  width: 50%; /* Снимката заема точно 50% от картата */
+  aspect-ratio: 16/9; /* Фиксира съотношението 16:9 (като YouTube) */
   overflow: hidden;
+  border-radius: 12px 0 0 12px; /* Променени ъгли: само ляво */
 }
 
 .news-image {
-  width: 100%;
+  width: 100%; /* Промяна: 100% от контейнера */
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Запазва пропорциите, изрязва излишното */
   transition: transform 0.4s ease;
 }
 
@@ -2778,6 +2770,9 @@
 
 .news-content {
   padding: 2rem;
+  width: 50%; /* Съдържанието също заема 50% */
+  display: flex;
+  flex-direction: column;
 }
 
 .news-meta {
@@ -2815,6 +2810,7 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex-grow: 1; /* Заема оставащото пространство */
 }
 
 .news-footer {
@@ -2872,6 +2868,7 @@
   transition: all 0.3s ease;
   width: 100%;
   justify-content: center;
+  margin-top: auto; /* Бутонът се позиционира в долната част */
 }
 
 .news-read-more:hover {
@@ -2913,6 +2910,26 @@
   transform: translateY(-2px);
 }
 
+/* Адаптивност за мобилни устройства */
+@media (max-width: 768px) {
+  .news-grid {
+    grid-template-columns: 1fr;
+    minmax: unset;
+  }
+  
+  .news-card {
+    flex-direction: column; /* На мобилни снимката е отгоре */
+  }
+  
+  .news-image-container {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .news-content {
+    width: 100%;
+  }
+}
 /* Enhanced Calendar Events Section */
 .events-section {
   padding: 120px 0;
@@ -4517,4 +4534,159 @@
   background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
   border-radius: 2px;
 }
+
+/* Featured News Styles */
+.featured-news-section {
+  margin-bottom: 3rem;
+}
+
+.featured-news-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffd700;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.featured-news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.featured-news-card {
+  position: relative;
+  border: 2px solid #ffd700;
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.15);
+}
+
+.featured-badge {
+  right: 15px;
+  background: rgba(255, 215, 0, 0.95);
+  color: #000;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 10;
+}
+
+.featured-news-card .news-content {
+  padding: 1.5rem;
+}
+
+.featured-news-card .news-title {
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.featured-news-card .news-excerpt {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.no-news {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.no-news svg {
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.news-modal-category-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f0f0;
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Галерия за снимки в новините */
+.news-gallery {
+  margin-bottom: 2rem;
+}
+
+.gallery-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gallery-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gallery-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.no-images {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.no-images svg {
+  margin-bottom: 1rem;
+  color: #adb5bd;
+}
+
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .gallery-image {
+    height: 150px;
+  }
+}
+
 

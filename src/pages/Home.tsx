@@ -23,16 +23,32 @@ import {
   Info,
   AlertCircle,
   CheckCircle,
-  Eye as EyeIcon
+  Eye as EyeIcon,
+  ImageIcon
 } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import * as bookService from "../../src/lib/services/bookService";
+import * as userService from "../../src/lib/services/userService";
+import * as wishlistService from "../../src/lib/services/wishlistService";
+import type { BookLibrary } from "../../src/lib/services/bookTypes";
 
 import './Home.css';
 import libraryImage from '../assets/images/2.jpg';
 import library from '../assets/images/library.png';
+
+
+interface Recommendation {
+  bookId: string;
+  title: string;
+  author: string;
+  reason: string;
+  score: number;
+  coverUrl?: string;
+  bookDetails?: BookLibrary;
+}
 
 interface Event {
   id: string;
@@ -54,15 +70,18 @@ interface News {
   title: string;
   excerpt: string;
   content: string;
-  image: string;
-  date: string;
+  image: string; 
+  images?: string[]; 
+  date: any;
   author: string;
   category: string;
   tags: string[];
   views: number;
   likes: number;
+  featured?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
 }
-
 interface EventModalData {
   event: Event;
   colorClass: string;
@@ -75,8 +94,18 @@ const Home: React.FC = () => {
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [showAllNews, setShowAllNews] = useState(false);
   const [selectedEventModal, setSelectedEventModal] = useState<EventModalData | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
+  // Във вашия Home.tsx/Home.jsx, близо до другите useState
+const [selectedNews, setSelectedNews] = useState<News | null>(null);
+const handleOpenNewsModal = (newsItem: News) => {
+    setSelectedNews(newsItem);
+};
+const handleCloseNewsModal = () => {
+    setSelectedNews(null);
+};
 
   // Нова функция за парсване на дати - поддържа и ISO и български формат
   const parseEventDate = (dateString: string, timeString: string = "00:00"): Date => {
@@ -254,78 +283,59 @@ const Home: React.FC = () => {
   };
 
   // Зареждане на новини
-  const fetchNews = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, "news"));
-      const newsData: News[] = snapshot.docs.map(doc => ({
+const fetchNews = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, "news"));
+    const newsData: News[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
         id: doc.id,
-        ...doc.data()
-      } as News));
-      
-      // Сортиране по дата (най-новите първи)
-      newsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setNews(newsData);
-    } catch (error) {
-      console.error("Error fetching news:", error);
-      // Fallback новини
-      const fallbackNews: News[] = [
-        {
-          id: '1',
-          title: 'Нова колекция от детски книги',
-          excerpt: 'Разширяваме колекцията си с над 200 нови заглавия за деца и юноши',
-          content: 'Библиотеката е обогатила колекцията си с най-новите заглавия в детската и юношеска литература...',
-          image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-          date: '2024-12-10',
-          author: 'Мария Иванова',
-          category: 'Нови книги',
-          tags: ['книги', 'деца', 'нови заглавия'],
-          views: 156,
-          likes: 23
-        },
-        {
-          id: '2',
-          title: 'Дигитална библиотека - вече достъпна',
-          excerpt: 'Започваме с дигитални услуги - книги онлайн за всички читатели',
-          content: 'С гордость представяме нашата нова дигитална платформа...',
-          image: 'https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSqSQCwBRu8DVNP62v6c2czLbqmp3RrfIRY5LAT5IITN9mt1XAxjMcfx8kl9LEWVSsIEUsNlJSP',
-          date: '2024-12-08',
-          author: 'Петър Георгиев',
-          category: 'Дигитални услуги',
-          tags: ['дигитални', 'онлайн', 'е-книги'],
-          views: 203,
-          likes: 45
-        },
-        {
-          id: '3',
-          title: 'Рекордна посещаемост този месец',
-          excerpt: 'Над 200 посетители през декември – нов рекорд, подкрепен от организираните в библиотеката събития.',
-          content: 'Библиотеката отчете рекордна посещаемост за месец ноември...',
-          image: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-          date: '2024-12-05',
-          author: 'Анна Петрова',
-          category: 'Новини',
-          tags: ['посещаемост', 'рекорд', 'активност'],
-          views: 189,
-          likes: 34
-        },
-        {
-          id: '4',
-          title: 'Състезание за млади поети',
-          excerpt: 'Обявяваме национално състезание за млади таланти в поезията',
-          content: 'Под патронажа на Министерството на културата, библиотеката организира...',
-          image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-          date: '2024-12-01',
-          author: 'Георги Димитров',
-          category: 'Събития',
-          tags: ['състезание', 'поезия', 'млади таланти'],
-          views: 278,
-          likes: 67
-        }
-      ];
-      setNews(fallbackNews);
-    }
-  };
-
+        ...data,
+        // Обработка на снимките
+        image: data.image || '/api/placeholder/400/250',
+        images: data.images || [], // Допълнителни снимки (може да е празен масив)
+        date: data.date?.toDate ? data.date.toDate() : new Date(data.date || Date.now()),
+        tags: data.tags || [],
+        views: data.views || 0,
+        likes: data.likes || 0,
+        featured: data.featured || false
+      } as News;
+    });
+    
+    // Сортиране по дата (най-новите първи)
+    newsData.sort((a, b) => {
+      const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+      const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    setNews(newsData);
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    // Fallback новини
+    const fallbackNews: News[] = [
+      {
+        id: '1',
+        title: 'Нова колекция от детски книги',
+        excerpt: 'Разширяваме колекцията си с над 200 нови заглавия за деца и юноши',
+        content: 'Библиотеката е обогатила колекцията си с най-новите заглавия в детската и юношеска литература...',
+        image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+        ],
+        date: new Date('2024-12-10'),
+        author: 'Мария Иванова',
+        category: 'Нови книги',
+        tags: ['книги', 'деца', 'нови заглавия'],
+        views: 156,
+        likes: 23,
+        featured: true
+      }
+    ];
+    setNews(fallbackNews);
+  }
+};
   // Функция за регистрация в системата (става читател)
   const handleBecomeReader = () => {
     if (user) {
@@ -398,6 +408,149 @@ const handleEventRegistration = (event: Event) => {
     fetchNews();
   }, []);
 
+  useEffect(() => {
+    const generateRecommendations = async () => {
+      try {
+        setLoadingRecs(true);
+        
+        // Зареждане на всички книги
+        const allBooks = await bookService.fetchAllBooks();
+        
+        // Зареждане на потребителски данни ако има логнат потребител
+        let viewedBooks: string[] = [];
+        let userWishlist: string[] = [];
+        
+        if (user) {
+          [viewedBooks, userWishlist] = await Promise.all([
+            userService.getUserViewedBooks(user.uid),
+            wishlistService.getUserWishlist(user.uid)
+          ]);
+        }
+        
+        const recs: Recommendation[] = [];
+        const today = new Date();
+        
+        // 1. ПОПУЛЯРНИ КНИГИ (за всички)
+        const popularBooks = allBooks
+          .filter(book => {
+            if (user) {
+              return !viewedBooks.includes(book.id) && !userWishlist.includes(book.id);
+            }
+            return true;
+          })
+          .filter(book => book.views && book.views > 50)
+          .sort((a, b) => (b.views || 0) - (a.views || 0))
+          .slice(0, 3)
+          .map(book => ({
+            bookId: book.id,
+            title: book.title,
+            author: book.author,
+            reason: 'Популярна в библиотеката',
+            score: book.views || 0,
+            coverUrl: book.coverUrl,
+            bookDetails: book
+          }));
+        
+        recs.push(...popularBooks);
+        
+        // 2. НОВИ КНИГИ
+        const newBooks = allBooks
+          .filter(book => {
+            if (user) {
+              return !viewedBooks.includes(book.id) && !userWishlist.includes(book.id);
+            }
+            return true;
+          })
+          .filter(book => book.year >= today.getFullYear() - 2)
+          .sort((a, b) => b.year - a.year)
+          .slice(0, 3)
+          .map(book => ({
+            bookId: book.id,
+            title: book.title,
+            author: book.author,
+            reason: 'Нова книга',
+            score: 50 + (book.year - (today.getFullYear() - 2)) * 20,
+            coverUrl: book.coverUrl,
+            bookDetails: book
+          }));
+        
+        recs.push(...newBooks);
+        
+        // 3. За логнати потребители - персонализирани препоръки
+        if (user && viewedBooks.length > 0) {
+          const viewedBooksData = allBooks.filter(b => viewedBooks.includes(b.id));
+          const userGenres = new Set<string>();
+          const userAuthors = new Set<string>();
+          
+          viewedBooksData.forEach(book => {
+            book.genres?.forEach(genre => userGenres.add(genre));
+            userAuthors.add(book.author);
+          });
+          
+          // По жанр
+          allBooks.forEach(book => {
+            if (!viewedBooks.includes(book.id) && !userWishlist.includes(book.id)) {
+              const commonGenres = book.genres?.filter(g => userGenres.has(g)).length || 0;
+              if (commonGenres > 0) {
+                recs.push({
+                  bookId: book.id,
+                  title: book.title,
+                  author: book.author,
+                  reason: `Съвпадение на жанрове (${commonGenres})`,
+                  score: commonGenres * 15,
+                  coverUrl: book.coverUrl,
+                  bookDetails: book
+                });
+              }
+            }
+          });
+          
+          // По автор
+          allBooks.forEach(book => {
+            if (!viewedBooks.includes(book.id) && !userWishlist.includes(book.id) && userAuthors.has(book.author)) {
+              recs.push({
+                bookId: book.id,
+                title: book.title,
+                author: book.author,
+                reason: `От любимия ви автор ${book.author}`,
+                score: 80,
+                coverUrl: book.coverUrl,
+                bookDetails: book
+              });
+            }
+          });
+        }
+        
+        // Сортиране и вземане на топ 6
+        const sortedRecs = recs
+          .filter((rec, index, self) => 
+            index === self.findIndex(r => r.bookId === rec.bookId)
+          )
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 6);
+        
+        setRecommendations(sortedRecs);
+        
+      } catch (error) {
+        console.error("Грешка при генериране на препоръки:", error);
+      } finally {
+        setLoadingRecs(false);
+      }
+    };
+    
+    generateRecommendations();
+  }, [user]);
+  
+  // Функция за резервиране
+  const handleReserveBook = (bookId: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    // Тук може да добавиш логика за резервиране
+    navigate(`/books/${bookId}`);
+  };
+
   // Hero Section Data
   const heroData = {
     title: 'Smart School Library',
@@ -430,45 +583,6 @@ const handleEventRegistration = (event: Event) => {
     }
   ];
 
-  // Books Data with images
-  const featuredBooks = [
-    {
-      id: 1,
-      title: 'Под игото',
-      author: 'Иван Вазов',
-      category: 'Българска класика',
-      rating: 4.8,
-      available: true,
-      image: 'https://www.ciela.com/media/catalog/product/cache/32bb0748c82325b02c55df3c2a9a9856/p/o/pod-igoto_1.jpg'
-    },
-    {
-      id: 2,
-      title: 'Железният светилник',
-      author: 'Димитър Талев',
-      category: 'Исторически роман',
-      rating: 4.6,
-      available: true,
-      image: 'https://hermesbooks.bg/media/catalog/product/cache/e533a3e3438c08fe7c51cedd0cbec189/j/e/jelezniat_svetilnik_hrm_2_20200901160342.jpg'
-    },
-    {
-      id: 3,
-      title: 'Тютюн',
-      author: 'Димитър Димов',
-      category: 'Роман',
-      rating: 4.7,
-      available: false,
-      image: 'https://www.elixiria.bg/image/cache/data/d17f7e84adce47498b642ad632e054e9-259x388.jpg'
-    },
-    {
-      id: 4,
-      title: 'Време разделно',
-      author: 'Антон Дончев',
-      category: 'Исторически роман',
-      rating: 4.9,
-      available: true,
-      image: 'https://kultura.bg/web/wp-content/uploads/2019/07/vreme-razdelno-2.jpg'
-    }
-  ];
 
   // Testimonials Data
   const testimonials = [
@@ -491,23 +605,6 @@ const handleEventRegistration = (event: Event) => {
       rating: 4
     }
   ];
-
-  // Helper Functions
-  const renderStars = (rating: number) => {
-    return (
-      <div className="stars-container">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`star-icon ${
-              star <= rating ? 'star-filled' : 'star-empty'
-            }`}
-          />
-        ))}
-        <span className="rating-text">({rating})</span>
-      </div>
-    );
-  };
 
   const renderTestimonialStars = (rating: number) => {
     return (
@@ -534,14 +631,32 @@ const handleEventRegistration = (event: Event) => {
     return getAvailableSpots(event) <= 0;
   };
 
-  const formatNewsDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('bg-BG', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+  const formatNewsDate = (dateInput: any) => {
+  let date: Date;
+  
+  // Проверка дали датата е Firebase Timestamp
+  if (dateInput?.toDate) {
+    date = dateInput.toDate();
+  } 
+  // Проверка дали е string
+  else if (typeof dateInput === 'string') {
+    date = new Date(dateInput);
+  } 
+  // Проверка дали вече е Date обект
+  else if (dateInput instanceof Date) {
+    date = dateInput;
+  }
+  // В противен случай създаваме нова дата
+  else {
+    date = new Date();
+  }
+  
+  return date.toLocaleDateString('bg-BG', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
 
   return (
     <div className="home-container">
@@ -632,89 +747,197 @@ const handleEventRegistration = (event: Event) => {
       </section>
 
       {/* Book Catalog Section */}
-      <section className="catalog-section">
+<section className="catalog-section">
   <div className="container">
     <div className="section-header">
-            <h2 className="handwritten-title">Препоръчани книги</h2>
-            <p className="section-subtitle">
-              Открийте най-популярните заглавия в нашата библиотека
-            </p>
-          </div>
+      <h2 className="handwritten-title">
+        {user ? 'Препоръчани за вас' : 'Препоръчани книги'}
+      </h2>
+      <p className="section-subtitle">
+        {user 
+          ? 'Книги, подбрани специално за вас въз основа на читателският рейтинг' 
+          : 'Най-популярните и нови заглавия в нашата библиотека'}
+      </p>
+    </div>
 
-          <div className="books-grid">
-            {featuredBooks.map((book) => (
-              <div key={book.id} className="book-card">
-                <div className="book-content">
-                  <div className="book-cover">
-                    <img 
-                      src={book.image} 
-                      alt={book.title}
-                      className="book-cover-image"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                    <div className="book-cover-fallback">
-                      <BookOpen className="book-cover-icon" />
-                    </div>
-                  </div>
-                  <div className="book-details">
-                    <h3 className="book-title">{book.title}</h3>
-                    <p className="book-author">{book.author}</p>
-                    <p className="book-category">{book.category}</p>
-                    
-                    <div className="book-meta">
-                      {renderStars(book.rating)}
-                      <span className={`availability ${book.available ? 'available' : 'unavailable'}`}>
-                        {book.available ? 'Налична' : 'Заета'}
-                      </span>
-                    </div>
-                    
-                    <button className="reserve-btn">
-                      Резервирай
-                    </button>
-                  </div>
-                </div>
+    {loadingRecs ? (
+      <div className="loading-state">
+        <div className="spinner"></div>
+        <p>Зареждане на препоръките...</p>
+      </div>
+    ) : recommendations.length > 0 ? (
+      <div className="books-grid">
+  {recommendations.map((rec) => {
+    const book = rec.bookDetails;
+    console.log('Book data:', {
+      id: rec.bookId,
+      title: rec.title,
+      bookTitle: book?.title,
+      coverUrl: rec.coverUrl,
+      bookCoverUrl: book?.coverUrl,
+      hasBookDetails: !!book,
+      fullBookData: book
+    });
+    
+    const coverUrl = book?.coverUrl || rec.coverUrl;
+    const available = book?.availableCopies && book.availableCopies > 0;
+    
+    return (
+      <div key={rec.bookId} className="book-card">
+        <div className="book-content">
+          <div className="book-cover-image">
+            {coverUrl ? (
+              <img 
+                src={coverUrl} 
+                alt={rec.title}
+                className="book-cover-image"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('book-cover-fallback');
+                }}
+              />
+            ) : null}
+            <div className={`book-cover-fallback ${coverUrl ? 'hidden' : ''}`}>
+              <BookOpen className="book-cover-icon" />
+            </div>
+            <div className="recommendation-badge">
+              <span>{rec.score} точки</span>
+            </div>
+          </div>
+          
+          <div className="book-details">
+            <h3 className="book-title">{rec.title}</h3>
+            <p className="book-author">{rec.author}</p>
+            <p className="book-reason">{rec.reason}</p>
+            
+            {book && (
+              <div className="book-meta">
+                <span className="book-category">
+                  {book.genres?.[0] || 'Без категория'}
+                </span>
+                <span className={`availability ${available ? 'available' : 'unavailable'}`}>
+                  {available ? 'Налична' : 'Заета'}
+                </span>
               </div>
-            ))}
-          </div>
-
-          <div className="catalog-footer">
+            )}
+            
             <button 
-              className="btn btn-outline catalog-btn"
-              onClick={() => navigate('/catalog')}
+              className="reserve-btn"
+              onClick={() => handleReserveBook(rec.bookId)}
             >
-              Виж всички книги
+              {user ? 'Резервирай' : 'Виж детайли'}
             </button>
           </div>
         </div>
-      </section>
+      </div>
+          );
+        })}
+      </div>
+    ) : (
+      <div className="empty-state">
+        <BookOpen size={48} />
+        <p>Няма налични препоръки в момента</p>
+        <p className="empty-subtext">
+          {user ? 'Разгледайте повече книги, за да получите персонализирани препоръки' : 'Влезте в профила си за персонализирани препоръки'}
+        </p>
+      </div>
+    )}
+
+    <div className="catalog-footer">
+      <button 
+        className="btn btn-outline catalog-btn"
+        onClick={() => navigate('/books')}
+      >
+        Виж всички книги
+      </button>
+    </div>
+  </div>
+</section>
 
       {/* News Section */}
-      <section className="news-section">
-        <div className="container">
-          <div className="section-header">
-            <div className="section-header-top">
-              <Newspaper className="section-title-icon" />
-              <h2 className="handwritten-title">Новини и Събития</h2>
-            </div>
-            <p className="section-subtitle">
-              Най-новите актуализации и събития от библиотеката
-            </p>
-          </div>
+      {/* News Section */}
+<section className="news-section">
+  <div className="container">
+    <div className="section-header">
+      <div className="section-header-top">
+        <Newspaper className="section-title-icon" />
+        <h2 className="handwritten-title">Новини и Събития</h2>
+      </div>
+      <p className="section-subtitle">
+        Най-новите актуализации и събития от библиотеката
+      </p>
+    </div>
 
-          <div className="news-grid">
-            {displayedNews.map((newsItem, _index) => (
+    {displayedNews.length > 0 ? (
+      <>
+        {/* Препоръчани новини (ако има) */}
+        {displayedNews.filter(newsItem => newsItem.featured).length > 0 && (
+          <div className="featured-news-section">
+            <div className="featured-news-grid">
+              {displayedNews
+                .filter(newsItem => newsItem.featured)
+                .map((newsItem) => (
+                  <article key={newsItem.id} className="news-card featured-news-card">
+                    <div className="featured-badge">
+                      <Star size={12} />
+                      <span>Препоръчана</span>
+                    </div>
+                    <div className="news-image-container">
+                      <img 
+                        src={newsItem.image || '/api/placeholder/400/250'} 
+                        alt={newsItem.title}
+                        className="news-image"
+                        onError={(e) => {
+                          e.currentTarget.src = '/api/placeholder/400/250';
+                        }}
+                      />
+                      <div className="news-category-tag">
+                        <Tag className="tag-icon" />
+                        <span>{newsItem.category || 'Общи'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="news-content">
+                      <div className="news-meta">
+                        <span className="news-date">{formatNewsDate(newsItem.date)}</span>
+                        <span className="news-author">от {newsItem.author || 'Администратор'}</span>
+                      </div>
+                      
+                      <h3 className="news-title">{newsItem.title}</h3>
+                      <p className="news-excerpt">{newsItem.excerpt}</p>
+                      
+                      <button 
+  className="news-read-more" 
+  onClick={() => handleOpenNewsModal(newsItem)}
+>
+  <span>Прочети повече</span>
+  <ExternalLink className="read-more-icon" />
+</button>
+                    </div>
+                  </article>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Всички новини */}
+        <div className="news-grid">
+          {displayedNews
+            .filter(newsItem => !newsItem.featured || displayedNews.filter(n => n.featured).length === 0)
+            .map((newsItem, _index) => (
               <article key={newsItem.id} className="news-card">
                 <div className="news-image-container">
                   <img 
-                    src={newsItem.image} 
+                    src={newsItem.image || '/api/placeholder/400/250'} 
                     alt={newsItem.title}
                     className="news-image"
+                    onError={(e) => {
+                      e.currentTarget.src = '/api/placeholder/400/250';
+                    }}
                   />
                   <div className="news-category-tag">
                     <Tag className="tag-icon" />
-                    <span>{newsItem.category}</span>
+                    <span>{newsItem.category || 'Общи'}</span>
                   </div>
                   <div className="news-overlay">
                     <button className="news-action-btn">
@@ -729,7 +952,7 @@ const handleEventRegistration = (event: Event) => {
                 <div className="news-content">
                   <div className="news-meta">
                     <span className="news-date">{formatNewsDate(newsItem.date)}</span>
-                    <span className="news-author">от {newsItem.author}</span>
+                    <span className="news-author">от {newsItem.author || 'Администратор'}</span>
                   </div>
 
                   <h3 className="news-title">{newsItem.title}</h3>
@@ -739,16 +962,16 @@ const handleEventRegistration = (event: Event) => {
                     <div className="news-stats">
                       <div className="news-stat">
                         <Eye className="stat-icon" />
-                        <span>{newsItem.views}</span>
+                        <span>{newsItem.views || 0}</span>
                       </div>
                       <div className="news-stat">
                         <Heart className="stat-icon" />
-                        <span>{newsItem.likes}</span>
+                        <span>{newsItem.likes || 0}</span>
                       </div>
                     </div>
 
                     <div className="news-tags">
-                      {newsItem.tags.slice(0, 2).map((tag, tagIndex) => (
+                      {(newsItem.tags || []).slice(0, 2).map((tag, tagIndex) => (
                         <span key={tagIndex} className="news-tag">#{tag}</span>
                       ))}
                     </div>
@@ -761,50 +984,57 @@ const handleEventRegistration = (event: Event) => {
                 </div>
               </article>
             ))}
-          </div>
-
-          {news.length > 3 && (
-            <div className="news-toggle-container">
-              <button 
-                className="news-toggle-btn"
-                onClick={toggleShowAllNews}
-              >
-                {showAllNews ? (
-                  <>
-                    <ChevronUp className="toggle-icon" />
-                    <span>Покажи по-малко новини</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="toggle-icon" />
-                    <span>Покажи всички новини ({news.length})</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
         </div>
-      </section>
+      </>
+    ) : (
+      <div className="no-news">
+        <Newspaper size={48} />
+        <p>Няма новини за показване в момента</p>
+      </div>
+    )}
+
+    {news.length > 4 && (
+      <div className="news-toggle-container">
+        <button 
+          className="news-toggle-btn"
+          onClick={toggleShowAllNews}
+        >
+          {showAllNews ? (
+            <>
+              <ChevronUp className="toggle-icon" />
+              <span>Покажи по-малко новини</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="toggle-icon" />
+              <span>Покажи всички новини ({news.length})</span>
+            </>
+          )}
+        </button>
+      </div>
+    )}
+  </div>
+</section>
 
    {/* Book Animation Section - ОПРАВЕН ЗА МОБИЛНИ */}
-<section className="book-animation-section dark-theme-compatible">
-  <div className="bookshelf-container">
-    <div className="bookshelf">
-      <div className="books">
+<section className="home-book-animation-section dark-theme-compatible">
+  <div className="home-bookshelf-container">
+    <div className="home-bookshelf">
+      <div className="home-books">
         <div 
-          className="book" 
+          className="home-book" 
           style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1581128232l/50214741.jpg)' } as any}
         ></div>
         <div 
-          className="book" 
+          className="home-book" 
           style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1544204706l/42505366.jpg)' } as any}
         ></div>
         <div 
-          className="book" 
+          className="home-book" 
           style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1541621322l/42201395.jpg)' } as any}
         ></div>
         <div 
-          className="book" 
+          className="home-book" 
           style={{ '--bg-image': 'url(https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1548518877l/43263520._SY475_.jpg)' } as any}
         ></div>
       </div>
@@ -1177,6 +1407,98 @@ const handleEventRegistration = (event: Event) => {
           </div>
         </div>
       )}
+     {/* News Details Modal */}
+{selectedNews && (
+  <div className="event-modal-overlay" onClick={handleCloseNewsModal}>
+    <div className="event-modal news-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="event-modal-header">
+        <div className="event-modal-title">
+          <div className="news-modal-category-badge">
+            <Tag size={16} />
+            <span>{selectedNews.category}</span>
+          </div>
+          <div className="event-modal-title-text">
+            <h3>{selectedNews.title}</h3>
+            <div className="event-modal-time">
+              <Calendar size={16} />
+              <span>{formatNewsDate(selectedNews.date)}</span>
+            </div>
+          </div>
+        </div>
+        <button 
+          className="event-modal-close"
+          onClick={handleCloseNewsModal}
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="event-modal-content">
+        {/* Галерия със снимки */}
+        <div className="news-gallery">
+          <h4 className="gallery-title">
+            <ImageIcon size={20} />
+            <span>Снимки</span>
+          </h4>
+          <div className="gallery-container">
+            {(() => {
+              // Комбинираме основната снимка с допълнителните
+              const allImages = [
+                selectedNews.image,
+                ...(selectedNews.images || [])
+              ].filter(img => img && img.trim() !== "");
+              
+              if (allImages.length > 0) {
+                return (
+                  <div className="gallery-grid">
+                    {allImages.map((image, index) => (
+                      <div key={index} className="gallery-item">
+                        <img 
+                          src={image} 
+                          alt={`${selectedNews.title} - снимка ${index + 1}`}
+                          className="gallery-image"
+                          onError={(e) => {
+                            e.currentTarget.src = '/api/placeholder/400/250';
+                          }}
+                        />
+                        {index === 0 && (
+                          <div className="image-label">Основна снимка</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="no-images">
+                    <ImageIcon size={32} />
+                    <p>Няма добавени снимки за тази новина</p>
+                  </div>
+                );
+              }
+            })()}
+          </div>
+        </div>
+
+        <div className="event-modal-description">
+          <h4 className="event-modal-description-title">Съдържание</h4>
+          <div className="event-modal-description-content">
+            <div dangerouslySetInnerHTML={{ __html: selectedNews.content }} />
+          </div>
+        </div>
+        
+        <div className="event-modal-footer">
+          <button 
+            className="event-modal-close-btn"
+            onClick={handleCloseNewsModal}
+          >
+            Затвори
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

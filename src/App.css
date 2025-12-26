@@ -1,288 +1,65 @@
-/* Gamma-inspired App.css */
+/* =====================================================
+   App.css — Application Shell ONLY
+   ===================================================== */
+
 #root {
   width: 100%;
+  min-height: 100vh;
   margin: 0 auto;
-  text-align: left;
-}
-
-/* Hero Section Styles */
-.hero-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.hero-glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Feature Cards */
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 3rem 0;
-}
-
-.feature-card {
-  background: var(--gamma-background);
-  border: 1px solid var(--gamma-border);
-  border-radius: 16px;
-  padding: 2rem;
-  transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  background-color: var(--color-bg);
+  transition: background-color 0.3s ease;
 }
 
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(135deg, var(--gamma-primary) 0%, var(--gamma-primary-light) 100%);
-  transform: scaleX(0);
-  transition: transform 0.3s ease;
-}
+/* =====================================================
+   Layout helpers
+   ===================================================== */
 
-.feature-card:hover::before {
-  transform: scaleX(1);
-}
-
-.feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* Book Cards */
-.book-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem 0;
-}
-
-.book-card {
-  background: var(--gamma-background);
-  border: 1px solid var(--gamma-border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.book-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-.book-cover {
+.app-container {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1rem;
   width: 100%;
-  height: 200px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
 }
 
-/* Stats Section */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
-  margin: 3rem 0;
+/* Section spacing (page-level only) */
+.section {
+  padding-block: 5rem;
 }
 
-.stat-card {
-  text-align: center;
-  padding: 2rem;
-  background: var(--gamma-surface);
-  border-radius: 12px;
-  border: 1px solid var(--gamma-border);
+.section-sm {
+  padding-block: 3rem;
 }
 
-.stat-number {
-  font-size: 3rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--gamma-primary) 0%, var(--gamma-primary-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
+.section-lg {
+  padding-block: 7rem;
 }
 
-/* Testimonials */
-.testimonial-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
-}
+/* =====================================================
+   Typography helpers
+   ===================================================== */
 
-.testimonial-card {
-  background: var(--gamma-background);
-  border: 1px solid var(--gamma-border);
-  border-radius: 16px;
-  padding: 2rem;
-  position: relative;
-}
-
-.testimonial-card::before {
-  content: '"';
-  font-size: 4rem;
-  color: var(--gamma-primary);
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  opacity: 0.2;
-  font-family: serif;
-}
-
-/* Search Bar */
-.search-container {
-  position: relative;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.search-input {
-  width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
-  border: 2px solid var(--gamma-border);
-  border-radius: 50px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  background: var(--gamma-background);
-}
-
-.search-input:focus {
-  border-color: var(--gamma-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--gamma-text-secondary);
-}
-
-/* Navigation */
-.nav-container {
-  background: var(--gamma-background);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--gamma-border);
-}
-
-/* Loading States */
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Utility Classes */
 .text-balance {
   text-wrap: balance;
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, var(--gamma-primary) 0%, var(--gamma-primary-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* =====================================================
+   Motion / Accessibility
+   ===================================================== */
 
-.shadow-gamma {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .feature-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .book-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .testimonial-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-number {
-    font-size: 2rem;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
   }
 }
 
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .book-grid {
-    grid-template-columns: 1fr;
+/* =====================================================
+   Print (app-level only)
+   ===================================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
   }
 }
-
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .skeleton {
-    background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
-  }
-  
-  .book-cover {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  }
-  
-  .search-input {
-    background: var(--gamma-surface);
-  }
-}
-
-/* Animation classes */
-.fade-in-up {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.stagger-animation > * {
-  animation: fadeInUp 0.6s ease-out;
-  animation-fill-mode: both;
-}
-
-.stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
-.stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
-.stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
-.stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
-.stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }

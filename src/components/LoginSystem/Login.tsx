@@ -129,7 +129,7 @@ const Login: React.FC = () => {
             <form onSubmit={handleLogin} className="login-form">
               <div className="form-header">
                 <h2 className="form-title">Вход в системата</h2>
-                <p className="form-subtitle">Въведете вашите данни за достъп</p>
+                <p className="alternative-actions">Въведете вашите данни за достъп</p>
               </div>
 
               {errorMessage && (
@@ -140,7 +140,7 @@ const Login: React.FC = () => {
               )}
 
               <div className="input-group">
-                <label htmlFor="email" className="input-label">
+                <label htmlFor="email" className="alternative-actions">
                   Имейл адрес
                 </label>
                 <div className="input-container">
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label htmlFor="password" className="input-label">
+                <label htmlFor="password" className="alternative-actions">
                   Парола
                 </label>
                 <div className="input-container">
@@ -184,15 +184,17 @@ const Login: React.FC = () => {
               </div>
 
               <div className="form-options">
-                <label className="checkbox-container">
-                  <input type="checkbox" />
-                  <span className="checkmark"></span>
-                  Запомни ме
-                </label>
-                <a href="/forgot-password" className="forgot-password">
-                  Забравена парола?
-                </a>
-              </div>
+  <div className="checkbox-wrapper">
+    <input type="checkbox" id="remember-me" className="checkbox-input" />
+    <label htmlFor="remember-me" className="checkbox-label">
+      <span className="checkmark"></span>
+      <span className="checkbox-text">Запомни ме</span>
+    </label>
+  </div>
+  <a href="/forgot-password" className="forgot-password">
+    Забравена парола?
+  </a>
+</div>
 
               <button
                 type="submit"

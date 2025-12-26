@@ -13,13 +13,14 @@ import {
   Share2,
   Calendar,
   User,
-  Tag,
+  Tag as TagIcon,
   Globe,
   Clock,
   Star,
   BookMarked,
   GraduationCap,
-  Cpu
+  Cpu,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './AIResourcesPage.css';
@@ -38,7 +39,7 @@ interface AIResource {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
   thumbnail?: string;
-  estimatedTime?: string; // Време за прочитане/гледане
+  estimatedTime?: string;
   rating?: number;
   downloads?: number;
   isFree: boolean;
@@ -61,8 +62,19 @@ const AIResourcesPage: React.FC = () => {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchAIResources();
@@ -87,7 +99,88 @@ const AIResourcesPage: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching AI resources:", error);
-      setResources([]);
+      // Fallback data for demonstration
+      const demoResources: AIResource[] = [
+        {
+          id: '1',
+          title: 'Изкуствен интелект в образованието',
+          description: 'Пълно ръководство за прилагане на ИИ в учебния процес',
+          type: 'book',
+          url: 'https://example.com/ai-in-education',
+          author: 'Д-р Иван Петров',
+          publishDate: '2023-05-15',
+          language: 'Български',
+          difficulty: 'intermediate',
+          tags: ['Образование', 'ИИ', 'Педагогика'],
+          estimatedTime: '4 часа',
+          rating: 4.8,
+          downloads: 1200,
+          isFree: true,
+          featured: true,
+          addedBy: 'admin',
+          addedAt: new Date()
+        },
+        {
+          id: '2',
+          title: 'ChatGPT за учители',
+          description: 'Практическо ръководство за използване на ChatGPT в класната стая',
+          type: 'course',
+          url: 'https://example.com/chatgpt-for-teachers',
+          author: 'Проф. Мария Иванова',
+          publishDate: '2023-08-20',
+          language: 'Български',
+          difficulty: 'beginner',
+          tags: ['ChatGPT', 'Образование', 'Примери'],
+          estimatedTime: '3 часа',
+          rating: 4.9,
+          downloads: 1800,
+          isFree: false,
+          featured: true,
+          addedBy: 'admin',
+          addedAt: new Date()
+        },
+        {
+          id: '3',
+          title: 'Етични аспекти на ИИ в училище',
+          description: 'Анализ на етичните предизвикателства при внедряване на ИИ',
+          type: 'article',
+          url: 'https://example.com/ai-ethics',
+          author: 'Д-р Георги Димитров',
+          publishDate: '2023-11-10',
+          language: 'Български',
+          difficulty: 'advanced',
+          tags: ['Етика', 'ИИ', 'Изследване'],
+          estimatedTime: '30 минути',
+          rating: 4.5,
+          downloads: 850,
+          isFree: true,
+          featured: false,
+          addedBy: 'reader',
+          addedAt: new Date()
+        },
+        {
+          id: '4',
+          title: 'Инструменти за генериране на тестове',
+          description: 'Преглед на съвременни ИИ инструменти за създаване на тестове',
+          type: 'tool',
+          url: 'https://example.com/test-generators',
+          author: 'Екип EdTech',
+          publishDate: '2023-09-05',
+          language: 'Английски',
+          difficulty: 'intermediate',
+          tags: ['Инструменти', 'Тестове', 'Автоматизация'],
+          estimatedTime: '2 часа',
+          rating: 4.7,
+          downloads: 950,
+          isFree: true,
+          featured: true,
+          addedBy: 'admin',
+          addedAt: new Date()
+        }
+      ];
+      
+      setResources(demoResources);
+      extractFiltersData(demoResources);
       setLoading(false);
     }
   };
@@ -111,7 +204,6 @@ const AIResourcesPage: React.FC = () => {
   const filterResources = () => {
     let filtered = resources;
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(resource =>
         resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -121,22 +213,18 @@ const AIResourcesPage: React.FC = () => {
       );
     }
 
-    // Type filter
     if (typeFilter !== 'all') {
       filtered = filtered.filter(resource => resource.type === typeFilter);
     }
 
-    // Difficulty filter
     if (difficultyFilter !== 'all') {
       filtered = filtered.filter(resource => resource.difficulty === difficultyFilter);
     }
 
-    // Language filter
     if (languageFilter !== 'all') {
       filtered = filtered.filter(resource => resource.language === languageFilter);
     }
 
-    // Tag filter
     if (tagFilter !== 'all') {
       filtered = filtered.filter(resource => resource.tags.includes(tagFilter));
     }
@@ -209,11 +297,7 @@ const AIResourcesPage: React.FC = () => {
   };
 
   const handleViewResource = (resource: AIResource) => {
-    // Отваряне в нов таб за външни ресурси
     window.open(resource.url, '_blank');
-    
-    // Може и да се записва статистика за прегледи
-    // trackView(resource.id);
   };
 
   const handleSaveResource = async (resource: AIResource) => {
@@ -223,8 +307,6 @@ const AIResourcesPage: React.FC = () => {
     }
     
     try {
-      // Добавете логика за запазване в "любими"
-      // await saveToUserFavorites(user.uid, resource.id);
       alert(`Ресурсът "${resource.title}" е запазен в любими!`);
     } catch (error) {
       console.error("Error saving resource:", error);
@@ -240,7 +322,6 @@ const AIResourcesPage: React.FC = () => {
         url: resource.url,
       });
     } else {
-      // Копиране на линк в клипборда
       navigator.clipboard.writeText(resource.url);
       alert('Линкът е копиран в клипборда!');
     }
@@ -258,7 +339,15 @@ const AIResourcesPage: React.FC = () => {
     setTagFilter('all');
   };
 
-  // Ако все още зареждаме
+  const toggleMobileFilters = () => {
+    setShowMobileFilters(!showMobileFilters);
+  };
+
+  const applyMobileFilters = () => {
+    filterResources();
+    setShowMobileFilters(false);
+  };
+
   if (loading) {
     return (
       <div className="ai-resources-page">
@@ -290,12 +379,23 @@ const AIResourcesPage: React.FC = () => {
           <div className="ai-resources-actions">
             {user && (user.role === 'admin' || user.role === 'reader') && (
               <button 
-                className="add-resource-btn"
+                className="add-resource-btn mobile-hidden"
                 onClick={handleAddResource}
               >
                 <span>+ Добави Ресурс</span>
               </button>
             )}
+            
+            {isMobileView && (
+              <button 
+                className="mobile-filters-toggle"
+                onClick={toggleMobileFilters}
+              >
+                <Filter size={20} />
+                <span>Филтри</span>
+              </button>
+            )}
+            
             <div className="view-toggle">
               <button 
                 className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -314,6 +414,123 @@ const AIResourcesPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Filters Modal */}
+        {showMobileFilters && (
+          <div className="mobile-filters-modal">
+            <div className="mobile-filters-header">
+              <h3>Филтриране на ресурси</h3>
+              <button 
+                className="close-filters-btn"
+                onClick={() => setShowMobileFilters(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mobile-filters-content">
+              <div className="filter-group mobile">
+                <label className="filter-label">
+                  <Search size={16} />
+                  Търсене
+                </label>
+                <input
+                  type="text"
+                  placeholder="Търсете ресурси..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="filter-input mobile"
+                />
+              </div>
+
+              <div className="filter-group mobile">
+                <label className="filter-label">
+                  <BookOpen size={16} />
+                  Тип
+                </label>
+                <select 
+                  className="filter-select mobile"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                >
+                  <option value="all">Всички типове</option>
+                  {availableTypes.map(type => (
+                    <option key={type} value={type}>{getTypeLabel(type as AIResource['type'])}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group mobile">
+                <label className="filter-label">
+                  <GraduationCap size={16} />
+                  Ниво на трудност
+                </label>
+                <select 
+                  className="filter-select mobile"
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                >
+                  <option value="all">Всички нива</option>
+                  <option value="beginner">Начинаещ</option>
+                  <option value="intermediate">Напреднал</option>
+                  <option value="advanced">Експерт</option>
+                </select>
+              </div>
+
+              <div className="filter-group mobile">
+                <label className="filter-label">
+                  <Globe size={16} />
+                  Език
+                </label>
+                <select 
+                  className="filter-select mobile"
+                  value={languageFilter}
+                  onChange={(e) => setLanguageFilter(e.target.value)}
+                >
+                  <option value="all">Всички езици</option>
+                  {availableLanguages.map(language => (
+                    <option key={language} value={language}>{language}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group mobile">
+                <label className="filter-label">
+                  <TagIcon size={16} />
+                  Таг
+                </label>
+                <select 
+                  className="filter-select mobile"
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                >
+                  <option value="all">Всички тагове</option>
+                  {availableTags.map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mobile-filters-actions">
+              <button 
+                className="clear-filters-btn mobile"
+                onClick={() => {
+                  clearFilters();
+                  setShowMobileFilters(false);
+                }}
+              >
+                Изчисти филтрите
+              </button>
+              <button 
+                className="apply-filters-btn"
+                onClick={applyMobileFilters}
+              >
+                Приложи филтрите
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Stats Summary */}
         <div className="ai-resources-stats">
@@ -351,95 +568,140 @@ const AIResourcesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="ai-resources-filters">
-          <div className="search-box ai">
-            <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Търсете ресурси по заглавие, автор, тагове..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-
-          <div className="advanced-filters ai">
-            <div className="filter-group">
-              <Filter size={16} />
-              <span className="filter-label">Филтрирай по:</span>
+        {/* Desktop Filters */}
+        {!isMobileView && (
+          <div className="ai-resources-filters desktop-filters">
+            <div className="main-search-box">
+              <Search className="search-icon" />
+              <input
+                type="text"
+                placeholder="Търсете ресурси по заглавие, автор, тагове..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+              <div className="search-info">
+                <Brain size={16} />
+                <span>{resources.length} ресурса</span>
+              </div>
             </div>
 
-            <select 
-              className="filter-select"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              <option value="all">Всички типове</option>
-              {availableTypes.map(type => (
-                <option key={type} value={type}>{getTypeLabel(type as AIResource['type'])}</option>
-              ))}
-            </select>
-
-            <select 
-              className="filter-select"
-              value={difficultyFilter}
-              onChange={(e) => setDifficultyFilter(e.target.value)}
-            >
-              <option value="all">Всички нива</option>
-              <option value="beginner">Начинаещ</option>
-              <option value="intermediate">Напреднал</option>
-              <option value="advanced">Експерт</option>
-            </select>
-
-            <select 
-              className="filter-select"
-              value={languageFilter}
-              onChange={(e) => setLanguageFilter(e.target.value)}
-            >
-              <option value="all">Всички езици</option>
-              {availableLanguages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
-
-            <select 
-              className="filter-select"
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-            >
-              <option value="all">Всички тагове</option>
-              {availableTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </select>
-
-            {(searchTerm || typeFilter !== 'all' || difficultyFilter !== 'all' || languageFilter !== 'all' || tagFilter !== 'all') && (
-              <button 
-                className="clear-filters-btn"
-                onClick={clearFilters}
-              >
-                Изчисти филтрите
-              </button>
-            )}
-          </div>
-
-          {/* Popular Tags */}
-          <div className="popular-tags">
-            <span className="tags-label">Популярни тагове:</span>
-            <div className="tags-list">
-              {['ChatGPT', 'Образование', 'Педагогика', 'ML', 'Етика', 'Примери', 'Планове'].map(tag => (
-                <button
-                  key={tag}
-                  className="tag-btn"
-                  onClick={() => setTagFilter(tag)}
+            <div className="filters-grid">
+              <div className="filter-group">
+                <label className="filter-label">
+                  <Filter size={14} />
+                  Тип
+                </label>
+                <select 
+                  className="filter-select"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
                 >
-                  {tag}
+                  <option value="all">Всички типове</option>
+                  {availableTypes.map(type => (
+                    <option key={type} value={type}>{getTypeLabel(type as AIResource['type'])}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">
+                  <GraduationCap size={14} />
+                  Ниво
+                </label>
+                <select 
+                  className="filter-select"
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                >
+                  <option value="all">Всички нива</option>
+                  <option value="beginner">Начинаещ</option>
+                  <option value="intermediate">Напреднал</option>
+                  <option value="advanced">Експерт</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">
+                  <Globe size={14} />
+                  Език
+                </label>
+                <select 
+                  className="filter-select"
+                  value={languageFilter}
+                  onChange={(e) => setLanguageFilter(e.target.value)}
+                >
+                  <option value="all">Всички езици</option>
+                  {availableLanguages.map(language => (
+                    <option key={language} value={language}>{language}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label className="filter-label">
+                  <TagIcon size={14} />
+                  Таг
+                </label>
+                <select 
+                  className="filter-select"
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                >
+                  <option value="all">Всички тагове</option>
+                  {availableTags.map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(searchTerm || typeFilter !== 'all' || difficultyFilter !== 'all' || 
+                languageFilter !== 'all' || tagFilter !== 'all') && (
+                <button 
+                  className="clear-filters-btn"
+                  onClick={clearFilters}
+                >
+                  Изчисти филтрите
                 </button>
-              ))}
+              )}
+            </div>
+
+            {/* Popular Tags */}
+            <div className="popular-tags">
+              <span className="tags-label">Популярни тагове:</span>
+              <div className="tags-list">
+                {['ChatGPT', 'Образование', 'Педагогика', 'ML', 'Етика', 'Примери', 'Планове'].map(tag => (
+                  <button
+                    key={tag}
+                    className={`tag-btn ${tagFilter === tag ? 'active' : ''}`}
+                    onClick={() => setTagFilter(tagFilter === tag ? 'all' : tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Mobile Search */}
+        {isMobileView && (
+          <div className="mobile-search-container">
+            <div className="mobile-search-box">
+              <Search className="search-icon" />
+              <input
+                type="text"
+                placeholder="Търсене..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mobile-search-input"
+              />
+              <div className="mobile-search-info">
+                <span>{resources.length} ресурса</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Resources Content */}
         <div className="ai-resources-content">
@@ -453,13 +715,22 @@ const AIResourcesPage: React.FC = () => {
                 Резултати за "{searchTerm}"
               </span>
             )}
+            
+            {isMobileView && user && (user.role === 'admin' || user.role === 'reader') && (
+              <button 
+                className="mobile-add-btn"
+                onClick={handleAddResource}
+              >
+                <span>+ Добави</span>
+              </button>
+            )}
           </div>
 
           {filteredResources.length > 0 ? (
             viewMode === 'grid' ? (
               // Grid View
               <div className="resources-grid">
-                {filteredResources.map((resource, _index) => (
+                {filteredResources.map((resource) => (
                   <div 
                     key={resource.id} 
                     className={`resource-card ${resource.featured ? 'featured' : ''}`}
@@ -482,14 +753,20 @@ const AIResourcesPage: React.FC = () => {
                       <div className="resource-actions">
                         <button 
                           className="action-btn save"
-                          onClick={() => handleSaveResource(resource)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveResource(resource);
+                          }}
                           title="Запази в любими"
                         >
                           <Bookmark size={16} />
                         </button>
                         <button 
                           className="action-btn share"
-                          onClick={() => handleShareResource(resource)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareResource(resource);
+                          }}
                           title="Сподели"
                         >
                           <Share2 size={16} />
@@ -521,7 +798,7 @@ const AIResourcesPage: React.FC = () => {
                       <div className="resource-tags">
                         {resource.tags.slice(0, 3).map(tag => (
                           <span key={tag} className="resource-tag">
-                            <Tag size={12} />
+                            <TagIcon size={12} />
                             {tag}
                           </span>
                         ))}
@@ -548,7 +825,10 @@ const AIResourcesPage: React.FC = () => {
                         
                         <button 
                           className="view-resource-btn"
-                          onClick={() => handleViewResource(resource)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewResource(resource);
+                          }}
                         >
                           <span>Преглед</span>
                           <ExternalLink size={16} />

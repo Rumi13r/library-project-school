@@ -2,441 +2,131 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Gamma-inspired color scheme */
-  --gamma-primary: #3b82f6;
-  --gamma-primary-dark: #2563eb;
-  --gamma-primary-light: #60a5fa;
-  --gamma-background: #ffffff;
-  --gamma-surface: #f8fafc;
-  --gamma-text-primary: #1f2937;
-  --gamma-text-secondary: #6b7280;
-  --gamma-border: #e5e7eb;
-  --gamma-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+/* =====================================================
+   DESIGN TOKENS
+   ===================================================== */
 
-  /* Existing Vite variables */
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+/* Light theme (default) */
+:root {
+  /* Colors */
+  --color-bg: #ffffff;
+  --color-surface: #f8fafc;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-contrast: #ffffff;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+  /* Typography */
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
   line-height: 1.6;
-  font-weight: 400;
 
   color-scheme: light;
-  color: var(--gamma-text-primary);
-  background-color: var(--gamma-background);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
 }
 
-/* Base Gamma-inspired styles */
-* {
+/* Dark theme */
+[data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-border: #334155;
+
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-primary-contrast: #0f172a;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}
+
+/* =====================================================
+   BASE / RESET
+   ===================================================== */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: var(--gamma-background);
-  color: var(--gamma-text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
-  line-height: 1.6;
-}
-
-/* Typography scale inspired by Gamma */
-h1 {
-  font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin: 0 0 1.5rem 0;
-}
-
-h2 {
-  font-size: 2.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin: 0 0 1rem 0;
-}
-
-h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.3;
-  margin: 0 0 0.75rem 0;
-}
-
-h4 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0 0 0.5rem 0;
-}
-
-p {
-  margin: 0 0 1rem 0;
-  color: var(--gamma-text-secondary);
-}
-
-/* Links - Gamma style */
-a {
-  font-weight: 500;
-  color: var(--gamma-primary);
-  text-decoration: none;
-  transition: all 0.2s ease-in-out;
-}
-
-a:hover {
-  color: var(--gamma-primary-dark);
-}
-
-/* Buttons - Gamma inspired */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  text-decoration: none;
-  line-height: 1;
-}
-
-.btn-primary {
-  background-color: var(--gamma-primary);
-  color: white;
-  border: 1px solid var(--gamma-primary);
-}
-
-.btn-primary:hover {
-  background-color: var(--gamma-primary-dark);
-  border-color: var(--gamma-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--gamma-shadow);
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: var(--gamma-primary);
-  border: 1px solid var(--gamma-primary);
-}
-
-.btn-secondary:hover {
-  background-color: var(--gamma-primary);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: var(--gamma-shadow);
-}
-
-.btn-ghost {
-  background-color: transparent;
-  color: var(--gamma-text-primary);
-  border: 1px solid transparent;
-}
-
-.btn-ghost:hover {
-  background-color: var(--gamma-surface);
-  border-color: var(--gamma-border);
-}
-
-/* Cards - Gamma style */
-.card {
-  background: var(--gamma-background);
-  border: 1px solid var(--gamma-border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: var(--gamma-shadow);
-  transition: all 0.2s ease-in-out;
-}
-
-.card:hover {
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  transform: translateY(-2px);
-}
-
-/* Form elements - Gamma style */
-input, textarea, select {
-  border: 1px solid var(--gamma-border);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s ease-in-out;
-  background-color: var(--gamma-background);
-  color: var(--gamma-text-primary);
-}
-
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: var(--gamma-primary);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
-}
-
-/* Navigation - Gamma style */
-.nav-link {
-  color: var(--gamma-text-secondary);
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s ease-in-out;
-}
-
-.nav-link:hover {
-  color: var(--gamma-primary);
-  background-color: var(--gamma-surface);
-}
-
-.nav-link.active {
-  color: var(--gamma-primary);
-  background-color: rgb(59 130 246 / 0.1);
-}
-
-/* Utility classes for Gamma design */
-.gamma-gradient {
-  background: linear-gradient(135deg, var(--gamma-primary) 0%, var(--gamma-primary-light) 100%);
-}
-
-.gamma-gradient-light {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-}
-
-.gamma-text-gradient {
-  background: linear-gradient(135deg, var(--gamma-primary) 0%, var(--gamma-primary-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Glass morphism effect (like Gamma) */
-.glass {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-
-.slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Focus styles for accessibility */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--gamma-primary);
-  outline-offset: 2px;
-}
-
-/* Scroll behavior */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+body {
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  line-height: inherit;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--gamma-surface);
+/* =====================================================
+   TYPOGRAPHY
+   ===================================================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-primary);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--gamma-border);
-  border-radius: 3px;
+p {
+  margin-bottom: 1rem;
+  color: var(--color-text-secondary);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--gamma-text-secondary);
+a {
+  color: var(--color-primary);
+  text-decoration: none;
 }
 
-/* Existing Vite dark mode styles - adjusted for Gamma */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --gamma-background: #0f172a;
-    --gamma-surface: #1e293b;
-    --gamma-text-primary: #f1f5f9;
-    --gamma-text-secondary: #94a3b8;
-    --gamma-border: #334155;
-    color: #f1f5f9;
-    background-color: var(--gamma-background);
-  }
-  
-  a:hover {
-    color: var(--gamma-primary-light);
-  }
-  
-  .card {
-    background: var(--gamma-surface);
-  }
-  
-  input, textarea, select {
-    background-color: var(--gamma-surface);
-    color: var(--gamma-text-primary);
-    border-color: var(--gamma-border);
-  }
-  
-  .gamma-gradient-light {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  }
-  
-  .glass {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+a:hover {
+  color: var(--color-primary-hover);
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  h1 {
-    font-size: 2.5rem;
-  }
-  
-  h2 {
-    font-size: 2rem;
-  }
-  
-  h3 {
-    font-size: 1.25rem;
-  }
-  
-  .btn {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.8125rem;
-  }
-}
+/* =====================================================
+   LAYOUT PRIMITIVES
+   ===================================================== */
 
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* Добави след съществуващия CSS в index.css */
-
-/* Improved spacing and layout */
-.container-custom {
+.container {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
 }
 
-/* Better section spacing */
-.section-py {
-  padding: 4rem 0;
+.section {
+  padding-block: 3rem;
 }
 
-.section-pt {
-  padding-top: 4rem;
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.section-pb {
-  padding-bottom: 4rem;
-}
-
-/* Enhanced card styles */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-/* Improved button variants */
-.btn-lg {
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
-}
-
-.btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
-/* Better grid systems */
-.grid-auto-fit {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.grid-auto-fill {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-/* Enhanced typography */
-.lead {
-  font-size: 1.25rem;
-  color: var(--gamma-text-secondary);
-  line-height: 1.7;
-}
-
-.text-muted {
-  color: var(--gamma-text-secondary);
-  opacity: 0.8;
-}
-
-/* Better form styles */
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: var(--gamma-text-primary);
-}
-
-/* Improved navigation */
-.navbar {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--gamma-border);
-}
-
-/* Dark mode improvements */
-@media (prefers-color-scheme: dark) {
-  .navbar {
-    background: rgba(15, 23, 42, 0.95);
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
   }
 }

@@ -363,7 +363,7 @@ console.log(formatDateForDisplay);
   };
 
   const displayedEvents = showAllEvents ? events : events.slice(0, 6);
-  const displayedNews = showAllNews ? news : news.slice(0, 4);
+  const displayedNews = showAllNews ? news : news.slice(0, 8);
 
   useEffect(() => {
     fetchEvents();

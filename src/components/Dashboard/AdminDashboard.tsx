@@ -1998,12 +1998,12 @@ const deleteNews = async (newsId: string) => {
           </div>
         )}
 
-        {showNewsModal && (
+       {showNewsModal && (
   <div className="modal-overlay">
     <div className="modal-content large-modal">
       <div className="modal-header">
         <h3>
-          {modalNewsData.id ? 'Редактиране на новина' : 'Създаване на нова новина'}
+          {modalNewsData.id ? 'Редактиране на новина' : 'Създаване на статия'}
         </h3>
         <button onClick={closeNewsModal} className="close-btn">
           <X size={20} />
@@ -2078,10 +2078,16 @@ const deleteNews = async (newsId: string) => {
               type="text"
               placeholder="новина, събитие, библиотека, актуално"
               value={modalNewsData.tags ? modalNewsData.tags.join(', ') : ""}
-              onChange={(e) => setModalNewsData({
-                ...modalNewsData, 
-                tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
-              })}
+              onChange={(e) => {
+                const tagsArray = e.target.value
+                  .split(',')
+                  .map(tag => tag.trim())
+                  .filter(tag => tag.length > 0);
+                setModalNewsData({
+                  ...modalNewsData, 
+                  tags: tagsArray
+                });
+              }}
               className="modal-form-input"
             />
             <small className="help-text">
@@ -2101,7 +2107,7 @@ const deleteNews = async (newsId: string) => {
             />
           </div>
           
-          {/* ФИЧЪРД/ПРЕПОРЪЧАНО */}
+          {/* ФИЧЪРД/ПРЕПОРЪЧАНО - ПОПРАВЕНО */}
           <div className="modal-form-group">
             <div className="checkbox-group">
               <input
@@ -2155,16 +2161,16 @@ const deleteNews = async (newsId: string) => {
             )}
           </div>
           
-          {/* ДОПЪЛНИТЕЛНИ СНИМКИ (по избор) */}
+          {/* ДОПЪЛНИТЕЛНИ СНИМКИ (по избор) - ПОПРАВЕНО */}
           <div className="modal-form-group full-width">
             <label>Допълнителни снимки за галерия</label>
             <div className="images-container">
-              {(modalNewsData.images || []).map((imageUrl, index) => (
+              {(modalNewsData.images && modalNewsData.images.length > 0 ? modalNewsData.images : []).map((imageUrl, index) => (
                 <div key={index} className="image-input-row">
                   <input
                     type="url"
                     placeholder="https://example.com/image.jpg"
-                    value={imageUrl}
+                    value={imageUrl || ""}
                     onChange={(e) => {
                       const newImages = [...(modalNewsData.images || [])];
                       newImages[index] = e.target.value;

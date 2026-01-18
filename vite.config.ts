@@ -6,7 +6,25 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5000'
+      // За вашия API
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        // Не пренасочвай placeholder заявки към локалния API
+        bypass: (req) => {
+          if (req.url && req.url.includes('/api/placeholder')) {
+            return req.url;
+          }
+        }
+      },
+      // Специален proxy за placeholder услуги
+      '/api/placeholder': {
+        target: 'https://via.placeholder.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/placeholder/, ''),
+        secure: false
+      }
     }
   },
   build: {

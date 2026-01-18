@@ -1,13 +1,13 @@
 // src/components/Dashboard/LibrarianDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, Timestamp } from "firebase/firestore";
 import { 
   Calendar, Trash2, Plus, Search, Clock, 
-  MapPin, User, Edit, X, Save, Building, Book, UserCheck, 
-  Bookmark,
+  MapPin, User, Edit, X, Save, Book, UserCheck, 
+  Bookmark, Tag, Copy
 } from "lucide-react";
-import './LibrarianDashboard.css';
+import styles from './LibrarianDashboard.module.css';
 
 interface Event {
   id: string;
@@ -22,24 +22,35 @@ interface Event {
   allowedRoles: string[];
   organizer: string;
   createdAt: any;
+  imageUrl?: string;
+  participants: string[];
 }
 
-interface Book {
+interface BookLibrary {
   id: string;
   title: string;
   author: string;
   isbn: string;
   category: string;
   description: string;
-  totalCopies: number;
+  copies: number;
   availableCopies: number;
-  publishedYear: number;
-  publisher: string;
+  publishedYear?: number;
+  publisher?: string;
   language: string;
-  imageUrl: string;
+  coverUrl: string;
   createdAt: any;
   tags: string[];
   rating: number;
+  genres: string[];
+  pages?: number;
+  location: string;
+  condition?: string;
+  ageRecommendation?: string;
+  featured?: boolean;
+  status: string;
+  shelfNumber?: string;
+  callNumber?: string;
 }
 
 interface Reservation {
@@ -54,45 +65,44 @@ interface Reservation {
   returnDate?: string;
 }
 
-interface RoomBooking {
-  id: string;
-  room: string;
-  date: string;
-  time: string;
-  endTime: string;
-  eventId: string;
-  eventTitle: string;
-}
-
 const LibrarianDashboard: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [books, setBooks] = useState<Book[]>([]);
+  const [books, setBooks] = useState<BookLibrary[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [roomBookings, setRoomBookings] = useState<RoomBooking[]>([]);
-  const [activeTab, setActiveTab] = useState<"books" | "events" | "reservations" | "rooms">("books");
+  const [activeTab, setActiveTab] = useState<"books" | "events" | "reservations">("books");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // Book Form State
-  const [newBook, setNewBook] = useState<Omit<Book, 'id' | 'createdAt'>>({
+  // Модални прозорци
+  const [showBookModal, setShowBookModal] = useState<boolean>(false);
+  const [showEventModal, setShowEventModal] = useState<boolean>(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  
+  // Данни за модален прозорец на книга
+  const [modalBookData, setModalBookData] = useState<Partial<BookLibrary>>({
     title: "",
     author: "",
     isbn: "",
     category: "",
     description: "",
-    totalCopies: 1,
+    copies: 1,
     availableCopies: 1,
     publishedYear: new Date().getFullYear(),
     publisher: "",
     language: "български",
-    imageUrl: "",
+    coverUrl: "",
     tags: [],
-    rating: 0
+    rating: 0,
+    genres: [],
+    pages: 0,
+    location: "Библиотека",
+    condition: "good",
+    ageRecommendation: "",
+    featured: false,
+    status: "available"
   });
-
-  // Event Form State
-  const [newEvent, setNewEvent] = useState<Omit<Event, 'id' | 'createdAt' | 'currentParticipants'>>({
+  
+  // Данни за модален прозорец на събитие
+  const [modalEventData, setModalEventData] = useState<Partial<Event>>({
     title: "",
     description: "",
     date: "",
@@ -101,15 +111,20 @@ const LibrarianDashboard: React.FC = () => {
     location: "",
     maxParticipants: 20,
     allowedRoles: ["reader", "librarian"],
-    organizer: ""
+    organizer: "",
+    imageUrl: "",
+    currentParticipants: 0,
+    participants: []
   });
 
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [editBookData, setEditBookData] = useState<Partial<Book>>({});
-  const [editEventData, setEditEventData] = useState<Partial<Event>>({});
+  const locationOptions = [
+    "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Зала Европа", "Комп.каб.-ТЧ", 
+    "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
+    "1101", "1102", "1103", "1104", "1105", "1106", "1204", "1205", "1207", 
+    "1209", "1301", "1302", "1304", "1305", "1307", "1309", "1401", "1402", 
+    "1403", "1404", "1405", "1406", "1407", "1409", "1306"
+  ];
 
-  // Categories for books
   const bookCategories = [
     "Българска класика", "Световна класика", "Съвременна литература", 
     "Исторически романи", "Фантастика", "Фентъзи", "Трилъри", 
@@ -117,21 +132,13 @@ const LibrarianDashboard: React.FC = () => {
     "Поезия", "Драма", "Пътеписи", "Философия", "Психология"
   ];
 
-  const locationOptions = [
-    "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Комп.каб.-ТЧ", 
-    "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
-    "1101", "1102", "1103", "1104", "1105", "1106", "1204", "1205", "1207", 
-    "1209", "1301", "1302", "1304", "1305", "1307", "1309", "1401", "1402", 
-    "1403", "1404", "1405", "1406", "1407", "1409", "1306"
+  const bookGenres = [
+    "Роман", "Поезия", "Драма", "Разказ", "Есе", "Биография", "Автобиография",
+    "Исторически", "Фантастика", "Фентъзи", "Трилър", "Мистъри", "Романтика",
+    "Приключенски", "Хорър", "Научна литература", "Образователна литература",
+    "Детска литература", "Младежка литература", "Класика", "Съвременна литература"
   ];
-
-  const timeSlots = [
-    "07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", 
-    "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", 
-    "17:00-18:00", "18:00-19:00", "19:00-20:00"
-  ];
-
-  // Генериране на часове с минути
+console.log(bookGenres);
   const generateTimeOptions = () => {
     const options = [];
     for (let hour = 7; hour <= 19; hour++) {
@@ -145,98 +152,6 @@ const LibrarianDashboard: React.FC = () => {
 
   const timeOptionsWithMinutes = generateTimeOptions();
 
-  // Проверка за конфликти на резервации
-  const hasBookingConflict = (
-    room: string, 
-    date: string, 
-    startTime: string, 
-    endTime: string, 
-    excludeEventId?: string
-  ): boolean => {
-    return roomBookings.some(booking => {
-      // Пропускаме събитието, което редактираме
-      if (excludeEventId && booking.id === excludeEventId) return false;
-      
-      // Проверяваме дали е същата стая и дата
-      if (booking.room !== room || booking.date !== date) return false;
-      
-      // Проверяваме за застъпване на времеви интервали
-      const newStart = startTime;
-      const newEnd = endTime;
-      const existingStart = booking.time;
-      const existingEnd = booking.endTime;
-      
-      // Конфликт възниква, ако:
-      // - новият начален час е между съществуващия интервал
-      // - новият краен час е между съществуващия интервал  
-      // - съществуващият интервал е напълно в новия интервал
-      return (
-        (newStart >= existingStart && newStart < existingEnd) ||
-        (newEnd > existingStart && newEnd <= existingEnd) ||
-        (newStart <= existingStart && newEnd >= existingEnd)
-      );
-    });
-  };
-
-  // Закръгляне на начален час надолу и краен час нагоре
-  const getRoundedTimeRange = (startTime: string, endTime: string): { roundedStart: string, roundedEnd: string } => {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    // Начален час - закръгляме към по-близкия час
-    let roundedStartHours = startHours;
-    if (startMinutes >= 30) {
-      roundedStartHours = startHours + 1;
-    }
-    const roundedStart = `${roundedStartHours.toString().padStart(2, '0')}:00`;
-    
-    // Краен час - закръгляме към по-близкия час
-    let roundedEndHours = endHours;
-    if (endMinutes > 0) {
-      roundedEndHours = endHours + 1;
-    }
-    const roundedEnd = `${roundedEndHours.toString().padStart(2, '0')}:00`;
-    
-    return { roundedStart, roundedEnd };
-  };
-
-  // Генериране на всички часове между закръглените начален и краен час
-  const getTimeSlotsInRange = (startTime: string, endTime: string): string[] => {
-    const { roundedStart, roundedEnd } = getRoundedTimeRange(startTime, endTime);
-    const slots: string[] = [];
-    
-    // Намираме началния и крайния час като числа
-    const startHour = parseInt(roundedStart.split(':')[0]);
-    const endHour = parseInt(roundedEnd.split(':')[0]);
-    
-    // Генерираме часовете между началния и крайния час
-    for (let hour = startHour; hour < endHour; hour++) {
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      slots.push(timeString);
-    }
-    
-    return slots;
-  };
-
-  // Проверка дали стаята е заета за конкретен ден и час
-  const isRoomBooked = (room: string, date: string, timeSlot: string) => {
-    return roomBookings.some(booking => 
-      booking.room === room && 
-      booking.date === date &&
-      getTimeSlotsInRange(booking.time, booking.endTime).includes(timeSlot)
-    );
-  };
-
-  // Вземане на информация за резервацията
-  const getBookingInfo = (room: string, date: string, timeSlot: string) => {
-    const booking = roomBookings.find(booking => 
-      booking.room === room && 
-      booking.date === date &&
-      getTimeSlotsInRange(booking.time, booking.endTime).includes(timeSlot)
-    );
-    return booking;
-  };
-
   // Зареждане на данни
   const fetchEvents = async () => {
     const snapshot = await getDocs(collection(db, "events"));
@@ -245,15 +160,14 @@ const LibrarianDashboard: React.FC = () => {
       ...doc.data() 
     } as Event));
     setEvents(eventsData);
-    updateRoomBookings(eventsData);
   };
 
   const fetchBooks = async () => {
     const snapshot = await getDocs(collection(db, "books"));
-    const booksData: Book[] = snapshot.docs.map(doc => ({ 
+    const booksData: BookLibrary[] = snapshot.docs.map(doc => ({ 
       id: doc.id, 
       ...doc.data() 
-    } as Book));
+    } as BookLibrary));
     setBooks(booksData);
   };
 
@@ -266,117 +180,126 @@ const LibrarianDashboard: React.FC = () => {
     setReservations(reservationsData);
   };
 
-  // Актуализиране на резервациите на стаи
-  const updateRoomBookings = (eventsData: Event[]) => {
-    const bookings: RoomBooking[] = [];
-    eventsData.forEach(event => {
-      if (event.date && event.time && event.endTime && event.location) {
-        bookings.push({
-          id: event.id,
-          room: event.location,
-          date: event.date,
-          time: event.time,
-          endTime: event.endTime,
-          eventId: event.id,
-          eventTitle: event.title
-        });
-      }
-    });
-    setRoomBookings(bookings);
-  };
-
   useEffect(() => {
     fetchEvents();
     fetchBooks();
     fetchReservations();
   }, []);
 
-  // Book Management Functions
-  const createBook = async () => {
-    if (!newBook.title.trim() || !newBook.author.trim() || !newBook.category) return;
-
-    const bookData = {
-      ...newBook,
-      availableCopies: newBook.totalCopies,
-      createdAt: new Date(),
-    };
-
-    await addDoc(collection(db, "books"), bookData);
-    
-    // Reset form
-    setNewBook({
+  // Модални функции за книги
+  const openCreateBookModal = () => {
+    setModalMode('create');
+    setModalBookData({
       title: "",
       author: "",
       isbn: "",
       category: "",
       description: "",
-      totalCopies: 1,
+      copies: 1,
       availableCopies: 1,
       publishedYear: new Date().getFullYear(),
       publisher: "",
       language: "български",
-      imageUrl: "",
+      coverUrl: "",
       tags: [],
-      rating: 0
+      rating: 0,
+      genres: [],
+      pages: 0,
+      location: "Библиотека",
+      condition: "good",
+      ageRecommendation: "",
+      featured: false,
+      status: "available"
     });
-    
-    fetchBooks();
+    setShowBookModal(true);
   };
 
-  const deleteBook = async (bookId: string) => {
-    if (!window.confirm("Сигурни ли сте, че искате да изтриете книгата?")) return;
-    await deleteDoc(doc(db, "books", bookId));
-    fetchBooks();
+  const openEditBookModal = (book: BookLibrary) => {
+    setModalMode('edit');
+    setModalBookData({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      isbn: book.isbn,
+      category: book.category,
+      description: book.description,
+      copies: book.copies,
+      availableCopies: book.availableCopies,
+      publishedYear: book.publishedYear,
+      publisher: book.publisher,
+      language: book.language,
+      coverUrl: book.coverUrl,
+      tags: book.tags || [],
+      rating: book.rating,
+      genres: book.genres || [],
+      pages: book.pages,
+      location: book.location,
+      condition: book.condition,
+      ageRecommendation: book.ageRecommendation,
+      featured: book.featured,
+      status: book.status
+    });
+    setShowBookModal(true);
   };
 
-  const startEditingBook = (book: Book) => {
-    setEditingBook(book);
-    setEditBookData({ ...book });
+  const closeBookModal = () => {
+    setShowBookModal(false);
+    setModalBookData({});
   };
 
-  const cancelEditingBook = () => {
-    setEditingBook(null);
-    setEditBookData({});
-  };
-
-  const saveBook = async () => {
-    if (!editingBook || !editBookData.title?.trim() || !editBookData.author?.trim()) return;
-
-    try {
-      await updateDoc(doc(db, "books", editingBook.id), {
-        ...editBookData,
-        updatedAt: new Date()
-      });
-      
-      setEditingBook(null);
-      setEditBookData({});
-      fetchBooks();
-    } catch (error) {
-      console.error("Error updating book:", error);
-      alert("Грешка при обновяване на книгата");
-    }
-  };
-
-  // Event Management Functions
-  const createEvent = async () => {
-    if (!newEvent.title.trim() || !newEvent.date || !newEvent.time || !newEvent.endTime || !newEvent.location) return;
-
-    // Проверка за конфликт
-    if (hasBookingConflict(newEvent.location, newEvent.date, newEvent.time, newEvent.endTime)) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
+  const handleCreateBook = async () => {
+    if (!modalBookData.title?.trim() || !modalBookData.author?.trim() || !modalBookData.category) {
+      alert("Моля, попълнете заглавие, автор и категория!");
       return;
     }
 
-    const eventData = {
-      ...newEvent,
-      currentParticipants: 0,
-      createdAt: new Date(),
-    };
+    try {
+      const bookData = {
+        ...modalBookData,
+        availableCopies: modalBookData.copies || 1,
+        createdAt: Timestamp.now(),
+      };
 
-    await addDoc(collection(db, "events"), eventData);
+      await addDoc(collection(db, "books"), bookData);
+      
+      closeBookModal();
+      fetchBooks();
+      alert("Книгата е добавена успешно!");
+      
+    } catch (error) {
+      console.error("Грешка при добавяне на книга:", error);
+      alert("Грешка при добавяне на книга!");
+    }
+  };
+
+  const handleUpdateBook = async () => {
+    if (!modalBookData.id) return;
     
-    // Reset form
-    setNewEvent({
+    if (!modalBookData.title?.trim() || !modalBookData.author?.trim() || !modalBookData.category) {
+      alert("Моля, попълнете заглавие, автор и категория!");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "books", modalBookData.id), {
+        ...modalBookData,
+        updatedAt: Timestamp.now()
+      });
+      
+      closeBookModal();
+      fetchBooks();
+      alert("Книгата е обновена успешно!");
+      
+    } catch (error) {
+      console.error("Грешка при обновяване на книга:", error);
+      alert("Грешка при обновяване на книга!");
+    }
+  };
+
+  // Модални функции за събития
+  const openCreateEventModal = () => {
+    setModalMode('create');
+    setModalEventData({
       title: "",
       description: "",
       date: "",
@@ -385,10 +308,96 @@ const LibrarianDashboard: React.FC = () => {
       location: "",
       maxParticipants: 20,
       allowedRoles: ["reader", "librarian"],
-      organizer: ""
+      organizer: "",
+      imageUrl: "",
+      currentParticipants: 0,
+      participants: []
     });
+    setShowEventModal(true);
+  };
+
+  const openEditEventModal = (event: Event) => {
+    setModalMode('edit');
+    setModalEventData({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: event.date,
+      time: event.time,
+      endTime: event.endTime,
+      location: event.location,
+      maxParticipants: event.maxParticipants,
+      allowedRoles: event.allowedRoles,
+      organizer: event.organizer,
+      imageUrl: event.imageUrl || "",
+      currentParticipants: event.currentParticipants,
+      participants: event.participants || []
+    });
+    setShowEventModal(true);
+  };
+
+  const closeEventModal = () => {
+    setShowEventModal(false);
+    setModalEventData({});
+  };
+
+  const handleCreateEvent = async () => {
+    if (!modalEventData.title?.trim() || !modalEventData.date || 
+        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
+      alert("Моля, попълнете всички задължителни полета!");
+      return;
+    }
     
-    fetchEvents();
+    try {
+      const eventData = {
+        ...modalEventData,
+        currentParticipants: 0,
+        participants: [],
+        createdAt: Timestamp.now(),
+      };
+
+      await addDoc(collection(db, "events"), eventData);
+      
+      closeEventModal();
+      fetchEvents();
+      alert("Събитието е създадено успешно!");
+      
+    } catch (error) {
+      console.error("Грешка при създаване на събитие:", error);
+      alert("Грешка при създаване на събитие!");
+    }
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!modalEventData.id) return;
+    
+    if (!modalEventData.title?.trim() || !modalEventData.date || 
+        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
+      alert("Моля, попълнете всички задължителни полета!");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "events", modalEventData.id), {
+        ...modalEventData,
+        updatedAt: Timestamp.now()
+      });
+      
+      closeEventModal();
+      fetchEvents();
+      alert("Събитието е обновено успешно!");
+      
+    } catch (error) {
+      console.error("Грешка при обновяване на събитие:", error);
+      alert("Грешка при обновяване на събитие!");
+    }
+  };
+
+  // Други функции
+  const deleteBook = async (bookId: string) => {
+    if (!window.confirm("Сигурни ли сте, че искате да изтриете книгата?")) return;
+    await deleteDoc(doc(db, "books", bookId));
+    fetchBooks();
   };
 
   const deleteEvent = async (eventId: string) => {
@@ -397,73 +406,32 @@ const LibrarianDashboard: React.FC = () => {
     fetchEvents();
   };
 
-  const startEditingEvent = (event: Event) => {
-    setEditingEvent(event);
-    setEditEventData({ ...event });
-  };
-
-  const cancelEditingEvent = () => {
-    setEditingEvent(null);
-    setEditEventData({});
-  };
-
-  const saveEvent = async () => {
-    if (!editingEvent || !editEventData.title?.trim() || !editEventData.date || !editEventData.time) return;
-
-    // Проверка за конфликт при редактиране (изключваме текущото събитие)
-    if (hasBookingConflict(
-      editEventData.location || '', 
-      editEventData.date || '', 
-      editEventData.time || '', 
-      editEventData.endTime || '', 
-      editingEvent.id
-    )) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, "events", editingEvent.id), {
-        ...editEventData,
-        updatedAt: new Date()
-      });
-      
-      setEditingEvent(null);
-      setEditEventData({});
-      fetchEvents();
-    } catch (error) {
-      console.error("Error updating event:", error);
-      alert("Грешка при обновяване на събитието");
-    }
-  };
-
-  // Reservation Management
   const updateReservationStatus = async (reservationId: string, status: Reservation['status']) => {
     await updateDoc(doc(db, "reservations", reservationId), {
       status,
-      updatedAt: new Date()
+      updatedAt: Timestamp.now()
     });
     fetchReservations();
   };
 
   // Филтрирани данни
   const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === "all" || book.category === filterCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = 
+      (book.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (book.author?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (book.category?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (event.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (event.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (event.location?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const filteredReservations = reservations.filter(reservation =>
-    reservation.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reservation.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
+    (reservation.userName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (reservation.userEmail?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   // Helper functions
@@ -478,710 +446,341 @@ const LibrarianDashboard: React.FC = () => {
   const getBookReservations = (bookId: string) => {
     return reservations.filter(r => r.bookId === bookId && r.status === 'active');
   };
-
+console.log(getBookReservations);
   return (
-    <div className="librarian-dashboard">
-      <div className="dashboard-container">
+    <div className={styles.container}>
+      <div className={styles.dashboardContainer}>
         {/* Header */}
-        <div className="dashboard-header">
+        <div className={styles.header}>
           <h1>Библиотекарски Панел</h1>
           <p>Управление на книги, събития и резервации</p>
         </div>
 
-        {/* Search and Filter */}
-        <div className="search-section">
-          <div className="search-box">
-            <Search className="search-icon" />
+        {/* Search */}
+        <div className={styles.searchSection}>
+          <div className={styles.searchBox}>
+            <Search className={styles.searchIcon} />
             <input
               type="text"
               placeholder="Търсене по заглавие, автор, име..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
+              className={styles.searchInput}
             />
           </div>
-          {activeTab === "books" && (
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Всички категории</option>
-              {bookCategories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          )}
         </div>
 
         {/* Tabs */}
-        <div className="tabs-section">
+        <div className={styles.tabsSection}>
           <button 
-            className={`tab-button ${activeTab === "books" ? "active" : ""}`}
+            className={`${styles.tabButton} ${activeTab === "books" ? styles.active : ""}`}
             onClick={() => setActiveTab("books")}
           >
             <Book size={18} />
             Книги ({books.length})
           </button>
           <button 
-            className={`tab-button ${activeTab === "events" ? "active" : ""}`}
+            className={`${styles.tabButton} ${activeTab === "events" ? styles.active : ""}`}
             onClick={() => setActiveTab("events")}
           >
             <Calendar size={18} />
             Събития ({events.length})
           </button>
           <button 
-            className={`tab-button ${activeTab === "reservations" ? "active" : ""}`}
+            className={`${styles.tabButton} ${activeTab === "reservations" ? styles.active : ""}`}
             onClick={() => setActiveTab("reservations")}
           >
             <Bookmark size={18} />
             Резервации ({reservations.filter(r => r.status === 'active').length})
           </button>
-          <button 
-            className={`tab-button ${activeTab === "rooms" ? "active" : ""}`}
-            onClick={() => setActiveTab("rooms")}
-          >
-            <Building size={18} />
-            Стаи ({locationOptions.length})
-          </button>
         </div>
 
         {/* Books Tab */}
         {activeTab === "books" && (
-          <div className="content-section">
-            <h2>Управление на Книги</h2>
-            
-            {/* Add Book Form */}
-            <div className="create-card">
-              <div className="card-header">
-                <h3>Добави Нова Книга</h3>
-              </div>
-              <div className="card-body">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Заглавие *</label>
-                    <input
-                      type="text"
-                      placeholder="Заглавие на книгата"
-                      value={newBook.title}
-                      onChange={(e) => setNewBook({...newBook, title: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Автор *</label>
-                    <input
-                      type="text"
-                      placeholder="Име на автора"
-                      value={newBook.author}
-                      onChange={(e) => setNewBook({...newBook, author: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Категория *</label>
-                    <select
-                      value={newBook.category}
-                      onChange={(e) => setNewBook({...newBook, category: e.target.value})}
-                      className="form-input"
-                    >
-                      <option value="">Изберете категория</option>
-                      {bookCategories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>ISBN</label>
-                    <input
-                      type="text"
-                      placeholder="ISBN номер"
-                      value={newBook.isbn}
-                      onChange={(e) => setNewBook({...newBook, isbn: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Общ брой копия</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newBook.totalCopies}
-                      onChange={(e) => setNewBook({...newBook, totalCopies: parseInt(e.target.value) || 1})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Година на издаване</label>
-                    <input
-                      type="number"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      value={newBook.publishedYear}
-                      onChange={(e) => setNewBook({...newBook, publishedYear: parseInt(e.target.value) || new Date().getFullYear()})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group full-width">
-                    <label>Описание</label>
-                    <textarea
-                      placeholder="Описание на книгата"
-                      value={newBook.description}
-                      onChange={(e) => setNewBook({...newBook, description: e.target.value})}
-                      className="form-input textarea"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="form-group full-width">
-                    <button
-                      onClick={createBook}
-                      disabled={!newBook.title.trim() || !newBook.author.trim() || !newBook.category}
-                      className="create-btn primary-btn"
-                    >
-                      <Plus size={16} />
-                      Добави Книга
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div className={styles.contentSection}>
+            <div className={styles.roomsHeader}>
+              <h2>Управление на Книги</h2>
+              <button 
+                onClick={openCreateBookModal}
+                className={styles.primaryBtn}
+              >
+                <Plus size={16} />
+                Добави Нова Книга
+              </button>
             </div>
 
-            {/* Books List */}
-            <div className="list-section">
-              <h3>Всички Книги ({filteredBooks.length})</h3>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Заглавие</th>
-                      <th>Автор</th>
-                      <th>Категория</th>
-                      <th>Налични</th>
-                      <th>Резервации</th>
-                      <th>Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBooks.map(book => {
-                      const bookReservations = getBookReservations(book.id);
-                      return (
-                        <tr key={book.id} className={book.availableCopies === 0 ? 'book-unavailable' : ''}>
-                          <td className="book-info-cell">
-                            {editingBook?.id === book.id ? (
-                              <input
-                                type="text"
-                                value={editBookData.title || ''}
-                                onChange={(e) => setEditBookData({...editBookData, title: e.target.value})}
-                                className="edit-input"
-                              />
-                            ) : (
-                              <div className="book-title-section">
-                                <div className="book-title">{book.title}</div>
-                                <div className="book-isbn">{book.isbn}</div>
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            {editingBook?.id === book.id ? (
-                              <input
-                                type="text"
-                                value={editBookData.author || ''}
-                                onChange={(e) => setEditBookData({...editBookData, author: e.target.value})}
-                                className="edit-input"
-                              />
-                            ) : (
-                              book.author
-                            )}
-                          </td>
-                          <td>
-                            {editingBook?.id === book.id ? (
-                              <select
-                                value={editBookData.category || ''}
-                                onChange={(e) => setEditBookData({...editBookData, category: e.target.value})}
-                                className="edit-input"
-                              >
-                                {bookCategories.map(category => (
-                                  <option key={category} value={category}>{category}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="category-tag">{book.category}</span>
-                            )}
-                          </td>
-                          <td>
-                            <div className="copies-info">
-                              {editingBook?.id === book.id ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={editBookData.availableCopies || 0}
-                                  onChange={(e) => setEditBookData({
-                                    ...editBookData, 
-                                    availableCopies: parseInt(e.target.value) || 0,
-                                    totalCopies: Math.max(parseInt(e.target.value) || 0, editBookData.totalCopies || book.totalCopies)
-                                  })}
-                                  className="edit-input small"
-                                />
-                              ) : (
-                                <>
-                                  <span className={`available-copies ${book.availableCopies === 0 ? 'none-available' : ''}`}>
-                                    {book.availableCopies}
-                                  </span>
-                                  <span className="total-copies">/ {book.totalCopies}</span>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="reservations-count">
-                              <Bookmark size={14} />
-                              {bookReservations.length}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="action-buttons">
-                              {editingBook?.id === book.id ? (
-                                <>
-                                  <button
-                                    onClick={saveBook}
-                                    className="save-btn"
-                                    title="Запази"
-                                    disabled={!editBookData.title?.trim() || !editBookData.author?.trim()}
-                                  >
-                                    <Save size={16} />
-                                  </button>
-                                  <button
-                                    onClick={cancelEditingBook}
-                                    className="cancel-btn"
-                                    title="Откажи"
-                                  >
-                                    <X size={16} />
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => startEditingBook(book)}
-                                    className="edit-btn"
-                                    title="Редактирай"
-                                  >
-                                    <Edit size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => deleteBook(book.id)}
-                                    className="delete-btn"
-                                    title="Изтрий"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {filteredBooks.length === 0 && (
-                  <div className="empty-state">
-                    <Book size={32} />
-                    <p>Няма намерени книги</p>
+            {/* Books Grid */}
+            <div className={styles.booksGridAdmin}>
+              {filteredBooks.map((book) => (
+                <div key={book.id} className={styles.bookCardAdmin}>
+                  {/* Book Header */}
+                  <div className={styles.bookHeaderAdmin}>
+                    <div className={styles.bookThumbnailAdmin}>
+                      {book.coverUrl ? (
+                        <img src={book.coverUrl} alt={book.title} className={styles.bookCoverAdmin} />
+                      ) : (
+                        <div className={styles.bookImageFallbackAdmin}>
+                          <Book className={styles.fallbackIconAdmin} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.bookMainInfoAdmin}>
+                      <div className={styles.bookTitleSectionAdmin}>
+                        <h3 className={styles.bookTitleAdmin}>
+                          {book.title}
+                        </h3>
+                        <p className={styles.bookAuthorAdmin}>{book.author}</p>
+                      </div>
+
+                      <div className={styles.bookMetaAdmin}>
+                        <div className={styles.bookCategoryAdmin}>
+                          <Tag size={14} />
+                          <span>{book.category}</span>
+                        </div>
+                        
+                        <div className={styles.bookAvailabilityAdmin}>
+                          <Copy size={14} />
+                          <span>{book.availableCopies}/{book.copies} копия</span>
+                        </div>
+
+                        <div className={styles.bookLocationAdmin}>
+                          <MapPin size={14} />
+                          <span>{book.location}</span>
+                        </div>
+
+                        <div className={styles.bookIsbnAdmin}>
+                          <span>ISBN: {book.isbn}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Book Description */}
+                  {book.description && (
+                    <div className={styles.bookDescriptionAdmin}>
+                      <p>{book.description.substring(0, 150)}...</p>
+                    </div>
+                  )}
+
+                  {/* Book Details */}
+                  <div className={styles.bookDetailsAdmin}>
+                    <div className={styles.detailsGridAdmin}>
+                      <div className={styles.bookDetailAdmin}>
+                        <span className={styles.detailLabelAdmin}>Издател:</span>
+                        <span className={styles.detailValueAdmin}>{book.publisher || "Няма информация"}</span>
+                      </div>
+                      <div className={styles.bookDetailAdmin}>
+                        <span className={styles.detailLabelAdmin}>Година:</span>
+                        <span className={styles.detailValueAdmin}>{book.publishedYear}</span>
+                      </div>
+                      {book.pages && (
+                        <div className={styles.bookDetailAdmin}>
+                          <span className={styles.detailLabelAdmin}>Страници:</span>
+                          <span className={styles.detailValueAdmin}>{book.pages}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Book Actions */}
+                  <div className={styles.bookActionsAdmin}>
+                    <div className={styles.adminActionButtons}>
+                      <button
+                        onClick={() => openEditBookModal(book)}
+                        className={styles.editBookBtn}
+                        title="Редактирай книга"
+                      >
+                        <Edit size={16} />
+                        <span>Редактирай</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => deleteBook(book.id)}
+                        className={styles.deleteBookBtn}
+                        title="Изтрий книга"
+                      >
+                        <Trash2 size={16} />
+                        <span>Изтрий</span>
+                      </button>
+                    </div>
+                    <div className={styles.bookStatsAdmin}>
+                      <div className={styles.statGroupAdmin}>
+                        <Book size={14} />
+                        <span>ID: {book.id.substring(0, 8)}...</span>
+                      </div>
+                      <div className={styles.statGroupAdmin}>
+                        <Calendar size={14} />
+                        <span>Добавена: {
+                          book.createdAt
+                            ? book.createdAt.toDate().toLocaleDateString('bg-BG')
+                            : "Няма дата"
+                        }</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {filteredBooks.length === 0 && (
+                <div className={styles.emptyState}>
+                  <Book size={48} />
+                  <p>Няма намерени книги</p>
+                  <button 
+                    onClick={openCreateBookModal}
+                    className={styles.primaryBtn}
+                  >
+                    <Plus size={16} />
+                    Добави първата книга
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Events Tab */}
         {activeTab === "events" && (
-          <div className="content-section">
-            <h2>Управление на Събития</h2>
-            
-            {/* Create Event Form */}
-            <div className="create-card">
-              <div className="card-header">
-                <h3>Създай Ново Събитие</h3>
-              </div>
-              <div className="card-body">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Заглавие *</label>
-                    <input
-                      type="text"
-                      placeholder="Заглавие на събитието"
-                      value={newEvent.title}
-                      onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Дата *</label>
-                    <input
-                      type="date"
-                      value={newEvent.date}
-                      onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
-                      className="form-input"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Начален час *</label>
-                    <select
-                      value={newEvent.time}
-                      onChange={(e) => setNewEvent({...newEvent, time: e.target.value})}
-                      className="form-input"
-                    >
-                      <option value="">Изберете начален час</option>
-                      {timeOptionsWithMinutes.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Краен час *</label>
-                    <select
-                      value={newEvent.endTime}
-                      onChange={(e) => setNewEvent({...newEvent, endTime: e.target.value})}
-                      className="form-input"
-                    >
-                      <option value="">Изберете краен час</option>
-                      {timeOptionsWithMinutes.map(time => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Място *</label>
-                    <select
-                      value={newEvent.location}
-                      onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
-                      className={`form-input ${
-                        newEvent.location && newEvent.date && newEvent.time && newEvent.endTime && 
-                        hasBookingConflict(newEvent.location, newEvent.date, newEvent.time, newEvent.endTime) 
-                          ? 'booking-conflict' 
-                          : ''
-                      }`}
-                    >
-                      <option value="">Изберете място</option>
-                      {locationOptions.map(location => {
-                        const hasConflict = newEvent.date && newEvent.time && newEvent.endTime && 
-                          hasBookingConflict(location, newEvent.date, newEvent.time, newEvent.endTime);
-                        
-                        return (
-                          <option 
-                            key={location} 
-                            value={location}
-                            disabled={hasConflict || false}
-                            style={{ color: hasConflict ? '#ccc' : '#000' }}
-                          >
-                            {location} {hasConflict ? '(Заето)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    {newEvent.location && newEvent.date && newEvent.time && newEvent.endTime && 
-                      hasBookingConflict(newEvent.location, newEvent.date, newEvent.time, newEvent.endTime) && (
-                      <div className="validation-error">
-                        Стаята е вече резервирана за избрания интервал!
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Брой места</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newEvent.maxParticipants}
-                      onChange={(e) => setNewEvent({...newEvent, maxParticipants: parseInt(e.target.value) || 1})}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group full-width">
-                    <label>Описание</label>
-                    <textarea
-                      placeholder="Описание на събитието"
-                      value={newEvent.description}
-                      onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
-                      className="form-input textarea"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="form-group full-width">
-                    <button
-                      onClick={createEvent}
-                      disabled={
-                        !newEvent.title.trim() || 
-                        !newEvent.date || 
-                        !newEvent.time || 
-                        !newEvent.endTime || 
-                        !newEvent.location ||
-                        hasBookingConflict(newEvent.location, newEvent.date, newEvent.time, newEvent.endTime)
-                      }
-                      className="create-btn primary-btn"
-                    >
-                      <Plus size={16} />
-                      Създай Събитие
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div className={styles.contentSection}>
+            <div className={styles.roomsHeader}>
+              <h2>Управление на Събития</h2>
+              <button 
+                onClick={openCreateEventModal}
+                className={styles.primaryBtn}
+              >
+                <Plus size={16} />
+                Създай Ново Събитие
+              </button>
             </div>
 
-            {/* Events List */}
-            <div className="list-section">
-              <h3>Всички Събития ({filteredEvents.length})</h3>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Заглавие</th>
-                      <th>Дата и час</th>
-                      <th>Място</th>
-                      <th>Участници</th>
-                      <th>Действия</th>
+            {/* Events Grid */}
+            <div className={styles.tableContainer}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th>Заглавие</th>
+                    <th>Дата и час</th>
+                    <th>Място</th>
+                    <th>Участници</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEvents.map(event => (
+                    <tr key={event.id} className={isEventFull(event) ? styles.eventFull : ''}>
+                      <td className={styles.eventInfoCell}>
+                        <div className={styles.eventTitleSection}>
+                          <div className={styles.eventTitle}>
+                            {event.title || "Без заглавие"}
+                          </div>
+                          <div className={styles.eventDesc}>{event.description || "Без описание"}</div>
+                        </div>
+                      </td>
+                      <td className={styles.eventTimeCell}>
+                        <div className={styles.eventTimeDisplay}>
+                          <div className={styles.eventDate}>
+                            <Calendar size={14} />
+                            {event.date ? new Date(event.date).toLocaleDateString('bg-BG') : "Без дата"}
+                          </div>
+                          <div className={styles.eventTimeRange}>
+                            <Clock size={14} />
+                            {event.time || "Без час"} - {event.endTime || "Без край"}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.eventLocation}>
+                          <MapPin size={14} />
+                          {event.location || "Без място"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.participantsInfo}>
+                          <div className={styles.participantsCount}>
+                            <User size={14} />
+                            {event.currentParticipants} / {event.maxParticipants}
+                          </div>
+                          <div className={styles.availableSpots}>
+                            Свободни: {getAvailableSpots(event)}
+                          </div>
+                          {isEventFull(event) && (
+                            <div className={styles.fullBadge}>Пълно</div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button
+                            onClick={() => openEditEventModal(event)}
+                            className={styles.editBtn}
+                            title="Редактирай"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteEvent(event.id)}
+                            className={styles.deleteBtn}
+                            title="Изтрий"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEvents.map(event => (
-                      <tr key={event.id} className={isEventFull(event) ? 'event-full' : ''}>
-                        <td className="event-info-cell">
-                          {editingEvent?.id === event.id ? (
-                            <input
-                              type="text"
-                              value={editEventData.title || ''}
-                              onChange={(e) => setEditEventData({...editEventData, title: e.target.value})}
-                              className="edit-input"
-                            />
-                          ) : (
-                            <div className="event-title-section">
-                              <div className="event-title">{event.title}</div>
-                              <div className="event-desc">{event.description}</div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="event-time-cell">
-                          {editingEvent?.id === event.id ? (
-                            <div className="edit-form">
-                              <input
-                                type="date"
-                                value={editEventData.date || ''}
-                                onChange={(e) => setEditEventData({...editEventData, date: e.target.value})}
-                                className="edit-input"
-                              />
-                              <div className="time-range-edit">
-                                <select
-                                  value={editEventData.time || ''}
-                                  onChange={(e) => setEditEventData({...editEventData, time: e.target.value})}
-                                  className="edit-input"
-                                >
-                                  {timeOptionsWithMinutes.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                                <span>до</span>
-                                <select
-                                  value={editEventData.endTime || ''}
-                                  onChange={(e) => setEditEventData({...editEventData, endTime: e.target.value})}
-                                  className="edit-input"
-                                >
-                                  {timeOptionsWithMinutes.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="event-time-display">
-                              <div className="event-date">
-                                <Calendar size={14} />
-                                {new Date(event.date).toLocaleDateString('bg-BG')}
-                              </div>
-                              <div className="event-time-range">
-                                <Clock size={14} />
-                                {event.time} - {event.endTime}
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {editingEvent?.id === event.id ? (
-                            <select
-                              value={editEventData.location || ''}
-                              onChange={(e) => setEditEventData({...editEventData, location: e.target.value})}
-                              className={`edit-input ${
-                                editEventData.location && editEventData.date && editEventData.time && editEventData.endTime && 
-                                hasBookingConflict(
-                                  editEventData.location, 
-                                  editEventData.date, 
-                                  editEventData.time, 
-                                  editEventData.endTime, 
-                                  event.id
-                                ) 
-                                  ? 'booking-conflict' 
-                                  : ''
-                              }`}
-                            >
-                              <option value="">Изберете място</option>
-                              {locationOptions.map(location => {
-                                const hasConflict = editEventData.date && editEventData.time && editEventData.endTime && 
-                                  hasBookingConflict(location, editEventData.date, editEventData.time, editEventData.endTime, event.id);
-                                
-                                return (
-                                  <option 
-                                    key={location} 
-                                    value={location}
-                                    disabled={hasConflict || false}
-                                    style={{ color: hasConflict ? '#ccc' : '#000' }}
-                                  >
-                                    {location} {hasConflict ? '(Заето)' : ''}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          ) : (
-                            <div className="event-location">
-                              <MapPin size={14} />
-                              {event.location}
-                            </div>
-                          )}
-                          {editingEvent?.id === event.id && editEventData.location && editEventData.date && editEventData.time && editEventData.endTime && 
-                            hasBookingConflict(
-                              editEventData.location, 
-                              editEventData.date, 
-                              editEventData.time, 
-                              editEventData.endTime, 
-                              event.id
-                            ) && (
-                            <div className="validation-error-small">
-                              Стаята е заета за този интервал!
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="participants-info">
-                            <div className="participants-count">
-                              <User size={14} />
-                              {event.currentParticipants} / {event.maxParticipants}
-                            </div>
-                            <div className="available-spots">
-                              Свободни: {getAvailableSpots(event)}
-                            </div>
-                            {isEventFull(event) && (
-                              <div className="full-badge">Пълно</div>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            {editingEvent?.id === event.id ? (
-                              <>
-                                <button
-                                  onClick={saveEvent}
-                                  className="save-btn"
-                                  title="Запази"
-                                  disabled={
-                                    !editEventData.title?.trim() || 
-                                    !editEventData.date || 
-                                    !editEventData.time || 
-                                    !editEventData.endTime || 
-                                    !editEventData.location ||
-                                    hasBookingConflict(
-                                      editEventData.location || '', 
-                                      editEventData.date || '', 
-                                      editEventData.time || '', 
-                                      editEventData.endTime || '', 
-                                      event.id
-                                    )
-                                  }
-                                >
-                                  <Save size={16} />
-                                </button>
-                                <button
-                                  onClick={cancelEditingEvent}
-                                  className="cancel-btn"
-                                  title="Откажи"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => startEditingEvent(event)}
-                                  className="edit-btn"
-                                  title="Редактирай"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => deleteEvent(event.id)}
-                                  className="delete-btn"
-                                  title="Изтрий"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredEvents.length === 0 && (
-                  <div className="empty-state">
-                    <Calendar size={32} />
-                    <p>Няма намерени събития</p>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </tbody>
+              </table>
+              {filteredEvents.length === 0 && (
+                <div className={styles.emptyState}>
+                  <Calendar size={32} />
+                  <p>Няма намерени събития</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (
-          <div className="content-section">
+          <div className={styles.contentSection}>
             <h2>Управление на Резервации</h2>
             
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon active-reservations">
+            <div className={styles.statsGrid}>
+              <div className={styles.statCard}>
+                <div className={`${styles.statIcon} ${styles.activeReservations}`}>
                   <Bookmark size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-number">
+                <div className={styles.statInfo}>
+                  <div className={styles.statNumber}>
                     {reservations.filter(r => r.status === 'active').length}
                   </div>
-                  <div className="stat-label">Активни резервации</div>
+                  <div className={styles.statLabel}>Активни резервации</div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon completed-reservations">
+              <div className={styles.statCard}>
+                <div className={`${styles.statIcon} ${styles.completedReservations}`}>
                   <UserCheck size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-number">
+                <div className={styles.statInfo}>
+                  <div className={styles.statNumber}>
                     {reservations.filter(r => r.status === 'completed').length}
                   </div>
-                  <div className="stat-label">Завършени</div>
+                  <div className={styles.statLabel}>Завършени</div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon total-reservations">
+              <div className={styles.statCard}>
+                <div className={`${styles.statIcon} ${styles.totalReservations}`}>
                   <Book size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-number">{reservations.length}</div>
-                  <div className="stat-label">Общо резервации</div>
+                <div className={styles.statInfo}>
+                  <div className={styles.statNumber}>{reservations.length}</div>
+                  <div className={styles.statLabel}>Общо резервации</div>
                 </div>
               </div>
             </div>
 
-            <div className="table-container">
-              <table className="data-table">
+            <div className={styles.tableContainer}>
+              <table className={styles.dataTable}>
                 <thead>
                   <tr>
                     <th>Книга</th>
@@ -1197,40 +796,43 @@ const LibrarianDashboard: React.FC = () => {
                     return (
                       <tr key={reservation.id}>
                         <td>
-                          <div className="book-info">
-                            <div className="book-title">{book?.title || "Неизвестна книга"}</div>
-                            <div className="book-author">{book?.author}</div>
+                          <div className={styles.bookInfo}>
+                            <div className={styles.bookTitle}>{book?.title || "Неизвестна книга"}</div>
+                            <div className={styles.bookAuthor}>{book?.author || "Неизвестен автор"}</div>
                           </div>
                         </td>
                         <td>
-                          <div className="user-info">
-                            <div className="user-name">{reservation.userName}</div>
-                            <div className="user-email">{reservation.userEmail}</div>
+                          <div className={styles.userInfo}>
+                            <div className={styles.userName}>{reservation.userName || "Без име"}</div>
+                            <div className={styles.userEmail}>{reservation.userEmail || "Без имейл"}</div>
                           </div>
                         </td>
                         <td>
-                          {new Date(reservation.reservedAt?.toDate()).toLocaleDateString('bg-BG')}
+                          {reservation.reservedAt?.toDate 
+                            ? new Date(reservation.reservedAt.toDate()).toLocaleDateString('bg-BG')
+                            : "Няма дата"
+                          }
                         </td>
                         <td>
-                          <span className={`status-badge status-${reservation.status}`}>
+                          <span className={`${styles.statusBadge} ${styles[`status${reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}`]}`}>
                             {reservation.status === 'active' ? 'Активна' : 
                              reservation.status === 'completed' ? 'Завършена' : 'Отменена'}
                           </span>
                         </td>
                         <td>
-                          <div className="action-buttons">
+                          <div className={styles.actionButtons}>
                             {reservation.status === 'active' && (
                               <>
                                 <button
                                   onClick={() => updateReservationStatus(reservation.id, 'completed')}
-                                  className="complete-btn"
+                                  className={styles.completeBtn}
                                   title="Маркирай като завършена"
                                 >
                                   <UserCheck size={16} />
                                 </button>
                                 <button
                                   onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
-                                  className="cancel-btn"
+                                  className={styles.cancelBtn}
                                   title="Откажи резервация"
                                 >
                                   <X size={16} />
@@ -1245,7 +847,7 @@ const LibrarianDashboard: React.FC = () => {
                 </tbody>
               </table>
               {filteredReservations.length === 0 && (
-                <div className="empty-state">
+                <div className={styles.emptyState}>
                   <Bookmark size={32} />
                   <p>Няма намерени резервации</p>
                 </div>
@@ -1254,119 +856,428 @@ const LibrarianDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Rooms Tab */}
-        {activeTab === "rooms" && (
-          <div className="content-section">
-            <h2>Заетост на Стаи</h2>
-            
-            {/* Date Picker */}
-            <div className="date-picker-section">
-              <label htmlFor="room-date" className="date-picker-label">
-                Изберете дата:
-              </label>
-              <input
-                id="room-date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="date-picker-input"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            {/* Rooms Grid */}
-            <div className="rooms-grid-container">
-              <div className="rooms-timetable">
-                {/* Header Row - Time Slots */}
-                <div className="table-header-row">
-                  <div className="corner-cell">Стая/Час</div>
-                  {timeSlots.map(time => (
-                    <div key={time} className="time-header-cell">
-                      {time.split('-')[0]}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Room Rows */}
-                {locationOptions.map(room => (
-                  <div key={room} className="table-row">
-                    <div className="room-name-cell">
-                      <Building size={16} />
-                      <span>{room}</span>
-                    </div>
-                    {timeSlots.map(timeSlot => {
-                      const [slotStart] = timeSlot.split('-');
-                      const isBooked = isRoomBooked(room, selectedDate, slotStart);
-                      const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
-                      
-                      return (
-                        <div
-                          key={`${room}-${timeSlot}`}
-                          className={`time-slot-cell ${isBooked ? 'booked' : 'available'}`}
-                          title={
-                            isBooked ? 
-                            `Заето: ${bookingInfo?.eventTitle} (${bookingInfo?.time} - ${bookingInfo?.endTime})` : 
-                            `Свободно: ${timeSlot}`
-                          }
-                        >
-                          {isBooked && (
-                            <div className="booking-indicator">
-                              <div className="event-dot"></div>
-                              <div className="event-tooltip">
-                                <strong>{bookingInfo?.eventTitle}</strong>
-                                <br />
-                                {bookingInfo?.time} - {bookingInfo?.endTime}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+        {/* Book Modal */}
+        {showBookModal && (
+          <div className={styles.modalOverlay}>
+            <div className={`${styles.modalContent} ${styles.largeModal}`}>
+              <div className={styles.modalHeader}>
+                <h3>
+                  {modalMode === 'create' ? 'Добавяне на нова книга' : 'Редактиране на книга'}
+                </h3>
+                <button onClick={closeBookModal} className={styles.closeBtn}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className={styles.modalBody}>
+                <div className={styles.modalFormGrid}>
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Заглавие *</label>
+                    <input
+                      type="text"
+                      placeholder="Заглавие на книгата"
+                      value={modalBookData.title || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, title: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="rooms-legend">
-              <div className="legend-item">
-                <div className="legend-color available"></div>
-                <span>Свободна стая</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color booked"></div>
-                <span>Заета стая</span>
-              </div>
-            </div>
-
-            {/* Bookings List */}
-            <div className="bookings-list">
-              <h3>Резервации за {new Date(selectedDate).toLocaleDateString('bg-BG')}</h3>
-              {roomBookings.filter(booking => booking.date === selectedDate).length > 0 ? (
-                <div className="bookings-grid">
-                  {roomBookings
-                    .filter(booking => booking.date === selectedDate)
-                    .map(booking => (
-                      <div key={booking.id} className="booking-card">
-                        <div className="booking-room">
-                          <Building size={16} />
-                          {booking.room}
-                        </div>
-                        <div className="booking-time">
-                          <Clock size={16} />
-                          {booking.time} - {booking.endTime}
-                        </div>
-                        <div className="booking-event">{booking.eventTitle}</div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Автор *</label>
+                    <input
+                      type="text"
+                      placeholder="Автор на книгата"
+                      value={modalBookData.author || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, author: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Категория *</label>
+                    <select
+                      value={modalBookData.category || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, category: e.target.value})}
+                      className={styles.modalFormInput}
+                    >
+                      <option value="">Изберете категория</option>
+                      {bookCategories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>ISBN</label>
+                    <input
+                      type="text"
+                      placeholder="ISBN номер"
+                      value={modalBookData.isbn || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, isbn: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Брой копия *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={modalBookData.copies || 1}
+                      onChange={(e) => setModalBookData({
+                        ...modalBookData, 
+                        copies: parseInt(e.target.value) || 1,
+                        availableCopies: parseInt(e.target.value) || 1
+                      })}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Година на издаване</label>
+                    <input
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      value={modalBookData.publishedYear || new Date().getFullYear()}
+                      onChange={(e) => setModalBookData({...modalBookData, publishedYear: parseInt(e.target.value)})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Издател</label>
+                    <input
+                      type="text"
+                      placeholder="Издателство"
+                      value={modalBookData.publisher || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, publisher: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Език</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. Български"
+                      value={modalBookData.language || "български"}
+                      onChange={(e) => setModalBookData({...modalBookData, language: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Жанрове (разделени със запетая)</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. Фантастика, Приключенски роман"
+                      value={modalBookData.genres ? modalBookData.genres.join(', ') : ""}
+                      onChange={(e) => setModalBookData({
+                        ...modalBookData, 
+                        genres: e.target.value.split(',').map(g => g.trim()).filter(g => g)
+                      })}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Тагове (разделени със запетая)</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. популярна, бестселър, нова"
+                      value={modalBookData.tags ? modalBookData.tags.join(', ') : ""}
+                      onChange={(e) => setModalBookData({
+                        ...modalBookData, 
+                        tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)
+                      })}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Брой страници</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={modalBookData.pages || 0}
+                      onChange={(e) => setModalBookData({...modalBookData, pages: parseInt(e.target.value) || 0})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Местоположение</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. Основен отдел, Рафт А1"
+                      value={modalBookData.location || "Библиотека"}
+                      onChange={(e) => setModalBookData({...modalBookData, location: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Състояние</label>
+                    <select
+                      value={modalBookData.condition || "good"}
+                      onChange={(e) => setModalBookData({...modalBookData, condition: e.target.value})}
+                      className={styles.modalFormInput}
+                    >
+                      <option value="new">Нова</option>
+                      <option value="good">Добра</option>
+                      <option value="fair">Задоволителна</option>
+                      <option value="poor">Лоша</option>
+                    </select>
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Възрастова препоръка</label>
+                    <input
+                      type="text"
+                      placeholder="Напр. 12+"
+                      value={modalBookData.ageRecommendation || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, ageRecommendation: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={`${styles.modalFormGroup} ${styles.fullWidth}`}>
+                    <label>Линк към корица</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/cover.jpg"
+                      value={modalBookData.coverUrl || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, coverUrl: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                    {modalBookData.coverUrl && (
+                      <div className={styles.imagePreview}>
+                        <p>Преглед на корицата:</p>
+                        <img 
+                          src={modalBookData.coverUrl} 
+                          alt="Preview" 
+                          className={styles.previewImage}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
                       </div>
-                    ))
-                  }
+                    )}
+                  </div>
+                  
+                  <div className={`${styles.modalFormGroup} ${styles.fullWidth}`}>
+                    <label>Описание</label>
+                    <textarea
+                      placeholder="Описание на книгата"
+                      value={modalBookData.description || ""}
+                      onChange={(e) => setModalBookData({...modalBookData, description: e.target.value})}
+                      className={styles.modalFormInput}
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <div className={styles.checkboxGroup}>
+                      <input
+                        type="checkbox"
+                        id="featured"
+                        checked={modalBookData.featured || false}
+                        onChange={(e) => setModalBookData({...modalBookData, featured: e.target.checked})}
+                        className={styles.checkboxInput}
+                      />
+                      <label htmlFor="featured" className={styles.checkboxLabel}>
+                        Препоръчана книга
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="no-bookings">
-                  <Calendar size={32} />
-                  <p>Няма резервации за избраната дата</p>
+                
+                <div className={styles.modalActions}>
+                  <button 
+                    onClick={modalMode === 'create' ? handleCreateBook : handleUpdateBook}
+                    disabled={!modalBookData.title?.trim() || !modalBookData.author?.trim() || !modalBookData.category}
+                    className={`${styles.primaryBtn} ${styles.modalSaveBtn}`}
+                  >
+                    <Save size={16} />
+                    {modalMode === 'create' ? 'Добави Книга' : 'Запази Промените'}
+                  </button>
+                  <button 
+                    onClick={closeBookModal}
+                    className={styles.secondaryBtn}
+                  >
+                    Отказ
+                  </button>
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Event Modal */}
+        {showEventModal && (
+          <div className={styles.modalOverlay}>
+            <div className={`${styles.modalContent} ${styles.largeModal}`}>
+              <div className={styles.modalHeader}>
+                <h3>
+                  {modalMode === 'create' ? 'Създаване на ново събитие' : 'Редактиране на събитие'}
+                </h3>
+                <button onClick={closeEventModal} className={styles.closeBtn}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className={styles.modalBody}>
+                <div className={styles.modalFormGrid}>
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Заглавие *</label>
+                    <input
+                      type="text"
+                      placeholder="Заглавие на събитието"
+                      value={modalEventData.title || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, title: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Дата *</label>
+                    <input
+                      type="date"
+                      value={modalEventData.date || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, date: e.target.value})}
+                      className={styles.modalFormInput}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Начален час *</label>
+                    <select
+                      value={modalEventData.time || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, time: e.target.value})}
+                      className={styles.modalFormInput}
+                    >
+                      <option value="">Изберете начален час</option>
+                      {timeOptionsWithMinutes.map(time => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Краен час *</label>
+                    <select
+                      value={modalEventData.endTime || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, endTime: e.target.value})}
+                      className={styles.modalFormInput}
+                    >
+                      <option value="">Изберете краен час</option>
+                      {timeOptionsWithMinutes.map(time => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label className={styles.required}>Място *</label>
+                    <select
+                      value={modalEventData.location || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, location: e.target.value})}
+                      className={styles.modalFormInput}
+                    >
+                      <option value="">Изберете място</option>
+                      {locationOptions.map(location => (
+                        <option key={location} value={location}>{location}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Брой места</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={modalEventData.maxParticipants || 20}
+                      onChange={(e) => setModalEventData({
+                        ...modalEventData, 
+                        maxParticipants: parseInt(e.target.value) || 20
+                      })}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Организатор</label>
+                    <input
+                      type="text"
+                      placeholder="Име на организатора"
+                      value={modalEventData.organizer || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, organizer: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                  </div>
+                  
+                  <div className={styles.modalFormGroup}>
+                    <label>Линк към картинка</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      value={modalEventData.imageUrl || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, imageUrl: e.target.value})}
+                      className={styles.modalFormInput}
+                    />
+                    {modalEventData.imageUrl && (
+                      <div className={styles.imagePreview}>
+                        <p>Преглед на картинката:</p>
+                        <img 
+                          src={modalEventData.imageUrl} 
+                          alt="Preview" 
+                          className={styles.previewImage}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className={`${styles.modalFormGroup} ${styles.fullWidth}`}>
+                    <label>Описание</label>
+                    <textarea
+                      placeholder="Описание на събитието"
+                      value={modalEventData.description || ""}
+                      onChange={(e) => setModalEventData({...modalEventData, description: e.target.value})}
+                      className={styles.modalFormInput}
+                      rows={5}
+                    />
+                  </div>
+                </div>
+                
+                <div className={styles.modalActions}>
+                  <button 
+                    onClick={modalMode === 'create' ? handleCreateEvent : handleUpdateEvent}
+                    disabled={
+                      !modalEventData.title?.trim() || 
+                      !modalEventData.date || 
+                      !modalEventData.time || 
+                      !modalEventData.endTime || 
+                      !modalEventData.location
+                    }
+                    className={`${styles.primaryBtn} ${styles.modalSaveBtn}`}
+                  >
+                    <Save size={16} />
+                    {modalMode === 'create' ? 'Създай Събитие' : 'Запази Промените'}
+                  </button>
+                  <button 
+                    onClick={closeEventModal}
+                    className={styles.secondaryBtn}
+                  >
+                    Отказ
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

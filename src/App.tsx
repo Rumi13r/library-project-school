@@ -15,6 +15,8 @@ import Archived from "./pages/ArchivedEventsPage";
 import OnlineBook from "./pages/OnlineBooksPage"; 
 import ReadersClubPage from "./pages/ReadersClubPage";
 import StudyMaterialsPage from "./pages/StudyMaterialsPage";
+import AdminUserDashboard from "./components/Dashboard/AdminDashboard"; 
+import LibrarianUserDashboard from "./components/Dashboard/LibrarianDashboard"; 
 
 function App() {
   // Protected route за всички логнати потребители
@@ -30,7 +32,7 @@ function App() {
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       // Ако ролята не е позволена, редирект към собствения dashboard
-      return <Navigate to="/dashboard" />;
+      return <Navigate to="/dashboard/user" />;
     }
 
     return <>{children}</>;
@@ -45,12 +47,12 @@ function App() {
 
     switch (user.role) {
       case "admin":
-        return <Navigate to="/admin" />;
+        return <Navigate to="/dashboard/admin" />;
       case "librarian":
-        return <Navigate to="/librarian" />;
+        return <Navigate to="/dashboard/librarian" />;
       case "reader":
       default:
-        return <Navigate to="/dashboard" />;
+        return <Navigate to="/dashboard/user" />;
     }
   };
 
@@ -142,7 +144,7 @@ function App() {
           {/* Auto-redirect route based on role */}
           <Route path="/redirect" element={<RoleBasedRedirect />} />
 
-          {/* Protected routes */}
+          {/* Стари маршрути (за обратна съвместимост) */}
           <Route
             path="/admin"
             element={
@@ -169,6 +171,49 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <UserDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Нови маршрути за разделени дашборди */}
+          <Route
+            path="/dashboard/user"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "librarian", "reader"]}>
+                <Layout>
+                  {/* За администратори и библиотекари - специален потребителски дашборд */}
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminUserDashboard />
+                  </ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["librarian"]}>
+                    <LibrarianUserDashboard />
+                  </ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["reader"]}>
+                    <UserDashboard />
+                  </ProtectedRoute>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/dashboard/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Layout>
+                  <AdminDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/dashboard/librarian"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "librarian"]}>
+                <Layout>
+                  <LibrarianDashboard />
                 </Layout>
               </ProtectedRoute>
             }

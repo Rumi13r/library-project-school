@@ -19,6 +19,10 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
 import './AdminDashboard.css';
 import '../../pages/EventsPage.css';
+import { getAllReservations } from "../../lib/services/reservationService"; 
+import { cancelReservation as cancelReservationService } from "../../lib/services/reservationService";
+import { RefreshCw } from "lucide-react";
+
 
 interface ClassSchedule {
   subject: string;
@@ -316,7 +320,7 @@ const AdminDashboard: React.FC = () => {
     pendingTickets: 0,
     todayScannedTickets: []
   });
-
+const [reservations, setReservations] = useState<any[]>([]);
   const [news, setNews] = useState<NewsArticle[]>([]);
 const [showNewsModal, setShowNewsModal] = useState<boolean>(false);
 const [modalNewsData, setModalNewsData] = useState<Partial<NewsArticle>>({
@@ -349,7 +353,14 @@ const [modalNewsData, setModalNewsData] = useState<Partial<NewsArticle>>({
   } as NewsArticle));
   setNews(newsData);
 };
-
+useEffect(() => {
+  fetchUsers();
+  fetchEvents();
+  fetchBooks();
+  fetchScheduleBookings();
+  fetchNews();
+  fetchReservations(); // Добавете тази линия
+}, []);
   useEffect(() => {
     if (editor && modalEventData.description !== editor.getHTML()) {
       editor.commands.setContent(modalEventData.description || "");
@@ -612,6 +623,46 @@ const [modalNewsData, setModalNewsData] = useState<Partial<NewsArticle>>({
       setIsCheckingTicket(false);
     }
   };
+  const markReservationFulfilled = async (reservationId: string) => {
+  try {
+    await updateDoc(doc(db, "reservations", reservationId), {
+      status: 'fulfilled',
+      lastUpdated: Timestamp.now()
+    });
+    
+    fetchReservations();
+    alert("Резервацията е маркирана като изпълнена!");
+  } catch (error) {
+    console.error("Грешка при маркиране на резервация:", error);
+    alert("Грешка при маркиране на резервация!");
+  }
+};
+
+const cancelReservation = async (reservationId: string) => {
+  if (!window.confirm("Сигурни ли сте, че искате да отмените тази резервация?")) return;
+  
+  try {
+    await cancelReservationService(reservationId);
+    
+    // Обновете наличността на книгата
+    const reservation = reservations.find(r => r.id === reservationId);
+    if (reservation && reservation.bookId) {
+      const book = books.find(b => b.id === reservation.bookId);
+      if (book) {
+        await bookService.updateBook(book.id, {
+          availableCopies: book.availableCopies + 1
+        });
+      }
+    }
+    
+    fetchReservations();
+    fetchBooks();
+    alert("Резервацията е отменена успешно!");
+  } catch (error) {
+    console.error("Грешка при отмяна на резервация:", error);
+    alert("Грешка при отмяна на резервация!");
+  }
+};
 
   // ----------- checkInTicket -----------
   const checkInTicket = async (): Promise<boolean> => {
@@ -1112,6 +1163,36 @@ const [modalNewsData, setModalNewsData] = useState<Partial<NewsArticle>>({
     setScheduleBookings(schedulesData);
   };
 
+  const fetchReservations = async () => {
+  try {
+    // Използвайте функцията от вашия service
+    const reservationsData = await getAllReservations();
+    setReservations(reservationsData);
+    
+    console.log("📚 Заредени резервации:", reservationsData.length);
+    if (reservationsData.length > 0) {
+      console.log("📋 Примерна резервация:", reservationsData[0]);
+    }
+  } catch (error) {
+    console.error("Грешка при зареждане на резервации:", error);
+  }
+};
+
+const completeReservation = async (reservationId: string) => {
+  try {
+    await updateDoc(doc(db, "reservations", reservationId), {
+      status: 'completed',
+      completedAt: new Date()
+    });
+    
+    fetchReservations();
+    alert("Резервацията е маркирана като завършена!");
+  } catch (error) {
+    console.error("Грешка при маркиране на резервация:", error);
+    alert("Грешка при маркиране на резервация!");
+  }
+};
+console.log(completeReservation);
   const updateRoomBookings = (eventsData: Event[]) => {
     const bookings: RoomBooking[] = [];
     eventsData.forEach(event => {
@@ -1874,12 +1955,12 @@ const deleteNews = async (newsId: string) => {
   </button>
 
   <button
-    className={`tab-button ${activeTab === "reservations" ? "active" : ""}`}
-    onClick={() => setActiveTab("reservations")}
-  >
-    <Bookmark size={18} />
-    Резервирани книги ({})
-  </button>
+  className={`tab-button ${activeTab === "reservations" ? "active" : ""}`}
+  onClick={() => setActiveTab("reservations")}
+>
+  <Bookmark size={18} />
+  Резервирани книги ({reservations.length})
+</button>
 
   <button
   className={`tab-button ${activeTab === "news" ? "active" : ""}`}
@@ -4123,6 +4204,154 @@ const deleteNews = async (newsId: string) => {
             </div>
           </div>
         )}
+
+ {/* Reservations Tab */}
+        {activeTab === "reservations" && (
+  <div className="content-section">
+    <div className="rooms-header">
+      <h2>Управление на Резервации</h2>
+      <button 
+        onClick={fetchReservations}
+        className="secondary-btn"
+        title="Обнови списъка с резервации"
+      >
+        <RefreshCw size={16} />
+        Обнови
+      </button>
+    </div>
+    
+    <div className="stats-grid">
+      <div className="stat-card">
+        <div className="stat-icon active-reservations">
+          <Bookmark size={24} />
+        </div>
+        <div className="stat-info">
+          <div className="stat-number">
+            {reservations.filter(r => r.status === 'active').length}
+          </div>
+          <div className="stat-label">Активни резервации</div>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon completed-reservations">
+          <Bookmark size={24} />
+        </div>
+        <div className="stat-info">
+          <div className="stat-number">
+            {reservations.filter(r => r.status === 'fulfilled').length}
+          </div>
+          <div className="stat-label">Изпълнени</div>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon cancelled-reservations">
+          <Bookmark size={24} />
+        </div>
+        <div className="stat-info">
+          <div className="stat-number">
+            {reservations.filter(r => r.status === 'cancelled').length}
+          </div>
+          <div className="stat-label">Отменени</div>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon total-reservations">
+          <Bookmark size={24} />
+        </div>
+        <div className="stat-info">
+          <div className="stat-number">{reservations.length}</div>
+          <div className="stat-label">Общо резервации</div>
+        </div>
+      </div>
+    </div>
+
+    {reservations.length > 0 ? (
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Книга</th>
+              <th>Потребител</th>
+              <th>Дата на резервация</th>
+              <th>Краен срок</th>
+              <th>Статус</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reservations.map(reservation => {
+              const book = books.find(b => b.id === reservation.bookId);
+              const user = users.find(u => u.id === reservation.userId);
+              
+              return (
+                <tr key={reservation.id}>
+                  <td>
+                    <div className="book-info-cell">
+                      <strong>{book?.title || 'Неизвестна книга'}</strong>
+                      <small>{book?.author}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="user-info-cell">
+                      <span>{user?.displayName || reservation.userName || 'Неизвестен потребител'}</span>
+                      <small>{reservation.userEmail}</small>
+                    </div>
+                  </td>
+                  <td>
+                    {reservation.reservedAt?.toDate?.().toLocaleDateString('bg-BG') || 
+                     new Date(reservation.reservedAt).toLocaleDateString('bg-BG') || 
+                     'Няма дата'}
+                  </td>
+                  <td>
+                    {reservation.expiresAt?.toDate?.().toLocaleDateString('bg-BG') || 
+                     new Date(reservation.expiresAt).toLocaleDateString('bg-BG') || 
+                     'Няма дата'}
+                  </td>
+                  <td>
+                    <span className={`status-badge ${reservation.status || 'active'}`}>
+                      {reservation.status === 'active' ? 'Активна' : 
+                       reservation.status === 'fulfilled' ? 'Изпълнена' : 
+                       reservation.status === 'cancelled' ? 'Отменена' : 
+                       reservation.status === 'expired' ? 'Изтекла' : 'Неизвестен'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      {reservation.status === 'active' && (
+                        <>
+                          <button
+                            onClick={() => cancelReservation(reservation.id)}
+                            className="secondary-btn small-btn"
+                            title="Отмени резервация"
+                          >
+                            Отмени
+                          </button>
+                          <button
+                            onClick={() => markReservationFulfilled(reservation.id)}
+                            className="primary-btn small-btn"
+                            title="Маркирай като изпълнена"
+                          >
+                            Изпълнена
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="empty-state">
+        <Bookmark size={48} />
+        <p>Няма намерени резервации</p>
+        <p className="help-text">Все още няма създадени резервации в системата.</p>
+      </div>
+    )}
+  </div>
+)}
 
           {activeTab === "news" && (
   <div className="content-section">

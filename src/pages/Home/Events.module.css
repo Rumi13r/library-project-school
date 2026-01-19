@@ -1,0 +1,668 @@
+/* Events.module.css - Beautiful Redesign */
+
+.eventsSection {
+  padding: 100px 0;
+  background: linear-gradient(
+    180deg,
+    var(--light-section) 0%,
+    rgba(248, 250, 252, 0.97) 100%
+  );
+  position: relative;
+}
+
+/* Elegant separator */
+.eventsSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-green),
+    var(--primary-yellow),
+    var(--primary-red)
+  );
+  border-radius: 2px;
+}
+
+/* Google Calendar интеграция - под заглавката */
+.eventsCalendarIntegration {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 2rem 0 3rem;
+  flex-wrap: wrap;
+}
+
+.googleCalendarBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: white;
+  border: 2px solid #4285f4;
+  border-radius: 12px;
+  color: #4285f4;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.1);
+}
+
+.googleCalendarBtn:hover {
+  background: #4285f4;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(66, 133, 244, 0.25);
+}
+
+.googleCalendarIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.calendarSubscribeBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.calendarSubscribeBtn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.subscribeIcon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Промяна в grid layout за по-добра организация */
+.calendarEventsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Elegant Event Card */
+.calendarEventCard {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 1.75rem;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  display: flex;
+  gap: 1.25rem;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Subtle color accent on hover */
+.calendarEventCard:hover {
+  transform: translateY(-6px);
+  border-color: var(--primary-green);
+  box-shadow: 
+    0 12px 35px rgba(22, 163, 74, 0.12),
+    0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Beautiful Date Badge */
+.calendarDate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 0.875rem;
+  border-radius: 16px;
+  color: white;
+  text-align: center;
+  flex-shrink: 0;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.calendarDate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
+}
+
+.calendarGreen {
+  background: linear-gradient(135deg, var(--primary-green), var(--green-dark));
+}
+
+.calendarYellow {
+  background: linear-gradient(135deg, var(--primary-yellow), var(--yellow-dark));
+}
+
+.calendarRed {
+  background: linear-gradient(135deg, var(--primary-red), var(--red-dark));
+}
+
+.calendarBlue {
+  background: linear-gradient(135deg, var(--primary-blue), var(--blue-dark));
+}
+
+.calendarDay {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.125rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.calendarMonth {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.95;
+}
+
+.calendarWeekday {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendarEventContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.eventHeaderCalendar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.eventTitleCalendar {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.3;
+  flex: 1;
+  margin: 0;
+}
+
+.eventTimeBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1), rgba(234, 179, 8, 0.05));
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  flex-shrink: 0;
+}
+
+.timeBadgeIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.eventDescriptionContainer {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.truncatedDescription {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 3;
+  min-height: 4.5em;
+}
+
+.viewMoreContainer {
+  margin-top: 0.5rem;
+}
+
+.viewMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  color: var(--primary-green);
+  text-decoration: none;
+}
+
+.viewMoreBtn:hover {
+  background: var(--primary-green);
+  color: white;
+  border-color: var(--primary-green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+}
+
+.viewMoreIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.eventDetailsCalendar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.eventDetailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.detailIconCalendar {
+  width: 16px;
+  height: 16px;
+  color: var(--text-gray);
+  opacity: 0.8;
+}
+
+.detailTextCalendar {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
+/* Променен eventFooterCalendar за да побере новите бутони */
+.eventFooterCalendar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.participantsSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.participantsInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
+.participantsIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-green);
+}
+
+.participantsText {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
+.spotsAvailable {
+  padding: 0.35rem 0.75rem;
+  background: var(--green-light);
+  color: var(--green-dark);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--green-dark);
+  white-space: nowrap;
+}
+
+/* Реорганизирани бутони в една линия */
+.eventActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eventRegisterBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  flex: 1;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.eventRegisterBtn:hover:not(.eventBtnDisabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.eventBtnDisabled {
+  background: var(--text-muted) !important;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.registerIcon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Добавяне към календар бутон за всяко събитие - подобрен */
+.addToCalendarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.addToCalendarBtn:hover {
+  background: #4285f4;
+  border-color: #4285f4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
+}
+
+.calendarBtnIcon {
+  width: 20px;
+  height: 20px;
+  transition: filter 0.3s ease;
+}
+
+.addToCalendarBtn:hover .calendarBtnIcon {
+  filter: brightness(0) invert(1);
+}
+
+.noEvents {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-gray);
+}
+
+.noEventsIcon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.eventsToggleContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 3rem;
+}
+
+.eventsToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background: var(--card-bg);
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  color: var(--text-gray);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.eventsToggleBtn:hover {
+  background: var(--primary-green);
+  color: white;
+  border-color: var(--primary-green);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.15);
+}
+
+.toggleIcon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .calendarEventsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .eventsSection {
+    padding: 80px 0;
+  }
+  
+  .eventsCalendarIntegration {
+    flex-direction: column;
+    align-items: stretch;
+    margin: 1.5rem 0 2rem;
+  }
+  
+  .googleCalendarBtn,
+  .calendarSubscribeBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .calendarEventsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .calendarEventCard {
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .calendarDate {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+    min-width: auto;
+    width: fit-content;
+    padding: 0.75rem 1.5rem;
+    align-self: flex-start;
+  }
+  
+  .calendarDay {
+    font-size: 1.5rem;
+  }
+  
+  .eventHeaderCalendar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .eventActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .eventRegisterBtn,
+  .addToCalendarBtn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .addToCalendarBtn {
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendarEventCard {
+    padding: 1.25rem;
+  }
+  
+  .eventTitleCalendar {
+    font-size: 1.15rem;
+  }
+  
+  .eventFooterCalendar {
+    gap: 0.875rem;
+  }
+  
+  .participantsSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] .eventsSection {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.8) 0%,
+    rgba(15, 23, 42, 0.97) 100%
+  );
+}
+
+[data-theme="dark"] .calendarEventCard {
+  background: var(--card-bg);
+  border-color: var(--border-medium);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .calendarEventCard:hover {
+  border-color: var(--primary-green);
+  box-shadow: 
+    0 12px 35px rgba(22, 163, 74, 0.15),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .eventTimeBadge {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.15), rgba(234, 179, 8, 0.08));
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+[data-theme="dark"] .viewMoreBtn {
+  border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .viewMoreBtn:hover {
+  background: var(--primary-green);
+  border-color: var(--primary-green);
+}
+
+[data-theme="dark"] .detailIconCalendar {
+  color: var(--text-gray);
+}
+
+[data-theme="dark"] .eventFooterCalendar {
+  border-top-color: var(--border-medium);
+}
+
+[data-theme="dark"] .spotsAvailable {
+  background: rgba(22, 163, 74, 0.2);
+  border-color: var(--primary-green);
+}
+
+[data-theme="dark"] .eventsToggleBtn {
+  background: var(--card-bg);
+  border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .eventsToggleBtn:hover {
+  background: var(--primary-green);
+  border-color: var(--primary-green);
+}
+
+/* Тъмна тема за Google Calendar бутони */
+[data-theme="dark"] .googleCalendarBtn {
+  background: #1e293b;
+  border-color: #4285f4;
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .googleCalendarBtn:hover {
+  background: #4285f4;
+  color: white;
+}
+
+[data-theme="dark"] .calendarSubscribeBtn {
+  background: #334155;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .calendarSubscribeBtn:hover {
+  background: #475569;
+  border-color: #64748b;
+  color: white;
+}
+
+[data-theme="dark"] .addToCalendarBtn {
+  background: #334155;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .addToCalendarBtn:hover {
+  background: #4285f4;
+  border-color: #4285f4;
+}

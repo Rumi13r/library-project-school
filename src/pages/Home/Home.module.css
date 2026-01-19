@@ -1,0 +1,53 @@
+/* Home.module.css */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&family=Shadows+Into+Light&display=swap');
+
+/* Modern Library Design System - Green, Yellow, Red Theme */
+/* Ръкописни шрифтове */
+
+.homeContainer {
+  min-height: 100vh;
+  background: var(--light-bg);
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Section Headers */
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 5rem;
+}
+
+.sectionTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  position: relative;
+  display: inline-block;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 5px;
+  background: var(--primary-green);
+  border-radius: 3px;
+}
+
+.sectionSubtitle {
+  font-size: 1.3rem;
+  color: var(--text-gray);
+  max-width: 600px;
+  margin: 2rem auto 0;
+  line-height: 1.6;
+  font-weight: 300;
+}

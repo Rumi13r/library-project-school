@@ -1,0 +1,105 @@
+/* BookAnimation.module.css */
+.homeBookAnimationSection {
+  position: relative;
+  padding: 60px 0;
+  margin: 60px 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .homeBookAnimationSection {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+}
+
+[data-theme="dark"] .homeBookAnimationSection {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.darkThemeCompatible .homeBookAnimationSection {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+}
+
+.homeBookshelf {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 0 auto;
+}
+
+.homeBooks {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  height: 280px;
+  z-index: 2;
+}
+
+.homeBook {
+  width: 150px;
+  height: 230px;
+  position: relative;
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px 12px 12px 8px;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    -8px 8px 20px rgba(0,0,0,0.25),
+    inset 0 0 0 3px rgba(255,255,255,0.15);
+  animation: home-bookFloat 4s ease-in-out infinite;
+}
+
+.homeBook::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+  border-radius: 8px 0 0 8px;
+  transform: translateZ(-2px);
+}
+
+.homeBook::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 15px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border-radius: 0 12px 12px 0;
+}
+
+.homeBook:nth-child(1) { animation-delay: 0s; }
+.homeBook:nth-child(2) { animation-delay: 0.5s; }
+.homeBook:nth-child(3) { animation-delay: 1s; }
+.homeBook:nth-child(4) { animation-delay: 1.5s; }
+
+.homeBook:hover {
+  transform: rotateY(-25deg) translateY(-15px);
+  box-shadow: 
+    -20px 20px 40px rgba(0,0,0,0.4),
+    inset 0 0 0 3px rgba(255,255,255,0.25);
+  animation-play-state: paused;
+}
+
+@keyframes home-bookFloat {
+  0%, 100% {
+    transform: translateY(0) rotateY(0);
+  }
+  50% {
+    transform: translateY(-20px) rotateY(8deg);
+  }
+}

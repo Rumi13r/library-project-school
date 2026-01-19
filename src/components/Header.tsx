@@ -224,7 +224,7 @@ const Header: React.FC = () => {
               onClick={handleAdminDashboardClick}
             >
               <Shield size={16} />
-              <span>Админ Дашборд</span>
+              <span>Админ панел</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
             <button 
@@ -232,7 +232,7 @@ const Header: React.FC = () => {
               onClick={handleUserDashboardClick}
             >
               <LayoutDashboard size={16} />
-              <span>Моят Дашборд</span>
+              <span>Моят дашборд</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
           </>
@@ -245,7 +245,7 @@ const Header: React.FC = () => {
               onClick={handleLibrarianDashboardClick}
             >
               <BookUser size={16} />
-              <span>Библиотекарски Дашборд</span>
+              <span>Библиотекарски панел</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
             <button 
@@ -253,7 +253,7 @@ const Header: React.FC = () => {
               onClick={handleUserDashboardClick}
             >
               <LayoutDashboard size={16} />
-              <span>Моят Дашборд</span>
+              <span>Моят дашборд</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
           </>
@@ -265,7 +265,7 @@ const Header: React.FC = () => {
             onClick={handleUserDashboardClick}
           >
             <LayoutDashboard size={16} />
-            <span>Моят Дашборд</span>
+            <span>Моят дашборд</span>
             <ChevronRight className={styles.itemChevron} />
           </button>
         );
@@ -287,7 +287,7 @@ const Header: React.FC = () => {
               onClick={handleAdminDashboardClick}
             >
               <Shield size={16} />
-              <span>Админ Дашборд</span>
+              <span>Админ панел</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
             <button 
@@ -295,7 +295,7 @@ const Header: React.FC = () => {
               onClick={handleUserDashboardClick}
             >
               <LayoutDashboard size={16} />
-              <span>Моят Дашборд</span>
+              <span>Моят дашборд</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
           </>
@@ -308,7 +308,7 @@ const Header: React.FC = () => {
               onClick={handleLibrarianDashboardClick}
             >
               <BookUser size={16} />
-              <span>Библиотекарски Дашборд</span>
+              <span>Библиотекарски панел</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
             <button 
@@ -316,7 +316,7 @@ const Header: React.FC = () => {
               onClick={handleUserDashboardClick}
             >
               <LayoutDashboard size={16} />
-              <span>Моят Дашборд</span>
+              <span>Моят дашборд</span>
               <ChevronRight className={styles.itemChevron} />
             </button>
           </>
@@ -328,7 +328,7 @@ const Header: React.FC = () => {
             onClick={handleUserDashboardClick}
           >
             <LayoutDashboard size={16} />
-            <span>Моят Дашборд</span>
+            <span>Моят дашборд</span>
             <ChevronRight className={styles.itemChevron} />
           </button>
         );

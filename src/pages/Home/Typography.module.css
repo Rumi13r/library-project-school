@@ -1,0 +1,81 @@
+/* Typography.module.css */
+@keyframes handwriting {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(-1deg);
+  }
+}
+
+.handwrittenTitle {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-1deg);
+  margin-bottom: 2rem;
+  position: relative;
+  display: inline-block;
+  animation: handwriting 1s ease-out forwards;
+}
+
+.handwrittenTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+  border-radius: 2px;
+}
+
+.handwrittenTitleSmall {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 2.8rem;
+  color: var(--primary-green);
+  transform: rotate(0.5deg);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  animation: handwriting 1s ease-out forwards;
+}
+
+.handwrittenHero {
+  font-family: 'Shadows Into Light', cursive;
+  font-weight: 700;
+  font-size: 4rem;
+  color: white;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+  line-height: 1.1;
+  animation: handwriting 1s ease-out forwards;
+}
+
+.handwrittenHeroSub {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 600;
+  font-size: 3rem;
+  color: var(--primary-yellow);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  animation: handwriting 1s ease-out forwards;
+}
+
+.sectionHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitleIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--primary-green);
+}

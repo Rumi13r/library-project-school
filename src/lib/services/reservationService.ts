@@ -106,3 +106,16 @@ export const checkUserReservationForBook = async (userId: string, bookId: string
     return false;
   }
 };
+
+export const getAllReservations = async (): Promise<Reservation[]> => {
+  try {
+    const snapshot = await getDocs(collection(db, "reservations"));
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Reservation));
+  } catch (error) {
+    console.error("Error fetching all reservations:", error);
+    return [];
+  }
+};

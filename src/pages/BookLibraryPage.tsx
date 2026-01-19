@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Book, Search, Filter, Eye, Heart, Share2, Star, Clock, Tag, ChevronDown, 
+  Book, Search, Filter, Heart, Share2, Star, Clock, Tag, ChevronDown, 
   ChevronUp, Globe, Award, TrendingUp, Calendar, BookOpen, MapPin, Copy, Users, Home, Library, Download, FileText, X, CheckCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +30,7 @@ import {
   getUserViewedBooks, 
   getUserRatings 
 } from '../lib/services/userService';
-import './BookLibraryPage.css';
+import styles from './BookLibraryPage.module.css';
 import type { BookLibrary } from '../lib/services/bookTypes';
 import type { Reservation } from '../lib/services/reservationService';
 
@@ -117,91 +117,86 @@ const BookLibraryPage: React.FC = () => {
       locationFilter, selectedShelf, selectedShelfType]);
 
   const fetchLibraryBooks = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const booksData = await fetchAllBooks();
-    setBooks(booksData);
-    extractFiltersData(booksData);
+      const booksData = await fetchAllBooks();
+      setBooks(booksData);
+      extractFiltersData(booksData);
 
-    // ✅ ИЗВЛИЧАНЕ НА РАФТОВЕТЕ
-    const shelves = Array.from(
-  new Set(
-    booksData
-      .map(book => book.shelfNumber?.trim())
-      .filter((shelf): shelf is string => !!shelf)
-  )
-);
-setAvailableShelves(shelves);
+      const shelves = Array.from(
+        new Set(
+          booksData
+            .map(book => book.shelfNumber?.trim())
+            .filter((shelf): shelf is string => !!shelf)
+        )
+      );
+      setAvailableShelves(shelves);
 
-    setLoading(false);
-  } catch (error) {
-    console.error("Error fetching library books:", error);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching library books:", error);
 
-    // Fallback данни
-    const fallbackBooks: BookLibrary[] = [
-      {
-        id: '1',
-        title: '100 книги, които трябва да прочетете',
-        author: 'Христо Блажев',
-        description: 'Тест',
-        category: 'Българска литература',
-        isbn: '2365326',
-        publisher: 'Сиела',
-        year: 2025,
-        pages: 200,
-        language: 'Български',
-        edition: 'Първо издание',
-        coverType: 'soft',
-        location: 'Библиотека',
-        shelfNumber: 'сдсзф',
-        callNumber: '54543',
-        copies: 3,
-        availableCopies: 1,
-        condition: 'good',
-        status: 'available',
-        rating: 4,
-        ratingsCount: 1,
-        views: 1,
-        featured: false,
-        createdAt: new Date(),
-        lastUpdated: new Date(),
-        genres: [],
-        ageRecommendation: '13',
-        borrowPeriod: 14,
-        maxRenewals: 2,
-        reservationQueue: 0,
-        waitingList: [],
-        coverUrl: 'https://www.book.store.bg/prdimg/467590253/100-knigi-koito-triabva-da-prochetete.avif',
-        tags: ['литература'],
-        summary: '',
-        tableOfContents: [],
-        relatedBooks: [],
-        awards: [],
-        digitalVersion: { available: false, format: "", url: "" },
-        isActive: true,
-        underMaintenance: false
-      } as BookLibrary,
-    ];
+      const fallbackBooks: BookLibrary[] = [
+        {
+          id: '1',
+          title: '100 книги, които трябва да прочетете',
+          author: 'Христо Блажев',
+          description: 'Тест',
+          category: 'Българска литература',
+          isbn: '2365326',
+          publisher: 'Сиела',
+          year: 2025,
+          pages: 200,
+          language: 'Български',
+          edition: 'Първо издание',
+          coverType: 'soft',
+          location: 'Библиотека',
+          shelfNumber: 'сдсзф',
+          callNumber: '54543',
+          copies: 3,
+          availableCopies: 1,
+          condition: 'good',
+          status: 'available',
+          rating: 4,
+          ratingsCount: 1,
+          views: 1,
+          featured: false,
+          createdAt: new Date(),
+          lastUpdated: new Date(),
+          genres: [],
+          ageRecommendation: '13',
+          borrowPeriod: 14,
+          maxRenewals: 2,
+          reservationQueue: 0,
+          waitingList: [],
+          coverUrl: 'https://www.book.store.bg/prdimg/467590253/100-knigi-koito-triabva-da-prochetete.avif',
+          tags: ['литература'],
+          summary: '',
+          tableOfContents: [],
+          relatedBooks: [],
+          awards: [],
+          digitalVersion: { available: false, format: "", url: "" },
+          isActive: true,
+          underMaintenance: false
+        } as BookLibrary,
+      ];
 
-    setBooks(fallbackBooks);
-    extractFiltersData(fallbackBooks);
+      setBooks(fallbackBooks);
+      extractFiltersData(fallbackBooks);
 
-    // ✅ ИЗВЛИЧАНЕ НА РАФТОВЕТЕ (fallback)
-    const shelves = Array.from(
-      new Set(
-        fallbackBooks
-          .map(book => book.shelfNumber)
-          .filter((shelf): shelf is string => !!shelf)
-      )
-    );
+      const shelves = Array.from(
+        new Set(
+          fallbackBooks
+            .map(book => book.shelfNumber)
+            .filter((shelf): shelf is string => !!shelf)
+        )
+      );
 
-    setAvailableShelves(shelves);
-
-    setLoading(false);
-  }
-};
-
+      setAvailableShelves(shelves);
+      setLoading(false);
+    }
+  };
 
   const fetchUserReservations = async () => {
     if (!user) return;
@@ -228,7 +223,6 @@ setAvailableShelves(shelves);
       locations.add(book.location);
       if (book.shelfNumber) shelves.add(book.shelfNumber);
       
-      // Определяме типа на рафта според категорията на книгата
       if (book.category.includes('Научна') || book.category.includes('Учебна')) {
         if (book.shelfNumber) shelfTypesMap[book.shelfNumber] = 'Научна литература';
       } else if (book.category.includes('Художествена') || book.category.includes('Романи')) {
@@ -375,16 +369,28 @@ setAvailableShelves(shelves);
     }
   };
 
+  // Проверка дали книгата е заета от текущия потребител
+const isBookBorrowedByUser = (book: BookLibrary) => {
+  if (!user) return false;
+  return book.borrowedBy?.some(b => b.userId === user.uid && !b.returned) || false;
+};
+
   const handleReserveBook = async (book: BookLibrary) => {
     if (!user) {
-      navigate('/login', {
-        state: {
-          redirectTo: '/library',
-          message: 'Моля, влезте в профила си, за да резервирате книга.'
-        }
-      });
-      return;
-    }
+    navigate('/login', {
+      state: {
+        redirectTo: '/library',
+        message: 'Моля, влезте в профила си, за да резервирате книга.'
+      }
+    });
+    return;
+  }
+
+  // Проверка дали книгата вече е заета от потребителя
+  if (isBookBorrowedByUser(book)) {
+    alert('Вече сте взели тази книга!');
+    return;
+  }
 
     try {
       const hasExistingReservation = await checkUserReservationForBook(user.uid, book.id);
@@ -652,7 +658,7 @@ setAvailableShelves(shelves);
     const currentRating = hoverRating[bookId] || userRating[bookId] || rating;
     
     return (
-      <div className="stars-container">
+      <div className={styles['stars-container']}>
         {[1, 2, 3, 4, 5].map((star) => {
           const isFilled = star <= currentRating;
           const isHalf = star - 0.5 === currentRating;
@@ -660,7 +666,7 @@ setAvailableShelves(shelves);
           return (
             <button
               key={star}
-              className={`star-button ${interactive ? 'interactive' : ''}`}
+              className={`${styles['star-button']} ${interactive ? styles['interactive'] : ''}`}
               onClick={() => interactive && handleRateBook(bookId, star)}
               onMouseEnter={() => interactive && setHoverRating(prev => ({ ...prev, [bookId]: star }))}
               onMouseLeave={() => interactive && setHoverRating(prev => ({ ...prev, [bookId]: 0 }))}
@@ -668,14 +674,14 @@ setAvailableShelves(shelves);
               title={interactive ? `Оцени с ${star} звезди` : undefined}
             >
               <Star 
-                className={`star-icon ${isFilled ? 'star-filled' : ''} ${isHalf ? 'star-half' : ''}`}
+                className={`${styles['star-icon']} ${isFilled ? styles['star-filled'] : ''} ${isHalf ? styles['star-half'] : ''}`}
                 size={interactive ? 20 : 16}
                 fill={isFilled ? "currentColor" : "none"}
               />
             </button>
           );
         })}
-        <span className="rating-number">{rating.toFixed(1)}</span>
+        <span className={styles['rating-number']}>{rating.toFixed(1)}</span>
       </div>
     );
   };
@@ -722,22 +728,22 @@ setAvailableShelves(shelves);
   };
 
   const getRandomSpinePattern = () => {
-    const patterns = ['spine-pattern-1', 'spine-pattern-2', 'spine-pattern-3', 'spine-pattern-4'];
+    const patterns = [styles['spine-pattern-1'], styles['spine-pattern-2'], styles['spine-pattern-3'], styles['spine-pattern-4']];
     return patterns[Math.floor(Math.random() * patterns.length)];
   };
 
   const getRandomSpineColor = () => {
     const colors = [
-      'spine-color-maroon',
-      'spine-color-darkgreen',
-      'spine-color-darkolivegreen',
-      'spine-color-brown',
-      'spine-color-saddlebrown',
-      'spine-color-sienna',
-      'spine-color-midnightblue',
-      'spine-color-darkred',
-      'spine-color-darkblue',
-      'spine-color-darkgoldenrod'
+      styles['spine-color-maroon'],
+      styles['spine-color-darkgreen'],
+      styles['spine-color-darkolivegreen'],
+      styles['spine-color-brown'],
+      styles['spine-color-saddlebrown'],
+      styles['spine-color-sienna'],
+      styles['spine-color-midnightblue'],
+      styles['spine-color-darkred'],
+      styles['spine-color-darkblue'],
+      styles['spine-color-darkgoldenrod']
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   };
@@ -764,11 +770,11 @@ setAvailableShelves(shelves);
     
     if (Object.keys(booksByShelf).length === 0) {
       return (
-        <div className="empty-shelf">
+        <div className={styles['empty-shelf']}>
           <Library size={48} color="#fff8e1" />
           <p>Няма книги на тези рафтове</p>
           <button 
-            className="clear-filters-btn"
+            className={styles['clear-filters-btn']}
             onClick={() => {
               setSelectedShelf('all');
               setSelectedShelfType('all');
@@ -782,25 +788,25 @@ setAvailableShelves(shelves);
     }
     
     return (
-      <div className="bookshelf-view-container">
+      <div className={styles['bookshelf-view-container']}>
         {Object.entries(booksByShelf).map(([shelfNumber, shelfBooks]) => {
           const shelfType = getShelfType(shelfNumber);
           
           return (
-            <div key={shelfNumber} className="shelf-section">
-              <div className="shelf-header">
-                <div className="shelf-title-container">
+            <div key={shelfNumber} className={styles['shelf-section']}>
+              <div className={styles['shelf-header']}>
+                <div className={styles['shelf-title-container']}>
                   <Library size={18} color="#fff8e1" />
-                  <h4 className="shelf-title">Рафт {shelfNumber}</h4>
-                  <span className="shelf-type-badge">{shelfType}</span>
+                  <h4 className={styles['shelf-title']}>Рафт {shelfNumber}</h4>
+                  <span className={styles['shelf-type-badge']}>{shelfType}</span>
                 </div>
-                <div className="shelf-count">
+                <div className={styles['shelf-count']}>
                   <Book size={14} color="#fff8e1" />
                   <span>{shelfBooks.length} книги</span>
                 </div>
               </div>
               
-              <div className="bookshelf-container compact">
+              <div className={`${styles['bookshelf-container']} ${styles['compact']}`}>
                 {shelfBooks.map((book) => {
                   const spinePattern = getRandomSpinePattern();
                   const spineColor = getRandomSpineColor();
@@ -808,36 +814,35 @@ setAvailableShelves(shelves);
                   const topPosition = 230 - bookHeight;
                   
                   return (
-                    <div 
-                      key={book.id}
-                      className="book-3d compact"
-                      onClick={() => handleBookClick(book)}
-                      style={{ 
-                        height: `${bookHeight}px`,
-                        top: `${topPosition + 35}px`
-                      }}
-                    >
-                      <div className={`book-side book-spine compact ${spinePattern} ${spineColor}`}>
-                        <span className="spine-title">
-                          {book.title.length > 12 ? book.title.substring(0, 12) + '...' : book.title}
-                        </span>
-                        <span className="spine-author">
-                          {book.author.length > 10 ? book.author.substring(0, 10) + '...' : book.author}
-                        </span>
-                      </div>
-                      <div className="book-side book-top compact"></div>
-                      <div 
-                        className="book-side book-cover compact"
-                        style={{
-                          height: `${bookHeight}px`,
-                          top: `${topPosition}px`,
-                          backgroundImage: book.coverUrl 
-                            ? `url("${book.coverUrl}")` 
-                            : 'url("https://via.placeholder.com/140x230/4a3728/ffffff?text=Книга")'
-                        }}
-                      ></div>
-                    </div>
-                  );
+             <div 
+    key={book.id}
+    className={`${styles['book-3d']} ${styles['compact']}`}
+    onClick={() => handleBookClick(book)}
+    style={{ 
+      height: `${bookHeight}px`,
+      top: `${topPosition + 20}px`
+    }}
+  >
+    <div className={`${styles['book-side']} ${styles['book-spine']} ${styles['compact']} ${spinePattern} ${spineColor}`}>
+      <span className={styles['spine-title']}>
+        {book.title.length > 12 ? book.title.substring(0, 12) + '...' : book.title}
+      </span>
+      <span className={styles['spine-author']}>
+        {book.author.length > 10 ? book.author.substring(0, 10) + '...' : book.author}
+      </span>
+    </div>
+    <div className={`${styles['book-side']} ${styles['book-top']} ${styles['compact']}`}></div>
+    <div 
+      className={`${styles['book-side']} ${styles['book-cover']} ${styles['compact']}`}
+      style={{
+        backgroundImage: book.coverUrl 
+          ? `url("${book.coverUrl}")` 
+          : 'none',
+        backgroundColor: book.coverUrl ? 'transparent' : '#f5f5f5'
+      }}
+    ></div>
+  </div>
+);
                 })}
               </div>
             </div>
@@ -862,9 +867,9 @@ setAvailableShelves(shelves);
 
   if (loading) {
     return (
-      <div className="book-library-page">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+      <div className={styles['book-library-page']}>
+        <div className={styles['loading-spinner']}>
+          <div className={styles['spinner']}></div>
           <span>Зареждане на библиотеката...</span>
         </div>
       </div>
@@ -872,90 +877,95 @@ setAvailableShelves(shelves);
   }
 
   return (
-    <div className="book-library-page">
-      <div className="book-library-container">
+    <div className={styles['book-library-page']}>
+      <div className={styles['book-library-container']}>
         {/* Header */}
-        <div className="book-library-header">
-          <div className="book-library-title-section">
-            <div className="title-icon-wrapper library">
-              <Library className="book-library-title-icon" />
+        <div className={styles['book-library-header']}>
+          <div className={styles['book-library-title-section']}>
+            <div className={`${styles['title-icon-wrapper']} ${styles['library']}`}>
+              <Library className={styles['book-library-title-icon']} />
             </div>
-            <div className="title-content">
-              <h1 className="handwritten-title">Библиотека - Физически книги</h1>
-              <p className="book-library-subtitle">
+            <div className={styles['title-content']}>
+              <h1 className={styles['handwritten-title']}>Библиотека - Физически книги</h1>
+              <p className={styles['book-library-subtitle']}>
                 Разгледайте, резервирайте и вземате книги от нашата физическа библиотека
               </p>
             </div>
           </div>
 
-          <div className="book-library-stats">
-            <div className="stat-item">
-              <div className="stat-info">
-                <span className="stat-number">{books.length}</span>
-                <span className="book-library-subtitle">Общо книги</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-info">
-                <span className="stat-number">
-                  {books.reduce((sum, book) => sum + book.availableCopies, 0)}
-                </span>
-                <span className="book-library-subtitle">Налични копия</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-info">
-                <span className="stat-number">
-                  {userReservations.length}
-                </span>
-                <span className="book-library-subtitle">Активни резервации</span>
-              </div>
-            </div>
+          <div className={styles['book-library-stats']}>
+  <div className={styles['stat-item']}>
+    <div className={styles['stat-info']}>
+      <span className={styles['stat-number']}>{books.length}</span>
+      <span className={styles['book-library-subtitle']}>Общо книги</span>
+    </div>
+  </div>
+  <div className={styles['stat-item']}>
+    <div className={styles['stat-info']}>
+      <span className={styles['stat-number']}>
+        {books.reduce((sum, book) => sum + book.availableCopies, 0)}
+      </span>
+      <span className={styles['book-library-subtitle']}>Налични копия</span>
+    </div>
+  </div>
+  {/* Показвай статистиката за резервации само за логнати потребители */}
+  {user && (
+    <div className={styles['stat-item']}>
+      <div className={styles['stat-info']}>
+        <span className={styles['stat-number']}>
+          {userReservations.length}
+        </span>
+        <span className={styles['book-library-subtitle']}>Активни резервации</span>
+      </div>
+    </div>
+  )}
+</div>
+          <div className={styles['decorative-line']}>
           </div>
         </div>
 
         {/* User Reservations */}
         {user && userReservations.length > 0 && (
-          <div className="user-reservations">
-            <h3 className="reservations-title">
-              <Calendar className="title-icon" />
-              Вашите активни резервации
-            </h3>
-            <div className="reservations-grid">
-              {userReservations.map((reservation, index) => {
+  <div className={styles['user-reservations']}>
+    <h3 className={styles['reservations-title']}>
+      <Calendar className={styles['title-icon']} />
+      Вашите активни резервации
+    </h3>
+    <div className={styles['reservations-grid']}>
+      {userReservations.map((reservation, index) => {
                 const book = books.find(b => b.id === reservation.bookId);
                 if (!book) return null;
                 
                 return (
-                  <div key={index} className="reservation-card">
-                    <div className="reservation-book-info">
+                  <div key={index} className={styles['reservation-card']}>
+                    <div className={styles['reservation-book-info']}>
                       <h4>{book.title}</h4>
-                      <p className="reservation-author">{book.author}</p>
+                      <p className={styles['reservation-author']}>{book.author}</p>
                     </div>
-                    <div className="reservation-details">
-                      <div className="reservation-date">
+                    <div className={styles['reservation-details']}>
+                      <div className={styles['reservation-date']}>
                         <Calendar size={14} />
                         <span>
                           Резервирана: {formatDate(reservation.reservedAt)}
                         </span>
                       </div>
-                      <div className="reservation-expiry">
+                      <div className={styles['reservation-expiry']}>
                         <Clock size={14} />
                         <span>
                           Изтича: {formatDate(reservation.expiresAt)}
                         </span>
                       </div>
                     </div>
-                    <div className="reservation-actions">
+                    <div className={styles['reservation-actions']}>
                       <button 
-                        className="view-book-btn" 
+                        className={styles['view-book-btn']} 
                         onClick={() => handleBookClick(book)}
                       >
                         Виж детайли
                       </button>
                       <p>или</p>
                       <button 
-                        className="cancel-btn"
+                        className={styles['cancel-btn']}
                         onClick={() => handleCancelReservation(book.id)}
                         style={{ marginLeft: '10px' }}
                       >
@@ -970,30 +980,30 @@ setAvailableShelves(shelves);
         )}
 
         {/* Search and Filters */}
-        <div className="book-library-filters">
-          <div className="main-search-box">
-            <Search className="search-icon" />
+        <div className={styles['book-library-filters']}>
+          <div className={styles['main-search-box']}>
+            <Search className={styles['search-icon']} />
             <input
               type="text"
               placeholder="Търсете книги, автори, ISBN, теми..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
+              className={styles['search-input']}
             />
-            <div className="search-info">
+            <div className={styles['search-info']}>
               <Book size={16} />
               <span>{books.length} книги в библиотеката</span>
             </div>
           </div>
 
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label className="filter-label">
+          <div className={styles['filters-grid']}>
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <Filter size={16} />
                 Категория
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
@@ -1004,13 +1014,13 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <CheckCircle size={16} />
                 Статус
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -1022,13 +1032,13 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <Globe size={16} />
                 Език
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={languageFilter}
                 onChange={(e) => setLanguageFilter(e.target.value)}
               >
@@ -1039,13 +1049,13 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <Tag size={16} />
                 Жанр
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={genreFilter}
                 onChange={(e) => setGenreFilter(e.target.value)}
               >
@@ -1056,13 +1066,13 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <MapPin size={16} />
                 Местоположение
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
               >
@@ -1075,13 +1085,13 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group">
-              <label className="filter-label">
+            <div className={styles['filter-group']}>
+              <label className={styles['filter-label']}>
                 <TrendingUp size={16} />
                 Подреди по
               </label>
               <select 
-                className="filter-select"
+                className={styles['filter-select']}
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -1095,15 +1105,15 @@ setAvailableShelves(shelves);
               </select>
             </div>
 
-            <div className="filter-group checkbox-group">
-              <label className="checkbox-label">
+            <div className={styles['checkbox-group']}>
+              <label className={styles['checkbox-label']}>
                 <input
                   type="checkbox"
                   checked={showOnlyAvailable}
                   onChange={(e) => setShowOnlyAvailable(e.target.checked)}
-                  className="availability-checkbox"
+                  className={styles['availability-checkbox']}
                 />
-                <span className="checkbox-text">Покажи само налични</span>
+                <span className={styles['checkbox-text']}>Покажи само налични</span>
               </label>
             </div>
 
@@ -1112,7 +1122,7 @@ setAvailableShelves(shelves);
               conditionFilter !== 'all' || locationFilter !== 'all' || 
               showOnlyAvailable || sortBy !== 'newest') && (
               <button 
-                className="clear-filters-btn"
+                className={styles['clear-filters-btn']}
                 onClick={clearFiltersHandler}
               >
                 Изчисти всички филтри
@@ -1122,42 +1132,42 @@ setAvailableShelves(shelves);
         </div>
 
         {/* View Toggle */}
-        <div className="view-toggle">
+        <div className={styles['view-toggle']}>
           <button 
-            className={`view-toggle-btn ${!showShelvesView ? 'active' : ''}`}
+            className={`${styles['view-toggle-btn']} ${!showShelvesView ? styles['active'] : ''}`}
             onClick={() => setShowShelvesView(false)}
           >
-            <Book className="view-icon" />
+            <Book className={styles['view-icon']} />
             <span>Списък</span>
           </button>
           <button 
-            className={`view-toggle-btn ${showShelvesView ? 'active' : ''}`}
+            className={`${styles['view-toggle-btn']} ${showShelvesView ? styles['active'] : ''}`}
             onClick={() => setShowShelvesView(true)}
           >
-            <Library className="view-icon" />
+            <Library className={styles['view-icon']} />
             <span>Визуален каталог</span>
           </button>
         </div>
 
         {/* Books Content */}
-        <div className="book-library-content">
+        <div className={styles['book-library-content']}>
           {!showShelvesView ? (
             <>
               {filteredBooks.length > 0 ? (
                 <>
-                  <div className="books-stats">
-                    <BookOpen className="stats-icon" />
-                    <span className="books-count">
+                  <div className={styles['books-stats']}>
+                    <BookOpen className={styles['stats-icon']} />
+                    <span className={styles['books-count']}>
                       Намерени {filteredBooks.length} книги
                     </span>
                     {searchTerm && (
-                      <span className="search-results">
+                      <span className={styles['search-results']}>
                         Резултати за "{searchTerm}"
                       </span>
                     )}
                   </div>
 
-                  <div className="books-grid">
+                  <div className={styles['books-grid']}>
                     {filteredBooks.map((book) => {
                       const isExpanded = expandedBookId === book.id;
                       const isReserved = isBookReservedByUser(book.id);
@@ -1166,30 +1176,30 @@ setAvailableShelves(shelves);
                       return (
                         <div 
                           key={book.id} 
-                          className={`book-card ${book.featured ? 'featured' : ''}`}
+                          className={`${styles['book-card']} ${book.featured ? styles['featured'] : ''}`}
                         >
                           {/* Book Header */}
-                          <div className="book-header">
-                            <div className="book-thumbnail">
+                          <div className={styles['book-header']}>
+                            <div className={styles['book-thumbnail']}>
                               {book.coverUrl ? (
                                 <img 
                                   src={book.coverUrl} 
                                   alt={book.title}
-                                  className="book-cover-image"
+                                  className={styles['book-cover-image']}
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
-                                    const fallback = e.currentTarget.parentElement?.querySelector('.book-image-fallback');
+                                    const fallback = e.currentTarget.parentElement?.querySelector(`.${styles['book-image-fallback']}`);
                                     if (fallback) {
-                                      fallback.classList.remove('hidden');
+                                      fallback.classList.remove(styles['hidden']);
                                     }
                                   }}
                                 />
                               ) : null}
                               
-                              <div className={`book-image-fallback ${book.coverUrl ? 'hidden' : ''}`}>
-                                <Book className="fallback-icon" />
+                              <div className={`${styles['book-image-fallback']} ${book.coverUrl ? styles['hidden'] : ''}`}>
+                                <Book className={styles['fallback-icon']} />
                                 {book.featured && (
-                                  <div className="featured-badge">
+                                  <div className={styles['featured-badge']}>
                                     <Award size={14} />
                                     <span>Препоръчано</span>
                                   </div>
@@ -1197,20 +1207,20 @@ setAvailableShelves(shelves);
                               </div>
                             </div>
 
-                            <div className="book-main-info">
-                              <div className="book-title-section">
+                            <div className={styles['book-main-info']}>
+                              <div className={styles['book-title-section']}>
                                 <h3 
-                                  className="book-title"
+                                  className={styles['book-title']}
                                   onClick={() => handleBookClick(book)}
                                   style={{ cursor: 'pointer' }}
                                 >
                                   {book.title}
                                 </h3>
-                                <p className="book-author">{book.author}</p>
+                                <p className={styles['book-author']}>{book.author}</p>
                               </div>
 
-                              <div className="book-meta">
-                                <div className="book-status" style={{ color: getStatusColor(book.status) }}>
+                              <div className={styles['book-meta']}>
+                                <div className={styles['book-status']} style={{ color: getStatusColor(book.status) }}>
                                   <CheckCircle size={14} />
                                   <span>
                                     {book.status === 'available' && 'Налична'}
@@ -1220,17 +1230,17 @@ setAvailableShelves(shelves);
                                   </span>
                                 </div>
                                 
-                                <div className="book-availability">
+                                <div className={styles['book-availability']}>
                                   <Copy size={14} />
                                   <span>{book.availableCopies}/{book.copies} копия</span>
                                 </div>
 
-                                <div className="book-location">
+                                <div className={styles['book-location']}>
                                   <MapPin size={14} />
                                   <span>{book.location}</span>
                                 </div>
 
-                                <div className="book-condition" style={{ color: getConditionColor(book.condition) }}>
+                                <div className={styles['book-condition']} style={{ color: getConditionColor(book.condition) }}>
                                   <span>
                                     {book.condition === 'new' && '🆕 Нова'}
                                     {book.condition === 'good' && '✅ Добра'}
@@ -1243,41 +1253,41 @@ setAvailableShelves(shelves);
                           </div>
 
                           {/* Book Description */}
-                          <div className="book-description">
+                          <div className={styles['book-description']}>
                             <p>{book.description}</p>
                           </div>
 
                           {/* Book Details (Expandable) */}
                           {isExpanded && (
-                            <div className="book-details-expanded">
-                              <div className="details-grid">
-                                <div className="book-detail">
-                                  <span className="detail-label">ISBN:</span>
-                                  <span className="detail-value">{book.isbn}</span>
+                            <div className={styles['book-details-expanded']}>
+                              <div className={styles['details-grid']}>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>ISBN:</span>
+                                  <span className={styles['detail-value']}>{book.isbn}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Издател:</span>
-                                  <span className="detail-value">{book.publisher}</span>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Издател:</span>
+                                  <span className={styles['detail-value']}>{book.publisher}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Година:</span>
-                                  <span className="detail-value">{book.year}</span>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Година:</span>
+                                  <span className={styles['detail-value']}>{book.year}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Страници:</span>
-                                  <span className="detail-value">{book.pages}</span>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Страници:</span>
+                                  <span className={styles['detail-value']}>{book.pages}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Издание:</span>
-                                  <span className="detail-value">{book.edition}</span>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Издание:</span>
+                                  <span className={styles['detail-value']}>{book.edition}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Корици:</span>
-                                  <span className="detail-value">{getCoverTypeText(book.coverType)}</span>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Корици:</span>
+                                  <span className={styles['detail-value']}>{getCoverTypeText(book.coverType)}</span>
                                 </div>
-                                <div className="book-detail">
-                                  <span className="detail-label">Състояние:</span>
-                                  <span className="detail-value" style={{ color: getConditionColor(book.condition) }}>
+                                <div className={styles['book-detail']}>
+                                  <span className={styles['detail-label']}>Състояние:</span>
+                                  <span className={styles['detail-value']} style={{ color: getConditionColor(book.condition) }}>
                                     {book.condition === 'new' && 'Нова'}
                                     {book.condition === 'good' && 'Добра'}
                                     {book.condition === 'fair' && 'Задоволителна'}
@@ -1286,22 +1296,22 @@ setAvailableShelves(shelves);
                                 </div>
                               </div>
                               
-                              <div className="library-location">
+                              <div className={styles['library-location']}>
                                 <h4>Местоположение в библиотеката:</h4>
-                                <div className="location-details">
-                                  <div className="location-item">
+                                <div className={styles['location-details']}>
+                                  <div className={styles['location-item']}>
                                     <MapPin size={16} />
                                     <span>Отдел: {book.location}</span>
                                   </div>
-                                  <div className="location-item">
+                                  <div className={styles['location-item']}>
                                     <Home size={16} />
                                     <span>Рафт: {book.shelfNumber}</span>
                                   </div>
-                                  <div className="location-item call-number">
+                                  <div className={`${styles['location-item']} ${styles['call-number']}`}>
                                     <Library size={16} />
                                     <span>Сигнатура: {book.callNumber}</span>
                                     <button 
-                                      className="copy-call-number"
+                                      className={styles['copy-call-number']}
                                       onClick={() => copyCallNumber(book.callNumber)}
                                     >
                                       <Copy size={14} />
@@ -1311,9 +1321,9 @@ setAvailableShelves(shelves);
                               </div>
 
                               {book.tags && book.tags.length > 0 && (
-                                <div className="book-tags">
+                                <div className={styles['book-tags']}>
                                   {book.tags.map((tag, index) => (
-                                    <span key={index} className="book-tag">
+                                    <span key={index} className={styles['book-tag']}>
                                       #{tag}
                                     </span>
                                   ))}
@@ -1323,61 +1333,63 @@ setAvailableShelves(shelves);
                           )}
 
                           {/* Book Stats */}
-                          <div className="book-stats">
-                            <div className="stat-group">
+                          <div className={styles['book-stats']}>
+                            <div className={styles['stat-group']}>
                               {renderStars(book.id, book.rating ?? 0, true)}
-                              <span className="ratings-count">({book.ratingsCount})</span>
+                              <span className={styles['ratings-count']}>({book.ratingsCount})</span>
                             </div>
-                            <div className="stat-group">
-                              <Eye size={14} />
+                            <div className={styles['stat-group']}>
                               <span>{book.views || 0} прегледа</span>
                             </div>
-                            <div className="stat-group">
-                              <Users size={14} />
+                            <div className={styles['stat-group']}>
                               <span>{book.reservationQueue} чакащи</span>
                             </div>
                           </div>
 
                           {/* Book Actions */}
-                          <div className="book-actions">
-                            {isReserved ? (
-                              <div className="reserved-status">
-                                <CheckCircle size={16} />
-                                <span>Вече сте резервирали</span>
-                                <button 
-                                  className="cancel-small-btn"
-                                  onClick={() => handleCancelReservation(book.id)}
-                                  style={{ marginLeft: '10px', fontSize: '12px', padding: '2px 6px' }}
-                                >
-                                  Откажи
-                                </button>
-                              </div>
-                            ) : inWaitingList ? (
-                              <div className="waiting-list-status">
-                                <Clock size={16} />
-                                <span>Чакате в опашката ({book.reservationQueue} чакащи)</span>
-                              </div>
-                            ) : book.availableCopies > 0 ? (
+                          <div className={styles['book-actions']}>
+  {isBookBorrowedByUser(book) ? (
+    <div className={styles['borrowed-status']}>
+      <CheckCircle size={16} />
+      <span>Книгата е взета от вас</span>
+    </div>
+  ) : isReserved ? (
+    <div className={styles['reserved-status']}>
+      <CheckCircle size={16} />
+      <span>Вече сте резервирали</span>
+      <button 
+        className={styles['cancel-small-btn']}
+        onClick={() => handleCancelReservation(book.id)}
+        style={{ marginLeft: '10px', fontSize: '12px', padding: '2px 6px' }}
+      >
+        Откажи
+      </button>
+    </div>
+  ) : inWaitingList ? (
+    <div className={styles['waiting-list-status']}>
+      <Clock size={16} />
+      <span>Чакате в опашката ({book.reservationQueue} чакащи)</span>
+    </div>
+  ) : book.availableCopies > 0 ? (
+    <button 
+      className={styles['reserve-btn']}
+      onClick={() => handleReserveBook(book)}
+    >
+      <Calendar size={16} />
+      <span>Резервирай ({book.borrowPeriod} дни)</span>
+    </button>
+  ) : (
+    <button 
+      className={styles['waitlist-btn']}
+      onClick={() => handleReserveBook(book)}
+    >
+      <Users size={16} />
+      <span>Запиши се в списъка ({book.reservationQueue} чакащи)</span>
+    </button>
+  )}
+                            <div className={styles['action-buttons']}>
                               <button 
-                                className="reserve-btn"
-                                onClick={() => handleReserveBook(book)}
-                              >
-                                <Calendar size={16} />
-                                <span>Резервирай ({book.borrowPeriod} дни)</span>
-                              </button>
-                            ) : (
-                              <button 
-                                className="waitlist-btn"
-                                onClick={() => handleReserveBook(book)}
-                              >
-                                <Users size={16} />
-                                <span>Запиши се в списъка ({book.reservationQueue} чакащи)</span>
-                              </button>
-                            )}
-
-                            <div className="action-buttons">
-                              <button 
-                                className="action-btn"
+                                className={styles['action-btn']}
                                 onClick={() => toggleBookExpansion(book.id)}
                                 title={isExpanded ? 'Скрий детайли' : 'Покажи детайли'}
                               >
@@ -1385,7 +1397,7 @@ setAvailableShelves(shelves);
                               </button>
                               
                               <button 
-                                className="action-btn"
+                                className={styles['action-btn']}
                                 onClick={() => handleShareBook(book)}
                                 title="Сподели местоположение"
                               >
@@ -1395,7 +1407,7 @@ setAvailableShelves(shelves);
                               {user ? (
                                 isInWishlist(book.id) ? (
                                   <button 
-                                    className="action-btn"
+                                    className={styles['action-btn']}
                                     title="Премахни от желания"
                                     onClick={() => removeFromWishlistHandler(book.id)}
                                   >
@@ -1403,7 +1415,7 @@ setAvailableShelves(shelves);
                                   </button>
                                 ) : (
                                   <button 
-                                    className="action-btn"
+                                    className={styles['action-btn']}
                                     title="Добави в желания"
                                     onClick={() => handleAddToWishlist(book)}
                                   >
@@ -1412,7 +1424,7 @@ setAvailableShelves(shelves);
                                 )
                               ) : (
                                 <button 
-                                  className="action-btn"
+                                  className={styles['action-btn']}
                                   title="Влезте в профила си за да добавите в желания"
                                   onClick={() => navigate('/login')}
                                 >
@@ -1424,12 +1436,12 @@ setAvailableShelves(shelves);
 
                           {/* Digital Version */}
                           {book.digitalVersion?.available && (
-                            <div className="digital-version">
+                            <div className={styles['digital-version']}>
                               <a 
                                 href={book.digitalVersion.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="digital-link"
+                                className={styles['digital-link']}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <FileText size={14} />
@@ -1443,9 +1455,9 @@ setAvailableShelves(shelves);
                   </div>
                 </>
               ) : (
-                <div className="no-books-found">
-                  <Book size={80} className="no-books-icon" />
-                  <h3 className="handwritten-title-small">
+                <div className={styles['no-books-found']}>
+                  <Book size={80} className={styles['no-books-icon']} />
+                  <h3 className={styles['handwritten-title-small']}>
                     {searchTerm ? 'Няма намерени книги' : 'Няма книги с тези филтри'}
                   </h3>
                   <p>
@@ -1455,7 +1467,7 @@ setAvailableShelves(shelves);
                     }
                   </p>
                   <button 
-                    className="clear-filters-btn"
+                    className={styles['clear-filters-btn']}
                     onClick={clearFiltersHandler}
                   >
                     Изчисти филтрите
@@ -1464,19 +1476,19 @@ setAvailableShelves(shelves);
               )}
             </>
           ) : (
-            <div className="bookshelf-view">
-              <h3 className="bookshelf-title" style={{ color: '#333', marginBottom: '10px' }}>
+            <div className={styles['bookshelf-view']}>
+              <h3 className={styles['bookshelf-title']} style={{ color: '#333', marginBottom: '10px' }}>
                 <Library style={{ marginRight: '10px', verticalAlign: 'middle' }} />
                 Визуален каталог на рафтовете
               </h3>
-              <div className="shelf-options expanded">
-                <div className="filter-group">
-                  <label className="filter-label" style={{ color: '#333' }}>
+              <div className={`${styles['shelf-options']} ${styles['expanded']}`}>
+                <div className={styles['filter-group']}>
+                  <label className={styles['filter-label']} style={{ color: '#333' }}>
                     <Library size={16} />
                     Избери рафт
                   </label>
                   <select 
-                    className="shelf-select"
+                    className={styles['shelf-select']}
                     value={selectedShelf}
                     onChange={(e) => setSelectedShelf(e.target.value)}
                     style={{ border: '1px solid #ccc', background: 'white' }}
@@ -1488,13 +1500,13 @@ setAvailableShelves(shelves);
                   </select>
                 </div>
                 
-                <div className="filter-group">
-                  <label className="filter-label" style={{ color: '#333' }}>
+                <div className={styles['filter-group']}>
+                  <label className={styles['filter-label']} style={{ color: '#333' }}>
                     <Tag size={16} />
                     Тип литература
                   </label>
                   <select 
-                    className="shelf-select"
+                    className={styles['shelf-select']}
                     value={selectedShelfType}
                     onChange={(e) => setSelectedShelfType(e.target.value)}
                     style={{ border: '1px solid #ccc', background: 'white' }}
@@ -1509,12 +1521,12 @@ setAvailableShelves(shelves);
                   </select>
                 </div>
                 
-                <div className="filter-group">
-                  <label className="filter-label" style={{ color: '#333' }}>
+                <div className={styles['filter-group']}>
+                  <label className={styles['filter-label']} style={{ color: '#333' }}>
                     <Book size={16} />
                     Брой книги
                   </label>
-                  <div className="stat-number" style={{ 
+                  <div className={styles['stat-number']} style={{ 
                     fontSize: '16px', 
                     padding: '8px 12px',
                     background: '#f0f0f0',
@@ -1530,7 +1542,7 @@ setAvailableShelves(shelves);
                 
                 {(selectedShelf !== 'all' || selectedShelfType !== 'all') && (
                   <button 
-                    className="clear-filters-btn"
+                    className={styles['clear-filters-btn']}
                     onClick={() => {
                       setSelectedShelf('all');
                       setSelectedShelfType('all');
@@ -1553,30 +1565,32 @@ setAvailableShelves(shelves);
         </div>
 
         {/* Information Section */}
-        <div className="book-library-info">
-          <div className="info-card">
-            <div className="info-icon">
+        <div className={styles['book-library-info']}>
+          <div className={styles['info-card']}>
+            <div className={styles['info-icon']}>
               <Calendar size={24} />
             </div>
-            <div className="info-content">
+            <div className={styles['info-content']}>
               <h4>Как да вземете книга?</h4>
-              <ol className="steps-list">
+              <ol className={styles['steps-list']}>
                 <li>Резервирайте книгата онлайн</li>
                 <li>Получете потвърждение по имейл</li>
                 <li>Вземете книгата от библиотеката в рамките на 24 часа</li>
-                <li>Максимален период на ползване: 14-21 дни</li>
+                <li>Максимален период на ползване:  
+                  <strong> 14 или 30 дни</strong> в зависимост от категорията
+                </li>
                 <li>Възможност за удължаване: 1-2 пъти</li>
               </ol>
             </div>
           </div>
 
-          <div className="info-card">
-            <div className="info-icon">
+          <div className={styles['info-card']}>
+            <div className={styles['info-icon']}>
               <Award size={24} />
             </div>
-            <div className="info-content">
+            <div className={styles['info-content']}>
               <h4>Нашата колекция</h4>
-              <ul className="collection-list">
+              <ul className={styles['collection-list']}>
                 <li>10,000+ физически книги</li>
                 <li>Класическа и съвременна литература</li>
                 <li>Учебници и учебни помагала</li>
@@ -1586,13 +1600,13 @@ setAvailableShelves(shelves);
             </div>
           </div>
 
-          <div className="info-card">
-            <div className="info-icon">
+          <div className={styles['info-card']}>
+            <div className={styles['info-icon']}>
               <Users size={24} />
             </div>
-            <div className="info-content">
+            <div className={styles['info-content']}>
               <h4>Условия за ползване</h4>
-              <ul className="terms-list">
+              <ul className={styles['terms-list']}>
                 <li>Необходима регистрация в системата</li>
                 <li>Максимум 3 книги едновременно</li>
                 <li>Задължително връщане в срок</li>
@@ -1607,85 +1621,85 @@ setAvailableShelves(shelves);
       {/* Book Details Modal */}
       {showBookDetails && selectedBook && (
         <div 
-          className="book-modal-overlay"
+          className={styles['book-modal-overlay']}
           onClick={() => setShowBookDetails(false)}
         >
           <div 
-            className="book-modal"
+            className={styles['book-modal']}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="book-modal-content">
-              <div className="book-modal-header">
-                <div className="book-modal-thumbnail">
-                  <div className="book-modal-image-fallback">
-                    <Book className="modal-fallback-icon" />
+            <div className={styles['book-modal-content']}>
+              <div className={styles['book-modal-header']}>
+                <div className={styles['book-modal-thumbnail']}>
+                  <div className={styles['book-modal-image-fallback']}>
+                    <Book className={styles['modal-fallback-icon']} />
                   </div>
                 </div>
-                <div className="book-modal-info">
+                <div className={styles['book-modal-info']}>
                   <h2>{selectedBook.title}</h2>
-                  <p className="book-modal-author">от {selectedBook.author}</p>
-                  <div className="book-modal-meta">
-                    <span className="book-modal-category">{selectedBook.category}</span>
+                  <p className={styles['book-modal-author']}>от {selectedBook.author}</p>
+                  <div className={styles['book-modal-meta']}>
+                    <span className={styles['book-modal-category']}>{selectedBook.category}</span>
                     <span 
-                      className="book-modal-status"
+                      className={styles['book-modal-status']}
                       style={{ color: getStatusColor(selectedBook.status) }}
                     >
                       {selectedBook.status === 'available' ? 'Налична' : 
                        selectedBook.status === 'borrowed' ? 'Взета' : 
                        selectedBook.status === 'reserved' ? 'Резервирана' : 'В ремонт'}
                     </span>
-                    <span className="book-modal-year">{selectedBook.year}</span>
+                    <span className={styles['book-modal-year']}>{selectedBook.year}</span>
                   </div>
-                  <div className="book-modal-rating">
+                  <div className={styles['book-modal-rating']}>
                     {renderStars(selectedBook.id, selectedBook.rating ?? 0, false)}
                     <span>{selectedBook.ratingsCount} оценки</span>
                   </div>
                 </div>
                 <button 
-                  className="close-modal-btn"
+                  className={styles['close-modal-btn']}
                   onClick={() => setShowBookDetails(false)}
                 >
                   <X size={24} />
                 </button>
               </div>
               
-              <div className="book-modal-body">
-                <div className="book-modal-description">
+              <div className={styles['book-modal-body']}>
+                <div className={styles['book-modal-description']}>
                   <h3>Описание</h3>
                   <p>{selectedBook.description}</p>
                 </div>
                 
-                <div className="book-modal-details">
+                <div className={styles['book-modal-details']}>
                   <h3>Технически детайли</h3>
-                  <div className="details-grid modal">
-                    <div className="detail-item">
-                      <span className="detail-label">ISBN:</span>
-                      <span className="detail-value">{selectedBook.isbn}</span>
+                  <div className={`${styles['details-grid']} ${styles['modal']}`}>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>ISBN:</span>
+                      <span className={styles['detail-value']}>{selectedBook.isbn}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Издател:</span>
-                      <span className="detail-value">{selectedBook.publisher}</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Издател:</span>
+                      <span className={styles['detail-value']}>{selectedBook.publisher}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Издание:</span>
-                      <span className="detail-value">{selectedBook.edition}</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Издание:</span>
+                      <span className={styles['detail-value']}>{selectedBook.edition}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Страници:</span>
-                      <span className="detail-value">{selectedBook.pages}</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Страници:</span>
+                      <span className={styles['detail-value']}>{selectedBook.pages}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Език:</span>
-                      <span className="detail-value">{selectedBook.language}</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Език:</span>
+                      <span className={styles['detail-value']}>{selectedBook.language}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Корици:</span>
-                      <span className="detail-value">{getCoverTypeText(selectedBook.coverType)}</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Корици:</span>
+                      <span className={styles['detail-value']}>{getCoverTypeText(selectedBook.coverType)}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Състояние:</span>
+                    <div className={styles['detail-item']}>
+                      <span className={styles['detail-label']}>Състояние:</span>
                       <span 
-                        className="detail-value"
+                        className={styles['detail-value']}
                         style={{ color: getConditionColor(selectedBook.condition) }}
                       >
                         {selectedBook.condition === 'new' ? 'Нова' :
@@ -1696,22 +1710,22 @@ setAvailableShelves(shelves);
                   </div>
                 </div>
                 
-                <div className="book-modal-location">
+                <div className={styles['book-modal-location']}>
                   <h3>Местоположение в библиотеката</h3>
-                  <div className="location-info">
-                    <div className="location-item">
+                  <div className={styles['location-info']}>
+                    <div className={styles['location-item']}>
                       <MapPin size={18} />
                       <span><strong>Отдел:</strong> {selectedBook.location}</span>
                     </div>
-                    <div className="location-item">
+                    <div className={styles['location-item']}>
                       <Home size={18} />
                       <span><strong>Рафт:</strong> {selectedBook.shelfNumber}</span>
                     </div>
-                    <div className="location-item call-number">
+                    <div className={`${styles['location-item']} ${styles['call-number']}`}>
                       <Library size={18} />
                       <span><strong>Сигнатура:</strong> {selectedBook.callNumber}</span>
                       <button 
-                        className="copy-call-number"
+                        className={styles['copy-call-number']}
                         onClick={() => copyCallNumber(selectedBook.callNumber)}
                       >
                         <Copy size={16} />
@@ -1721,41 +1735,41 @@ setAvailableShelves(shelves);
                   </div>
                 </div>
 
-                <div className="book-modal-availability">
+                <div className={styles['book-modal-availability']}>
                   <h3>Наличност</h3>
-                  <div className="availability-info">
-                    <div className="availability-item">
-                      <span className="availability-label">Общо копия:</span>
-                      <span className="availability-value">{selectedBook.copies}</span>
+                  <div className={styles['availability-info']}>
+                    <div className={styles['availability-item']}>
+                      <span className={styles['availability-label']}>Общо копия:</span>
+                      <span className={styles['availability-value']}>{selectedBook.copies}</span>
                     </div>
-                    <div className="availability-item">
-                      <span className="availability-label">Налични сега:</span>
+                    <div className={styles['availability-item']}>
+                      <span className={styles['availability-label']}>Налични сега:</span>
                       <span 
-                        className="availability-value"
+                        className={styles['availability-value']}
                         style={{ color: selectedBook.availableCopies > 0 ? '#10b981' : '#ef4444' }}
                       >
                         {selectedBook.availableCopies}
                       </span>
                     </div>
-                    <div className="availability-item">
-                      <span className="availability-label">В списък за изчакване:</span>
-                      <span className="availability-value">{selectedBook.reservationQueue}</span>
+                    <div className={styles['availability-item']}>
+                      <span className={styles['availability-label']}>В списък за изчакване:</span>
+                      <span className={styles['availability-value']}>{selectedBook.reservationQueue}</span>
                     </div>
-                    <div className="availability-item">
-                      <span className="availability-label">Период на ползване:</span>
-                      <span className="availability-value">{selectedBook.borrowPeriod} дни</span>
+                    <div className={styles['availability-item']}>
+                      <span className={styles['availability-label']}>Период на ползване:</span>
+                      <span className={styles['availability-value']}>{selectedBook.borrowPeriod} дни</span>
                     </div>
-                    <div className="availability-item">
-                      <span className="availability-label">Удължавания:</span>
-                      <span className="availability-value">{selectedBook.maxRenewals} пъти</span>
+                    <div className={styles['availability-item']}>
+                      <span className={styles['availability-label']}>Удължавания:</span>
+                      <span className={styles['availability-value']}>{selectedBook.maxRenewals} пъти</span>
                     </div>
                   </div>
                 </div>
 
                 {selectedBook.digitalVersion?.available && (
-                  <div className="book-modal-digital">
+                  <div className={styles['book-modal-digital']}>
                     <h3>Дигитална версия</h3>
-                    <div className="digital-info">
+                    <div className={styles['digital-info']}>
                       <FileText size={18} />
                       <span>
                         Налична дигитална версия във формат {selectedBook.digitalVersion.format}
@@ -1764,7 +1778,7 @@ setAvailableShelves(shelves);
                         href={selectedBook.digitalVersion.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="digital-link-btn"
+                        className={styles['digital-link-btn']}
                       >
                         <Download size={16} />
                         <span>Свали</span>
@@ -1774,26 +1788,26 @@ setAvailableShelves(shelves);
                 )}
               </div>
               
-              <div className="book-modal-footer">
+              <div className={styles['book-modal-footer']}>
                 {isBookReservedByUser(selectedBook.id) ? (
-                  <div className="already-reserved">
+                  <div className={styles['already-reserved']}>
                     <CheckCircle size={20} />
                     <span>Вече сте резервирали тази книга</span>
                     <button 
-                      className="cancel-reservation-btn"
+                      className={styles['cancel-reservation-btn']}
                       onClick={() => handleCancelReservation(selectedBook.id)}
                     >
                       Откажи резервация
                     </button>
                   </div>
                 ) : isUserInWaitingListLocal(selectedBook) ? (
-                  <div className="waiting-status">
+                  <div className={styles['waiting-status']}>
                     <Clock size={20} />
                     <span>В списъка на чакащите</span>
                   </div>
                 ) : selectedBook.availableCopies > 0 ? (
                   <button 
-                    className="modal-reserve-btn"
+                    className={styles['modal-reserve-btn']}
                     onClick={() => {
                       handleReserveBook(selectedBook);
                       setShowBookDetails(false);
@@ -1804,7 +1818,7 @@ setAvailableShelves(shelves);
                   </button>
                 ) : (
                   <button 
-                    className="modal-waitlist-btn"
+                    className={styles['modal-waitlist-btn']}
                     onClick={() => {
                       handleReserveBook(selectedBook);
                       setShowBookDetails(false);
@@ -1816,7 +1830,7 @@ setAvailableShelves(shelves);
                 )}
                 
                 <button 
-                  className="modal-share-btn"
+                  className={styles['modal-share-btn']}
                   onClick={() => handleShareBook(selectedBook)}
                 >
                   <Share2 size={18} />
@@ -1825,7 +1839,7 @@ setAvailableShelves(shelves);
                 
                 {user && (
                   <button 
-                    className={`modal-wishlist-btn ${isInWishlist(selectedBook.id) ? 'active' : ''}`}
+                    className={`${styles['modal-wishlist-btn']} ${isInWishlist(selectedBook.id) ? styles['active'] : ''}`}
                     onClick={() => isInWishlist(selectedBook.id) 
                       ? removeFromWishlistHandler(selectedBook.id) 
                       : handleAddToWishlist(selectedBook)
@@ -1839,7 +1853,6 @@ setAvailableShelves(shelves);
             </div>
           </div>
         </div>
-
       )}
     </div>
   );

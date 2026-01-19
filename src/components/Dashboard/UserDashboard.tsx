@@ -3,14 +3,16 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { db } from "../../firebase/firebase";
 import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc, Timestamp } from "firebase/firestore";
 import { 
-  BookOpen, Calendar, Search, Clock, CheckCircle, Ticket, History, Heart, Bookmark, RotateCcw, XCircle, Eye, MapPin, X, Printer, Book, Sparkles,
+  BookOpen, Calendar, Search, Clock, CheckCircle, Ticket, History, Heart, Bookmark, 
+  RotateCcw, XCircle, Eye, MapPin, X, Printer, Book, Sparkles, Loader2, Home, Bell,
+  ArrowRight, ChevronRight, User, Library, Star
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import EventTicketModal from "../EventTicketModal";
 import EventDetailsModal from "../../pages/EventDetailsModal";
 import { v4 as uuidv4 } from 'uuid';
-import './UserDashboard.css';
+import styles from './UserDashboard.module.css';
 
 // Импорт на новите услуги и типове
 import * as bookService from "../../lib/services/bookService";
@@ -86,6 +88,7 @@ interface UserData {
     displayName?: string;
   };
 }
+
 const UserDashboard: React.FC = () => {
   const [userBooks, setUserBooks] = useState<UserBook[]>([]);
   const [allBooks, setAllBooks] = useState<BookLibrary[]>([]);
@@ -100,11 +103,12 @@ const UserDashboard: React.FC = () => {
     reservedBooks: 0,
     wishlistCount: 0,
     activeTickets: 0,
-    pastTickets: 0
+    pastTickets: 0,
+    totalTickets: 0
   });
   const [userData] = useState<UserData | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"overview" | "books" | "reservations" | "wishlist" | "activeEvents" | "pastEvents" | "tickets" | "recommendations">("overview");
+  const [activeTab, setActiveTab] = useState<"home" | "books" | "reservations" | "wishlist" | "activeEvents" | "pastEvents" | "tickets" | "recommendations">("home");
   const [loading, setLoading] = useState(true);
   const [processingBook, setProcessingBook] = useState<string | null>(null);
   const [processingEvent, setProcessingEvent] = useState<string | null>(null);
@@ -118,12 +122,13 @@ const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   
   const navigate = useNavigate();
+  
   const getUserDisplayName = useCallback((): string => {
-      if (userData?.profile?.displayName) {
-        return userData.profile.displayName;
-      }
-      return user?.email?.split('@')[0] || 'Потребител';
-    }, [user, userData]);
+    if (userData?.profile?.displayName) {
+      return userData.profile.displayName;
+    }
+    return user?.email?.split('@')[0] || 'Потребител';
+  }, [user, userData]);
 
   // Изчисляване на активни и изтекли събития
   const { activeEvents, pastEvents } = useMemo(() => {
@@ -135,7 +140,7 @@ const UserDashboard: React.FC = () => {
 
     const past = allEvents
       .filter(event => event.date && event.date < today)
-      .sort((b) => b.date.localeCompare(b.date));
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     return { activeEvents: active, pastEvents: past };
   }, [allEvents]);
@@ -143,138 +148,306 @@ const UserDashboard: React.FC = () => {
   // Зареждане на всички данни
   useEffect(() => {
     const loadAllData = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        
-        // 1. Зареждане на всички книги
-        const booksData = await bookService.fetchAllBooks();
-        setAllBooks(booksData);
-        
-        // 2. Зареждане на събития
-        await fetchEvents();
-        
-        // 3. Зареждане на резервации
-        const userReservations = await reservationService.getUserActiveReservations(user.uid);
-        setReservations(userReservations);
-        
-        // 4. Зареждане на списък с желания
-        const userWishlist = await wishlistService.getUserWishlist(user.uid);
-        setWishlist(userWishlist);
-        
-        // 5. Зареждане на прегледани книги
-        const viewed = await userService.getUserViewedBooks(user.uid);
-        setViewedBooks(viewed);
-        
-        // 6. Подготовка на книгите на потребителя
-        await prepareUserBooks(booksData, userReservations, userWishlist, viewed);
-        
-        // 7. Генериране на препоръки
-        await generateRecommendations(booksData, viewed, userWishlist);
-        
-        // 8. Обновяване на статистики
-        updateStats();
-        
-      } catch (error) {
-        console.error("Грешка при зареждане на данни:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (!user) return;
+  
+  try {
+    setLoading(true);
+    
+    // 1. Зареждане на всички книги
+    const booksData = await bookService.fetchAllBooks();
+    setAllBooks(booksData);
+    
+    // ДЕБЪГ: Провери кои книги са заети от този потребител
+    const borrowedBooks = booksData.filter(book => 
+      book.borrowedBy?.some(b => b.userId === user.uid && !b.returned)
+    );
+    console.log("📚 Заети книги от потребителя:", borrowedBooks.map(b => ({
+      title: b.title,
+      borrowedBy: b.borrowedBy?.filter(bb => bb.userId === user.uid && !bb.returned)
+    })));
+    
+    // 2. Зареждане на събития
+    await fetchEvents();
+    
+    // 3. Зареждане на резервации
+    const userReservations = await reservationService.getUserActiveReservations(user.uid);
+    console.log("📋 Резервации на потребителя:", {
+      count: userReservations.length,
+      active: userReservations.filter(r => r.status === 'active'),
+      fulfilled: userReservations.filter(r => r.status === 'fulfilled')
+    });
+    setReservations(userReservations);
+    
+    // 4. Зареждане на списък с желания
+    const userWishlist = await wishlistService.getUserWishlist(user.uid);
+    setWishlist(userWishlist);
+    
+    // 5. Зареждане на прегледани книги
+    const viewed = await userService.getUserViewedBooks(user.uid);
+    setViewedBooks(viewed);
+    
+    // 6. Подготовка на книгите на потребителя
+    await prepareUserBooks(booksData, userReservations, userWishlist, viewed);
+    
+    // 7. Генериране на препоръки
+    await generateRecommendations(booksData, viewed, userWishlist);
+    
+  } catch (error) {
+    console.error("Грешка при зареждане на данни:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
     loadAllData();
   }, [user]);
 
-  // Обновяване на статистики
+  // Добавете тази функция в компонента:
+const debugReservations = () => {
+  console.log("🔍 ДЕБЪГ - Резервации:", {
+    allReservations: reservations,
+    filteredReservations: filteredReservations,
+    userBooks: userBooks.filter(b => b.status === 'reserved'),
+    user: user?.uid
+  });
+  
+  if (reservations.length > 0) {
+    reservations.forEach((res, index) => {
+      const book = allBooks.find(b => b.id === res.bookId);
+      console.log(`📋 Резервация ${index + 1}:`, {
+        reservationId: res.id,
+        bookId: res.bookId,
+        bookTitle: book?.title || 'Неизвестна книга',
+        status: res.status,
+        expiresAt: res.expiresAt,
+        expiresAtRaw: res.expiresAt,
+        userMatch: res.userId === user?.uid
+      });
+    });
+  } else {
+    console.log("⚠️ Няма резервации за този потребител");
+  }
+};
+
+// И извикайте я в useEffect за статистиките:
+useEffect(() => {
   const updateStats = () => {
     const borrowedBooks = userBooks.filter(b => b.status === 'borrowed').length;
     const reservedBooks = userBooks.filter(b => b.status === 'reserved').length;
     const wishlistCount = wishlist.length;
     const activeTickets = userTickets.filter(t => !t.isPast).length;
     const pastTickets = userTickets.filter(t => t.isPast).length;
+    const totalTickets = userTickets.length;
+    
+    console.log("📊 Статистики:", {
+      borrowedBooks,
+      reservedBooks,
+      wishlistCount,
+      userBooksReserved: userBooks.filter(b => b.status === 'reserved')
+    });
+    
+    // ДЕБЪГ - покажете резервациите
+    debugReservations();
     
     setStats({
       borrowedBooks,
       reservedBooks,
       wishlistCount,
       activeTickets,
-      pastTickets
+      pastTickets,
+      totalTickets
     });
   };
 
+  updateStats();
+}, [userBooks, wishlist, userTickets]);
+
   // Подготовка на книгите на потребителя
   const prepareUserBooks = async (
-    books: BookLibrary[], 
-    reservations: Reservation[], 
-    wishlistItems: string[], 
-    viewed: string[]
-  ) => {
-    if (!user) return;
+  books: BookLibrary[], 
+  reservations: Reservation[], 
+  wishlistItems: string[], 
+  viewed: string[]
+) => {
+  if (!user) return;
+  
+  const userBooksData: UserBook[] = [];
+  
+  // 1. Заети книги (от borrowedBy полето) - ПРОВЕРКА ПЪРВА
+  books.forEach(book => {
+    const borrowedRecord = book.borrowedBy?.find(b => 
+      b.userId === user.uid && !b.returned
+    );
     
-    const userBooksData: UserBook[] = [];
+    if (borrowedRecord) {
+      userBooksData.push({
+        bookId: book.id,
+        bookDetails: book,
+        status: 'borrowed',
+        borrowedDate: borrowedRecord.borrowedDate,
+        dueDate: borrowedRecord.dueDate,
+        borrowedRecord
+      });
+    }
+  });
+  
+  // 2. Резервирани книги - САМО АКО НЕ СА ВЕЧЕ ЗАЕТИ
+  reservations.forEach(reservation => {
+    // Първо провери дали книгата вече е добавена като заета
+    const alreadyBorrowed = userBooksData.some(ub => 
+      ub.bookId === reservation.bookId && ub.status === 'borrowed'
+    );
     
-    // 1. Заети книги (от borrowedBy полето)
-    books.forEach(book => {
-      const borrowedRecord = book.borrowedBy?.find(b => 
-        b.userId === user.uid && !b.returned
-      );
+    if (alreadyBorrowed) {
+      // Ако вече е заета, не я добавяй като резервирана
+      return;
+    }
+    
+    const book = books.find(b => b.id === reservation.bookId);
+    if (book && reservation.status === 'active') {
+      let expiresAtString = '';
       
-      if (borrowedRecord) {
-        userBooksData.push({
-          bookId: book.id,
-          bookDetails: book,
-          status: 'borrowed',
-          borrowedDate: borrowedRecord.borrowedDate,
-          dueDate: borrowedRecord.dueDate,
-          borrowedRecord
-        });
+      // Безопасна обработка на дати
+      if (reservation.expiresAt) {
+        const expiresAt = reservation.expiresAt as any;
+        if (expiresAt.toDate && typeof expiresAt.toDate === 'function') {
+          expiresAtString = expiresAt.toDate().toISOString().split('T')[0];
+        } else if (expiresAt.seconds) {
+          expiresAtString = new Date(expiresAt.seconds * 1000).toISOString().split('T')[0];
+        } else if (typeof expiresAt === 'string') {
+          expiresAtString = expiresAt;
+        } else if (expiresAt instanceof Date) {
+          expiresAtString = expiresAt.toISOString().split('T')[0];
+        }
       }
-    });
+      
+      userBooksData.push({
+        bookId: book.id,
+        bookDetails: book,
+        status: 'reserved',
+        reservationExpiresAt: expiresAtString
+      });
+    }
+  });
+  
+  // 3. Книги в списъка с желания (само ако не са заети или резервирани)
+  wishlistItems.forEach(bookId => {
+    // Проверка дали книгата вече е в списъка като заета или резервирана
+    const alreadyInList = userBooksData.some(ub => 
+      ub.bookId === bookId && (ub.status === 'borrowed' || ub.status === 'reserved')
+    );
     
-    // 2. Резервирани книги
-    reservations.forEach(reservation => {
-      const book = books.find(b => b.id === reservation.bookId);
+    if (!alreadyInList) {
+      const book = books.find(b => b.id === bookId);
       if (book) {
-        userBooksData.push({
-          bookId: book.id,
-          bookDetails: book,
-          status: 'reserved',
-          reservationExpiresAt: (reservation.expiresAt as any)?.toDate?.()?.toISOString()?.split('T')[0]
-        });
+        // Проверка дали книгата вече е в списъка като wishlist
+        const alreadyWishlist = userBooksData.some(ub => 
+          ub.bookId === bookId && ub.status === 'wishlist'
+        );
+        
+        if (!alreadyWishlist) {
+          userBooksData.push({
+            bookId: book.id,
+            bookDetails: book,
+            status: 'wishlist'
+          });
+        }
       }
-    });
-    
-    // 3. Книги в списъка с желания
-    wishlistItems.forEach(bookId => {
+    }
+  });
+  
+  // 4. Прегледани книги (само ако не са в други списъци)
+  viewed.forEach(bookId => {
+    const alreadyInList = userBooksData.some(ub => ub.bookId === bookId);
+    if (!alreadyInList) {
       const book = books.find(b => b.id === bookId);
       if (book) {
         userBooksData.push({
           bookId: book.id,
           bookDetails: book,
-          status: 'wishlist'
+          status: 'viewed'
         });
       }
-    });
-    
-    // 4. Прегледани книги (само ако не са в други списъци)
-    viewed.forEach(bookId => {
-      const alreadyInList = userBooksData.some(ub => ub.bookId === bookId);
-      if (!alreadyInList) {
-        const book = books.find(b => b.id === bookId);
-        if (book) {
-          userBooksData.push({
-            bookId: book.id,
-            bookDetails: book,
-            status: 'viewed'
-          });
-        }
-      }
-    });
-    
-    setUserBooks(userBooksData);
-  };
+    }
+  });
+  
+  console.log("📋 Подготвени книги на потребителя:", {
+    total: userBooksData.length,
+    borrowed: userBooksData.filter(b => b.status === 'borrowed'),
+    reserved: userBooksData.filter(b => b.status === 'reserved'),
+    wishlist: userBooksData.filter(b => b.status === 'wishlist'),
+    viewed: userBooksData.filter(b => b.status === 'viewed'),
+    allBooks: userBooksData.map(b => ({
+      title: b.bookDetails.title,
+      status: b.status,
+      bookId: b.bookId
+    }))
+  });
+  
+  setUserBooks(userBooksData);
+};
+// Заемане на вече резервирана книга
+const borrowReservedBook = async (bookId: string, reservationId: string) => {
+  if (!user) return;
 
+  try {
+    setProcessingBook(bookId);
+    
+    // 1. Намерете книгата и резервацията
+    const book = allBooks.find(b => b.id === bookId);
+    const reservation = reservations.find(r => r.id === reservationId);
+    
+    if (!book || !reservation) {
+      alert('Грешка при намиране на данните!');
+      return;
+    }
+
+    // 2. Променете статуса на резервацията на "fulfilled"
+    await updateDoc(doc(db, "reservations", reservationId), {
+  status: 'fulfilled',
+  lastUpdated: Timestamp.now()
+});
+    
+    // 3. Добавете запис за заемане
+    const borrowedRecord = {
+      userId: user.uid,
+      userName: user.displayName || user.email || 'Потребител',
+      userEmail: user.email || '',
+      borrowedDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + (book.borrowPeriod || 14) * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0],
+      returned: false,
+      renewed: false,
+      renewalCount: 0
+    };
+
+    const updatedBorrowedBy = [...(book.borrowedBy || []), borrowedRecord];
+    
+    // 4. Актуализирайте книгата в базата данни
+    await updateDoc(doc(db, "books", bookId), {
+      borrowedBy: updatedBorrowedBy,
+      availableCopies: Math.max(0, book.availableCopies - 1),
+      lastUpdated: Timestamp.now()
+    });
+
+    // 5. Обновете всички данни
+    const updatedBooks = await bookService.fetchAllBooks();
+    setAllBooks(updatedBooks);
+    
+    const updatedReservations = await reservationService.getUserActiveReservations(user.uid);
+    setReservations(updatedReservations);
+    
+    await prepareUserBooks(updatedBooks, updatedReservations, wishlist, viewedBooks);
+    
+    alert(`Книгата "${book.title}" е взета успешно! Върнете я до ${formatDate(borrowedRecord.dueDate)}.`);
+    
+  } catch (error) {
+    console.error("Грешка при заемане на резервирана книга:", error);
+    alert("Възникна грешка при заемането. Опитайте отново.");
+  } finally {
+    setProcessingBook(null);
+  }
+};
   // Генериране на препоръки
   const generateRecommendations = async (
     books: BookLibrary[], 
@@ -454,15 +627,39 @@ const UserDashboard: React.FC = () => {
         });
         
         setUserTickets(userTicketsData);
-        updateStats();
         
       } catch (error) {
         console.error("Error fetching user tickets:", error);
       }
     };
 
-    fetchUserTickets();
+    if (allEvents.length > 0) {
+      fetchUserTickets();
+    }
   }, [allEvents, user]);
+
+  // Обновяване на статистиките при промяна на данните
+  useEffect(() => {
+    const updateStats = () => {
+      const borrowedBooks = userBooks.filter(b => b.status === 'borrowed').length;
+      const reservedBooks = userBooks.filter(b => b.status === 'reserved').length;
+      const wishlistCount = wishlist.length;
+      const activeTickets = userTickets.filter(t => !t.isPast).length;
+      const pastTickets = userTickets.filter(t => t.isPast).length;
+      const totalTickets = userTickets.length;
+      
+      setStats({
+        borrowedBooks,
+        reservedBooks,
+        wishlistCount,
+        activeTickets,
+        pastTickets,
+        totalTickets
+      });
+    };
+
+    updateStats();
+  }, [userBooks, wishlist, userTickets]);
 
   // 🔥 НОВИ ФУНКЦИИ ЗА КНИГИ
 
@@ -514,7 +711,6 @@ const UserDashboard: React.FC = () => {
       setReservations(updatedReservations);
       
       await prepareUserBooks(allBooks, updatedReservations, wishlist, viewedBooks);
-      updateStats();
       
       alert(`Успешно резервирахте "${book.title}"! Имате ${book.borrowPeriod || 14} дни да я вземете.`);
       
@@ -543,7 +739,6 @@ const UserDashboard: React.FC = () => {
       setReservations(updatedReservations);
       
       await prepareUserBooks(allBooks, updatedReservations, wishlist, viewedBooks);
-      updateStats();
       
       alert("Резервацията е отменена успешно!");
       
@@ -578,7 +773,6 @@ const UserDashboard: React.FC = () => {
       setWishlist(updatedWishlist);
       
       await prepareUserBooks(allBooks, reservations, updatedWishlist, viewedBooks);
-      updateStats();
       
     } catch (error) {
       console.error("Грешка при промяна на списъка с желания:", error);
@@ -601,7 +795,6 @@ const UserDashboard: React.FC = () => {
       const updatedBooks = await bookService.fetchAllBooks();
       setAllBooks(updatedBooks);
       await prepareUserBooks(updatedBooks, reservations, wishlist, viewedBooks);
-      updateStats();
       
       alert("Книгата е върната успешно!");
       
@@ -734,15 +927,15 @@ const UserDashboard: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'borrowed': return 'Заета';
-      case 'reserved': return 'Резервирана';
-      case 'wishlist': return 'Желана';
-      case 'viewed': return 'Прегледана';
-      case 'available': return 'Налична';
-      default: return 'Неизвестен';
-    }
-  };
+  switch (status) {
+    case 'borrowed': return 'Заета';
+    case 'reserved': return 'Резервирана';
+    case 'wishlist': return 'Желана';
+    case 'viewed': return 'Прегледана';
+    case 'available': return 'Налична';
+    default: return 'Неизвестен';
+  }
+};
 
   const getAvailableSpots = (event: Event) => {
     return Math.max(0, event.maxParticipants - event.currentParticipants);
@@ -768,7 +961,7 @@ const UserDashboard: React.FC = () => {
       month: 'short'
     })} ${timeString}`;
   };
-
+console.log(formatDateTime);
   // Проверка дали потребителят е записан за събитие
   const isUserRegistered = (event: Event): boolean => {
     return user && event.participants ? event.participants.includes(user.uid) : false;
@@ -861,7 +1054,6 @@ const UserDashboard: React.FC = () => {
         eventImageUrl: eventData.imageUrl
       };
       setUserTickets(prev => [...prev, newTicket]);
-      updateStats();
 
       // Показване на билета
       setCurrentTicket(newTicket);
@@ -933,7 +1125,6 @@ const UserDashboard: React.FC = () => {
         )
       );
 
-      updateStats();
       alert(`Успешно се отписахте от "${eventData.title}"! Билетът ви беше изтрит.`);
       
     } catch (error: any) {
@@ -950,30 +1141,90 @@ const UserDashboard: React.FC = () => {
     setShowTicket(true);
   };
 
-
-
   // Принтиране на билет
   const printTicket = () => {
     window.print();
   };
 
   return (
-    <div className="user-dashboard">
-      <div className="dashboard-container">
-        {/* Header */}
-        <div className="dashboard-header">
-          <h1>Моят Профил</h1>
-          <p>Управление на книги, резервации, събития и билети</p>
+    <div className={styles.userDashboard}>
+      <div className={styles.container}>
+        {/* Красив хедър */}
+        <div className={styles.header}>
+          <div className={styles.titleSection}>
+            <div className={styles.titleIconWrapper}>
+              <User className={styles.titleIcon} size={32} />
+            </div>
+            <div className={styles.titleContent}>
+              <h1 className={styles.handwrittenTitle}>Добре дошъл, {getUserDisplayName()}!</h1>
+              <p className={styles.subtitle}>
+                Управлявайте книгите, резервациите и събитията си на едно място.
+              </p>
+            </div>
+          </div>
+          <div className={styles.actions}>
+            <button className={styles.suggestBtn}>
+              <Sparkles size={18} />
+              <span>Предложи подобрение</span>
+            </button>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="search-section">
-          <div className="search-box">
-            <Search className="search-icon" />
+        {/* Статистики */}
+        <div className={styles.stats}>
+          <div className={styles.statItem}>
+            <div className={styles.statIcon}>
+              <BookOpen size={24} />
+            </div>
+            <div className={styles.statInfo}>
+              <h3>Заети книги</h3>
+              <div className={styles.statNumber}>{stats.borrowedBooks}</div>
+              <div className={styles.statLabel}>В момента</div>
+            </div>
+          </div>
+          
+          <div className={styles.statItem}>
+            <div className={styles.statIcon}>
+              <Bookmark size={24} />
+            </div>
+            <div className={styles.statInfo}>
+              <h3>Резервации</h3>
+              <div className={styles.statNumber}>{stats.reservedBooks}</div>
+              <div className={styles.statLabel}>Изчакващи</div>
+            </div>
+          </div>
+          
+          <div className={styles.statItem}>
+            <div className={styles.statIcon}>
+              <Heart size={24} />
+            </div>
+            <div className={styles.statInfo}>
+              <h3>Желани книги</h3>
+              <div className={styles.statNumber}>{stats.wishlistCount}</div>
+              <div className={styles.statLabel}>В списъка</div>
+            </div>
+          </div>
+          
+          <div className={styles.statItem}>
+            <div className={styles.statIcon}>
+              <Ticket size={24} />
+            </div>
+            <div className={styles.statInfo}>
+              <h3>Активни билети</h3>
+              <div className={styles.statNumber}>{stats.activeTickets}</div>
+              <div className={styles.statLabel}>За събития</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Търсене */}
+        <div className={styles.search}>
+          <div className={styles.searchBox}>
+            <Search className={styles.searchIcon} />
             <input
               type="text"
               placeholder={`Търсене по ${
-                activeTab === "overview" ? "всичко" :
+                activeTab === "home" ? "всичко" :
                 activeTab === "books" ? "заглавие, автор или жанр" : 
                 activeTab === "reservations" ? "заглавие или автор (резервации)" : 
                 activeTab === "wishlist" ? "заглавие или автор (желани)" : 
@@ -984,135 +1235,169 @@ const UserDashboard: React.FC = () => {
               }...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
+              className={styles.searchInput}
             />
+            <div className={styles.searchInfo}>
+              <Clock size={14} />
+              <span>Реално време</span>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="tabs-section">
+        {/* Табове */}
+        <div className={styles.tabs}>
           <button 
-            className={`tab-button ${activeTab === "books" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "home" ? styles.active : ""}`}
+            onClick={() => setActiveTab("home")}
+          >
+            <Home className={styles.tabIcon} size={18} />
+            <span>Начало</span>
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === "books" ? styles.active : ""}`}
             onClick={() => setActiveTab("books")}
           >
-            <BookOpen size={18} />
-            Книги ({stats.borrowedBooks})
+            <BookOpen className={styles.tabIcon} size={18} />
+            <span>Книги</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "reservations" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "reservations" ? styles.active : ""}`}
             onClick={() => setActiveTab("reservations")}
           >
-            <Bookmark size={18} />
-            Резервации ({stats.reservedBooks})
+            <Bookmark className={styles.tabIcon} size={18} />
+            <span>Резервации</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "wishlist" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "wishlist" ? styles.active : ""}`}
             onClick={() => setActiveTab("wishlist")}
           >
-            <Heart size={18} />
-            Желани ({stats.wishlistCount})
+            <Heart className={styles.tabIcon} size={18} />
+            <span>Желани</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "recommendations" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "recommendations" ? styles.active : ""}`}
             onClick={() => setActiveTab("recommendations")}
           >
-            <Sparkles size={18} />
-            Препоръки ({recommendations.length})
+            <Sparkles className={styles.tabIcon} size={18} />
+            <span>Препоръки</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "activeEvents" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "activeEvents" ? styles.active : ""}`}
             onClick={() => setActiveTab("activeEvents")}
           >
-            <Calendar size={18} />
-            Активни събития ({activeEvents.length})
+            <Calendar className={styles.tabIcon} size={18} />
+            <span>Събития</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "pastEvents" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "pastEvents" ? styles.active : ""}`}
             onClick={() => setActiveTab("pastEvents")}
           >
-            <History size={18} />
-            Изтекли събития ({pastEvents.length})
+            <History className={styles.tabIcon} size={18} />
+            <span>Изтекли събития</span>
           </button>
           <button 
-            className={`tab-button ${activeTab === "tickets" ? "active" : ""}`}
+            className={`${styles.tab} ${activeTab === "tickets" ? styles.active : ""}`}
             onClick={() => setActiveTab("tickets")}
           >
-            <Ticket size={18} />
-            Билети ({userTickets.length})
+            <Ticket className={styles.tabIcon} size={18} />
+            <span>Билети</span>
           </button>
         </div>
 
-        {/* Overview Tab */}
-        {activeTab === "overview" && (
-          <div className="content-section">
-            <h2>Добре дошъл, {getUserDisplayName()}!</h2>
+        {/* Home/Overview Tab */}
+        {activeTab === "home" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Общ Преглед</h2>
+              <p className={styles.sectionSubtitle}>Всичко на едно място за вашата библиотека</p>
+            </div>
 
-
-            {/* Статистики */}
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#10b98120', color: '#10b981' }}>
-                  <BookOpen size={24} />
+            {/* Бързи действия */}
+            <div className={styles.quickActions}>
+              <div className={styles.quickActionCard}>
+                <div className={styles.quickActionIcon}>
+                  <Library size={24} />
                 </div>
-                <div className="stat-content">
-                  <div className="stat-value">{stats.borrowedBooks}</div>
-                  <div className="stat-label">Заети книги</div>
-                </div>
-              </div>
-              
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#f59e0b20', color: '#f59e0b' }}>
-                  <Bookmark size={24} />
-                </div>
-                <div className="stat-content">
-                  <div className="stat-value">{stats.reservedBooks}</div>
-                  <div className="stat-label">Резервации</div>
+                <div className={styles.quickActionContent}>
+                  <h3>Разгледайте каталога</h3>
+                  <p>Открийте нови книги и запазете любимите си</p>
+                  <button 
+                    className={styles.quickActionBtn}
+                    onClick={() => navigate('/books')}
+                  >
+                    <span>Прегледайте</span>
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               </div>
               
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#ec489920', color: '#ec4899' }}>
-                  <Heart size={24} />
+              <div className={styles.quickActionCard}>
+                <div className={styles.quickActionIcon}>
+                  <Calendar size={24} />
                 </div>
-                <div className="stat-content">
-                  <div className="stat-value">{stats.wishlistCount}</div>
-                  <div className="stat-label">Желани книги</div>
+                <div className={styles.quickActionContent}>
+                  <h3>Предстоящи събития</h3>
+                  <p>Запишете се за интересни библиотечни мероприятия</p>
+                  <button 
+                    className={styles.quickActionBtn}
+                    onClick={() => navigate('/events')}
+                  >
+                    <span>Вижте всички</span>
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               </div>
               
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#3b82f620', color: '#3b82f6' }}>
-                  <Ticket size={24} />
+              <div className={styles.quickActionCard}>
+                <div className={styles.quickActionIcon}>
+                  <Star size={24} />
                 </div>
-                <div className="stat-content">
-                  <div className="stat-value">{stats.activeTickets}</div>
-                  <div className="stat-label">Активни билети</div>
+                <div className={styles.quickActionContent}>
+                  <h3>Препоръки</h3>
+                  <p>Книги, които може да харесате</p>
+                  <button 
+                    className={styles.quickActionBtn}
+                    onClick={() => setActiveTab("recommendations")}
+                  >
+                    <span>Вижте всички</span>
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Препоръки (мини) */}
             {recommendations.length > 0 && (
-              <div className="mini-recommendations">
-                <h3>Препоръчани за вас</h3>
-                <div className="recommendations-mini-grid">
+              <div className={styles.miniRecommendations}>
+                <div className={styles.sectionHeader}>
+                  <h3 className={styles.sectionTitle}>Препоръчани за вас</h3>
+                  <button 
+                    className={styles.viewAllBtn}
+                    onClick={() => setActiveTab("recommendations")}
+                  >
+                    <span>Вижте всички</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                <div className={styles.recommendationsGrid}>
                   {recommendations.slice(0, 3).map(rec => (
-                    <div key={rec.bookId} className="mini-rec-card">
+                    <div key={rec.bookId} className={styles.miniRecCard}>
                       {rec.coverUrl ? (
-                        <img src={rec.coverUrl} alt={rec.title} className="mini-rec-cover" />
+                        <img src={rec.coverUrl} alt={rec.title} className={styles.miniRecCover} />
                       ) : (
-                        <div className="mini-rec-cover-placeholder">
+                        <div className={styles.miniRecCoverPlaceholder}>
                           <Book size={20} />
                         </div>
                       )}
-                      <div className="mini-rec-info">
-                        <div className="mini-rec-title">{rec.title}</div>
-                        <div className="mini-rec-author">{rec.author}</div>
-                        <div className="mini-rec-reason">{rec.reason}</div>
+                      <div className={styles.miniRecInfo}>
+                        <div className={styles.miniRecTitle}>{rec.title}</div>
+                        <div className={styles.miniRecAuthor}>{rec.author}</div>
+                        <div className={styles.miniRecReason}>{rec.reason}</div>
                       </div>
                       <button 
-                        className="mini-rec-action"
+                        className={styles.miniRecAction}
                         onClick={() => navigate(`/books/${rec.bookId}`)}
+                        title="Виж детайли"
                       >
                         <Eye size={14} />
                       </button>
@@ -1124,30 +1409,72 @@ const UserDashboard: React.FC = () => {
 
             {/* Предстоящи събития (мини) */}
             {activeEvents.length > 0 && (
-              <div className="upcoming-events">
-                <h3>Предстоящи събития</h3>
-                <div className="events-mini-list">
+              <div className={styles.upcomingEvents}>
+                <div className={styles.sectionHeader}>
+                  <h3 className={styles.sectionTitle}>Предстоящи събития</h3>
+                  <button 
+                    className={styles.viewAllBtn}
+                    onClick={() => setActiveTab("activeEvents")}
+                  >
+                    <span>Вижте всички</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                <div className={styles.eventsList}>
                   {activeEvents.slice(0, 3).map(event => {
                     const userRegistered = isUserRegistered(event);
+                    const availableSpots = getAvailableSpots(event);
+                    const isFull = isEventFull(event);
+                    
                     return (
-                      <div key={event.id} className="mini-event-card">
-                        <div className="mini-event-info">
-                          <div className="mini-event-title">{event.title}</div>
-                          <div className="mini-event-date">
-                            <Clock size={12} />
-                            {formatDateTime(event.date, event.time)}
+                      <div key={event.id} className={styles.miniEventCard}>
+                        <div className={styles.miniEventInfo}>
+                          <div className={styles.miniEventTitle}>{event.title}</div>
+                          <div className={styles.miniEventDateTime}>
+                            <div className={styles.miniEventDate}>
+                              <Calendar size={14} />
+                              <span>{formatDate(event.date)}</span>
+                            </div>
+                            <div className={styles.eventTime}>{event.time}</div>
                           </div>
-                          <div className="mini-event-location">
-                            <MapPin size={12} />
-                            {event.location}
+                          <div className={styles.miniEventDetails}>
+                            <div className={styles.miniEventLocation}>
+                              <MapPin size={14} />
+                              <span>{event.location}</span>
+                            </div>
+                            <div className={styles.eventSpots}>
+                              <span className={`${styles.spotsCount} ${isFull ? styles.spotsFull : ''}`}>
+                                {availableSpots} свободни места
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <button
-                          className={`register-btn ${userRegistered ? 'unregister-btn' : ''}`}
+                          className={`${styles.miniEventButton} ${userRegistered ? styles.unregister : ''}`}
                           onClick={() => userRegistered ? unregisterFromEvent(event.id) : registerForEvent(event.id)}
-                          disabled={processingEvent === event.id}
+                          disabled={processingEvent === event.id || (!userRegistered && isFull)}
                         >
-                          {processingEvent === event.id ? '...' : userRegistered ? 'Откажи' : 'Запиши се'}
+                          {processingEvent === event.id ? (
+                            <>
+                              <Loader2 size={16} className={styles.spinner} />
+                              <span>Зареждане...</span>
+                            </>
+                          ) : isFull && !userRegistered ? (
+                            <>
+                              <XCircle size={16} />
+                              <span>Пълно</span>
+                            </>
+                          ) : userRegistered ? (
+                            <>
+                              <XCircle size={16} />
+                              <span>Откажи</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle size={16} />
+                              <span>Запиши се</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     );
@@ -1155,25 +1482,60 @@ const UserDashboard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Информационна секция */}
+            <div className={styles.infoSection}>
+              <div className={styles.infoCard}>
+                <div className={styles.infoCardIcon}>
+                  <BookOpen size={24} />
+                </div>
+                <div className={styles.infoCardContent}>
+                  <h4>Бързи съвети</h4>
+                  <p>Резервирайте книги предварително, за да гарантирате достъп до тях. Удължавайте заемите своевременно.</p>
+                </div>
+              </div>
+              
+              <div className={styles.infoCard}>
+                <div className={styles.infoCardIcon}>
+                  <Calendar size={24} />
+                </div>
+                <div className={styles.infoCardContent}>
+                  <h4>Събития</h4>
+                  <p>Записвайте се предварително за събития. Билетите се генерират автоматично след регистрация.</p>
+                </div>
+              </div>
+              
+              <div className={styles.infoCard}>
+                <div className={styles.infoCardIcon}>
+                  <Bell size={24} />
+                </div>
+                <div className={styles.infoCardContent}>
+                  <h4>Нотификации</h4>
+                  <p>Получавайте известия за изтичащи заеми и предстоящи събития. Винаги сте в крак с всичко.</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Books Tab */}
         {activeTab === "books" && (
-          <div className="content-section">
-            <h2>Моите Книги</h2>
-            <p className="tickets-subtitle">Всички ваши заети, резервирани, желани и прегледани книги</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Моите Книги</h2>
+              <p className={styles.sectionSubtitle}>Всички ваши заети, резервирани, желани и прегледани книги</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на книгите...</p>
               </div>
             ) : (
               <>
                 {filteredUserBooks.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className={styles.tableContainer}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
                           <th>Книга</th>
@@ -1185,159 +1547,194 @@ const UserDashboard: React.FC = () => {
                       </thead>
                       <tbody>
                         {filteredUserBooks.map(userBook => {
-                          const book = userBook.bookDetails;
-                          const isProcessing = processingBook === book.id;
-                          const statusColor = getStatusColor(userBook.status);
-                          
-                          return (
-                            <tr key={book.id}>
-                              <td>
-                                <div className="book-title">
-                                  <BookOpen className="book-icon" />
-                                  <div>
-                                    <div className="event-title-text">{book.title}</div>
-                                    {book.genres && book.genres.length > 0 && (
-                                      <div className="book-genres">
-                                        {book.genres.slice(0, 2).map(genre => (
-                                          <span key={genre} className="genre-tag">{genre}</span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <div className="book-author">{book.author}</div>
-                              </td>
-                              <td>
-                                <span 
-                                  className="status-badge"
-                                  style={{
-                                    background: `${statusColor}20`,
-                                    color: statusColor,
-                                    border: `1px solid ${statusColor}40`
-                                  }}
-                                >
-                                  {getStatusText(userBook.status)}
-                                </span>
-                              </td>
-                              <td>
-                                {userBook.dueDate && (
-                                  <div className="due-date">
-                                    <Clock size={14} style={{ marginRight: '8px', color: '#6b7280' }} />
-                                    {formatDate(userBook.dueDate)}
-                                  </div>
-                                )}
-                                {userBook.reservationExpiresAt && (
-                                  <div className="due-date">
-                                    <Bookmark size={14} style={{ marginRight: '8px', color: '#6b7280' }} />
-                                    {formatDate(userBook.reservationExpiresAt)}
-                                  </div>
-                                )}
-                              </td>
-                              <td>
-                                <div className="action-buttons">
-                                  {userBook.status === 'borrowed' && (
-                                    <>
-                                      <button
-                                        onClick={() => renewBook(book.id)}
-                                        className="btn return-btn"
-                                        disabled={isProcessing}
-                                        title="Удължи заема с 14 дни"
-                                      >
-                                        <RotateCcw size={16} />
-                                        <span>Удължи</span>
-                                      </button>
-                                      <button
-                                        onClick={() => returnBook(book.id)}
-                                        className="btn delete-btn"
-                                        disabled={isProcessing}
-                                        title="Върни книгата"
-                                      >
-                                        <CheckCircle size={16} />
-                                        <span>Върни</span>
-                                      </button>
-                                    </>
-                                  )}
-                                  
-                                  {userBook.status === 'reserved' && (
-                                    <button
-                                      onClick={() => {
-                                        const reservation = reservations.find(r => r.bookId === book.id);
-                                        if (reservation) {
-                                          cancelReservation(reservation.id, book.id);
-                                        }
-                                      }}
-                                      className="btn delete-btn"
-                                      disabled={isProcessing}
-                                      title="Откажи резервацията"
-                                    >
-                                      <XCircle size={16} />
-                                      <span>Откажи</span>
-                                    </button>
-                                  )}
-                                  
-                                  {userBook.status === 'wishlist' && (
-                                    <button
-                                      onClick={() => toggleWishlist(book.id)}
-                                      className="btn delete-btn"
-                                      disabled={isProcessing}
-                                      title="Премахни от желани"
-                                    >
-                                      <Heart size={16} fill="currentColor" />
-                                      <span>Премахни</span>
-                                    </button>
-                                  )}
-                                  
-                                  {userBook.status === 'viewed' && (
-                                    <>
-                                      <button
-                                        onClick={() => toggleWishlist(book.id)}
-                                        className="btn return-btn"
-                                        disabled={isProcessing}
-                                        title="Добави в желани"
-                                      >
-                                        <Heart size={16} />
-                                        <span>Желая</span>
-                                      </button>
-                                      <button
-                                        onClick={() => reserveBook(book.id)}
-                                        className="btn return-btn"
-                                        disabled={isProcessing || book.availableCopies <= 0}
-                                        title="Резервирай книгата"
-                                      >
-                                        <Bookmark size={16} />
-                                        <span>Резервирай</span>
-                                      </button>
-                                    </>
-                                  )}
-                                  
-                                  <button
-                                    onClick={() => navigate(`/books/${book.id}`)}
-                                    className="btn return-btn"
-                                    title="Виж пълна информация"
-                                  >
-                                    <Eye size={16} />
-                                    <span>Детайли</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
+  const book = userBook.bookDetails;
+  const isProcessing = processingBook === book.id;
+  const statusColor = getStatusColor(userBook.status);
+  console.log(statusColor);
+  // Проверка дали има активна резервация за тази книга
+  const activeReservation = reservations.find(r => 
+    r.bookId === book.id && r.status === 'active'
+  );
+  
+  // Проверка дали книгата е заета от този потребител
+  const isBorrowedByUser = book.borrowedBy?.some(b => 
+    b.userId === user?.uid && !b.returned
+  );
+  
+  // Актуализиран статус - ако е заета, покажи "заета", а не "резервирана"
+  const displayStatus = isBorrowedByUser ? 'borrowed' : userBook.status;
+  const displayStatusText = isBorrowedByUser ? 'Заета' : getStatusText(userBook.status);
+  
+  return (
+    <tr key={book.id}>
+      <td>
+        <div className={styles.bookTitle}>
+          <BookOpen className={styles.bookIcon} />
+          <div>
+            <div className={styles.eventTitleText}>{book.title}</div>
+            {book.genres && book.genres.length > 0 && (
+              <div className={styles.bookGenres}>
+                {book.genres.slice(0, 2).map(genre => (
+                  <span key={genre} className={styles.genreTag}>{genre}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </td>
+      <td>
+        <div className={styles.bookAuthor}>{book.author}</div>
+      </td>
+      <td>
+        <span 
+          className={`${styles.badge} ${styles.activeBadge}`}
+          style={{
+            background: `${getStatusColor(displayStatus)}20`,
+            color: getStatusColor(displayStatus),
+            border: `1px solid ${getStatusColor(displayStatus)}40`
+          }}
+        >
+          {displayStatusText}
+        </span>
+      </td>
+      <td>
+        {/* Покажи датата на връщане, ако книгата е заета */}
+        {isBorrowedByUser && book.borrowedBy && (
+          <div className={styles.dueDate}>
+            <Clock size={14} />
+            {(() => {
+              const borrowedRecord = book.borrowedBy.find(b => 
+                b.userId === user?.uid && !b.returned
+              );
+              return borrowedRecord?.dueDate 
+                ? formatDate(borrowedRecord.dueDate)
+                : 'Няма дата';
+            })()}
+          </div>
+        )}
+        
+        {/* Покажи срока на резервация, ако има активна резервация */}
+        {!isBorrowedByUser && activeReservation && userBook.reservationExpiresAt && (
+          <div className={styles.dueDate}>
+            <Bookmark size={14} />
+            {formatDate(userBook.reservationExpiresAt)}
+          </div>
+        )}
+      </td>
+      <td>
+        <div className={styles.actionButtons}>
+          {/* АКО Е ЗАЕТА */}
+          {isBorrowedByUser && (
+            <>
+              <button
+                onClick={() => renewBook(book.id)}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={isProcessing}
+                title="Удължи заема с 14 дни"
+              >
+                <RotateCcw size={16} />
+                <span>Удължи</span>
+              </button>
+              <button
+                onClick={() => returnBook(book.id)}
+                className={`${styles.btn} ${styles.btnDanger}`}
+                disabled={isProcessing}
+                title="Върни книгата"
+              >
+                <CheckCircle size={16} />
+                <span>Върни</span>
+              </button>
+            </>
+          )}
+          
+          {/* АКО Е РЕЗЕРВИРАНА (И НЕ Е ЗАЕТА) */}
+          {!isBorrowedByUser && userBook.status === 'reserved' && activeReservation && (
+            <>
+              <button
+                onClick={() => borrowReservedBook(book.id, activeReservation.id)}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={isProcessing}
+                title="Вземи резервираната книга"
+              >
+                <BookOpen size={16} />
+                <span>Вземи</span>
+              </button>
+              <button
+                onClick={() => cancelReservation(activeReservation.id, book.id)}
+                className={`${styles.btn} ${styles.btnDanger}`}
+                disabled={isProcessing}
+                title="Откажи резервацията"
+              >
+                <XCircle size={16} />
+                <span>Откажи</span>
+              </button>
+            </>
+          )}
+          
+          {/* АКО Е В ЖЕЛАНИ */}
+          {!isBorrowedByUser && userBook.status === 'wishlist' && (
+            <button
+              onClick={() => toggleWishlist(book.id)}
+              className={`${styles.btn} ${styles.btnDanger}`}
+              disabled={isProcessing}
+              title="Премахни от желани"
+            >
+              <Heart size={16} fill="currentColor" />
+              <span>Премахни</span>
+            </button>
+          )}
+          
+          {/* АКО Е ПРЕГЛЕДАНА */}
+          {!isBorrowedByUser && userBook.status === 'viewed' && (
+            <>
+              <button
+                onClick={() => toggleWishlist(book.id)}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={isProcessing}
+                title="Добави в желани"
+              >
+                <Heart size={16} />
+                <span>Желая</span>
+              </button>
+              <button
+                onClick={() => reserveBook(book.id)}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={isProcessing || book.availableCopies <= 0}
+                title="Резервирай книгата"
+              >
+                <Bookmark size={16} />
+                <span>Резервирай</span>
+              </button>
+            </>
+          )}
+          
+          {/* ВИНАГИ ПОКАЗВАЙ БУТОН ЗА ДЕТАЙЛИ */}
+          <button
+            onClick={() => navigate(`/books/${book.id}`)}
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            title="Виж пълна информация"
+          >
+            <Eye size={16} />
+            <span>Детайли</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+})}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <BookOpen size={48} />
+                  <div className={styles.empty}>
+                    <BookOpen className={styles.emptyIcon} size={48} />
                     <p>Няма намерени книги</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       {searchTerm ? 'Променете критериите за търсене' : 'Запишете или резервирайте книги, за да се появят тук'}
                     </p>
                     <button
                       onClick={() => navigate('/books')}
-                      className="register-btn"
+                      className={styles.registerBtn}
                       style={{ marginTop: '16px' }}
                     >
                       <Book size={16} />
@@ -1352,29 +1749,31 @@ const UserDashboard: React.FC = () => {
 
         {/* Active Events Tab */}
         {activeTab === "activeEvents" && (
-          <div className="content-section">
-            <h2>Активни Събития</h2>
-            <p className="tickets-subtitle">Предстоящи събития, за които можете да се запишете</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Активни Събития</h2>
+              <p className={styles.sectionSubtitle}>Предстоящи събития, за които можете да се запишете</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на събитията...</p>
               </div>
             ) : (
               <>
                 {filteredActiveEvents.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table events-table">
+                  <div className={styles.tableContainer}>
+                    <table className={`${styles.table} events-table`}>
                       <thead>
                         <tr>
-                          <th className="event-title-header">Събитие</th>
-                          <th className="event-desc-header">Описание</th>
-                          <th className="event-date-header">Дата и час</th>
-                          <th className="event-location-header">Място</th>
-                          <th className="event-spots-header">Свободни места</th>
-                          <th className="event-status-header">Статус</th>
-                          <th className="event-actions-header">Действия</th>
+                          <th>Събитие</th>
+                          <th>Описание</th>
+                          <th>Дата и час</th>
+                          <th>Място</th>
+                          <th>Свободни места</th>
+                          <th>Статус</th>
+                          <th>Действия</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1396,45 +1795,45 @@ const UserDashboard: React.FC = () => {
                                   dangerouslySetInnerHTML={{ __html: event.description }}
                                 />
                               </td>
-                              <td className="event-date-cell">
-                                <div className="event-date-content">
-                                  <Calendar className="date-icon" />
+                              <td>
+                                <div className={styles.eventDateContent}>
+                                  <Calendar className={styles.dateIcon} />
                                   <div>
-                                    <div className="event-date-text">{formatDate(event.date)}</div>
-                                    <div className="event-time">{event.time} - {event.endTime}</div>
+                                    <div className={styles.eventDateText}>{formatDate(event.date)}</div>
+                                    <div className={styles.eventTime}>{event.time} - {event.endTime}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="event-location-cell">
-                                <div className="event-location-content">
-                                  <MapPin className="location-icon" />
+                              <td>
+                                <div className={styles.eventLocationContent}>
+                                  <MapPin className={styles.locationIcon} />
                                   {event.location}
                                 </div>
                               </td>
-                              <td className="event-spots-cell">
-                                <div className="event-spots-content">
-                                  <span className={`spots-count ${isFull ? 'spots-full' : ''}`}>
+                              <td>
+                                <div className={styles.eventSpotsContent}>
+                                  <span className={`${styles.spotsCount} ${isFull ? styles.spotsFull : ''}`}>
                                     {availableSpots} / {event.maxParticipants}
                                   </span>
                                 </div>
                               </td>
-                              <td className="event-status-cell">
+                              <td>
                                 {userRegistered ? (
-                                  <span className="status-badge status-active">Записан</span>
+                                  <span className={`${styles.badge} ${styles.activeBadge}`}>Записан</span>
                                 ) : isFull ? (
-                                  <span className="status-badge status-expiring">Пълно</span>
+                                  <span className={`${styles.badge} ${styles.expiringBadge}`}>Пълно</span>
                                 ) : (
-                                  <span className="status-badge status-returned">Свободно</span>
+                                  <span className={`${styles.badge} ${styles.returnedBadge}`}>Свободно</span>
                                 )}
                               </td>
-                              <td className="event-actions-cell">
-                                <div className="action-buttons">
+                              <td>
+                                <div className={styles.actionButtons}>
                                   <button
                                     onClick={() => {
                                       setSelectedEventId(event.id);
                                       setShowEventModal(true);
                                     }}
-                                    className="btn return-btn"
+                                    className={`${styles.btn} ${styles.btnPrimary}`}
                                     title="Виж детайли"
                                   >
                                     <Eye size={16} />
@@ -1443,7 +1842,7 @@ const UserDashboard: React.FC = () => {
                                   {userRegistered ? (
                                     <button
                                       onClick={() => unregisterFromEvent(event.id)}
-                                      className="btn delete-btn"
+                                      className={`${styles.btn} ${styles.btnDanger}`}
                                       disabled={processingEvent === event.id}
                                     >
                                       {processingEvent === event.id ? '...' : 'Откажи'}
@@ -1451,7 +1850,7 @@ const UserDashboard: React.FC = () => {
                                   ) : (
                                     <button
                                       onClick={() => registerForEvent(event.id)}
-                                      className="register-btn"
+                                      className={styles.registerBtn}
                                       disabled={processingEvent === event.id || isFull}
                                     >
                                       {processingEvent === event.id ? '...' : 'Запиши се'}
@@ -1466,10 +1865,10 @@ const UserDashboard: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <Calendar size={48} />
+                  <div className={styles.empty}>
+                    <Calendar className={styles.emptyIcon} size={48} />
                     <p>Няма активни събития</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       {searchTerm ? 'Променете критериите за търсене' : 'В момента няма предстоящи събития'}
                     </p>
                   </div>
@@ -1481,28 +1880,30 @@ const UserDashboard: React.FC = () => {
 
         {/* Past Events Tab */}
         {activeTab === "pastEvents" && (
-          <div className="content-section">
-            <h2>Изтекли Събития</h2>
-            <p className="tickets-subtitle">Събития, които са се състояли вече</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Изтекли Събития</h2>
+              <p className={styles.sectionSubtitle}>Събития, които са се състояли вече</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на събитията...</p>
               </div>
             ) : (
               <>
                 {filteredPastEvents.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table events-table">
+                  <div className={styles.tableContainer}>
+                    <table className={`${styles.table} events-table`}>
                       <thead>
                         <tr>
-                          <th className="event-title-header">Събитие</th>
-                          <th className="event-desc-header">Описание</th>
-                          <th className="event-date-header">Дата и час</th>
-                          <th className="event-location-header">Място</th>
-                          <th className="event-spots-header">Участници</th>
-                          <th className="event-status-header">Статус</th>
+                          <th>Събитие</th>
+                          <th>Описание</th>
+                          <th>Дата и час</th>
+                          <th>Място</th>
+                          <th>Участници</th>
+                          <th>Статус</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1523,31 +1924,31 @@ const UserDashboard: React.FC = () => {
                                   dangerouslySetInnerHTML={{ __html: event.description }}
                                 />
                               </td>
-                              <td className="event-date-cell">
-                                <div className="event-date-content">
-                                  <Calendar className="date-icon" />
+                              <td>
+                                <div className={styles.eventDateContent}>
+                                  <Calendar className={styles.dateIcon} />
                                   <div>
-                                    <div className="event-date-text">{formatDate(event.date)}</div>
-                                    <div className="event-time">{event.time} - {event.endTime}</div>
+                                    <div className={styles.eventDateText}>{formatDate(event.date)}</div>
+                                    <div className={styles.eventTime}>{event.time} - {event.endTime}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="event-location-cell">
-                                <div className="event-location-content">
-                                  <MapPin className="location-icon" />
+                              <td>
+                                <div className={styles.eventLocationContent}>
+                                  <MapPin className={styles.locationIcon} />
                                   {event.location}
                                 </div>
                               </td>
                               <td className="event-participants-cell">
-                                <span className="participants-count">
+                                <span className={styles.participantsCount}>
                                   {event.currentParticipants} / {event.maxParticipants}
                                 </span>
                               </td>
-                              <td className="event-status-cell">
+                              <td>
                                 {userRegistered ? (
-                                  <span className="status-badge status-past">Участвахте</span>
+                                  <span className={`${styles.badge} ${styles.pastBadge}`}>Участвахте</span>
                                 ) : (
-                                  <span className="status-badge status-default">Не сте участвали</span>
+                                  <span className={`${styles.badge} ${styles.returnedBadge}`}>Не сте участвали</span>
                                 )}
                               </td>
                             </tr>
@@ -1557,10 +1958,10 @@ const UserDashboard: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <History size={48} />
+                  <div className={styles.empty}>
+                    <History className={styles.emptyIcon} size={48} />
                     <p>Няма изтекли събития</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       {searchTerm ? 'Променете критериите за търсене' : 'Все още няма изтекли събития в системата'}
                     </p>
                   </div>
@@ -1572,28 +1973,28 @@ const UserDashboard: React.FC = () => {
 
         {/* Tickets Tab */}
         {activeTab === "tickets" && (
-          <div className="content-section">
-            <div className="section-header">
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
               <div>
-                <h2>Моите Билети</h2>
-                <p className="tickets-subtitle">Всички ваши билети за активни и изтекли събития</p>
+                <h2 className={styles.sectionTitle}>Моите Билети</h2>
+                <p className={styles.sectionSubtitle}>Всички ваши билети за активни и изтекли събития</p>
               </div>
-              <div className="ticket-stats">
-                <span className="active-tickets">Активни: {stats.activeTickets}</span>
-                <span className="past-tickets">Изтекли: {stats.pastTickets}</span>
+              <div className={styles.ticketStats}>
+                <span className={styles.activeTickets}>Активни: {stats.activeTickets}</span>
+                <span className={styles.pastTickets}>Изтекли: {stats.pastTickets}</span>
               </div>
             </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на билетите...</p>
               </div>
             ) : (
               <>
                 {filteredTickets.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table tickets-table">
+                  <div className={styles.tableContainer}>
+                    <table className={`${styles.table} tickets-table`}>
                       <thead>
                         <tr>
                           <th>ID на билет</th>
@@ -1607,41 +2008,41 @@ const UserDashboard: React.FC = () => {
                       </thead>
                       <tbody>
                         {filteredTickets.map(ticket => (
-                          <tr key={ticket.ticketId} className={ticket.isPast ? "past-event-row" : ""}>
-                            <td className="ticket-id-cell">
-                              <Ticket className="ticket-icon" />
-                              <span className="ticket-id">{ticket.ticketId}</span>
+                          <tr key={ticket.ticketId} className={ticket.isPast ? styles.pastEventRow : ""}>
+                            <td className={styles.ticketIdCell}>
+                              <Ticket className={styles.ticketIcon} />
+                              <span className={styles.ticketId}>{ticket.ticketId}</span>
                               {ticket.isPast && (
-                                <span className="past-indicator">Изтекъл</span>
+                                <span className={styles.pastIndicator}>Изтекъл</span>
                               )}
                             </td>
-                            <td className="ticket-event-cell">
+                            <td className={styles.ticketEventCell}>
                               <div className="dashboard-event-title">{ticket.eventTitle}</div>
                             </td>
-                            <td className="ticket-date-cell">
-                              <div className="ticket-date">{formatDate(ticket.eventDate)}</div>
-                              <div className="ticket-time">{ticket.eventTime} - {ticket.endTime}</div>
+                            <td className={styles.ticketDateCell}>
+                              <div className={styles.ticketDate}>{formatDate(ticket.eventDate)}</div>
+                              <div className={styles.ticketTime}>{ticket.eventTime} - {ticket.endTime}</div>
                             </td>
-                            <td className="ticket-location-cell">
+                            <td className={styles.ticketLocationCell}>
                               {ticket.eventLocation}
                             </td>
-                            <td className="ticket-registration-cell">
+                            <td className={styles.ticketRegistrationCell}>
                               {ticket.registrationDate}
                             </td>
-                            <td className="ticket-status-cell">
+                            <td>
                               {ticket.isPast ? (
-                                <span className="status-badge status-past">Изтекъл</span>
+                                <span className={`${styles.badge} ${styles.pastBadge}`}>Изтекъл</span>
                               ) : ticket.checkedIn ? (
-                                <span className="status-badge status-active">Проверен</span>
+                                <span className={`${styles.badge} ${styles.activeBadge}`}>Проверен</span>
                               ) : (
-                                <span className="status-badge status-returned">Очаква се</span>
+                                <span className={`${styles.badge} ${styles.returnedBadge}`}>Очаква се</span>
                               )}
                             </td>
-                            <td className="ticket-actions-cell">
-                              <div className="action-buttons">
+                            <td>
+                              <div className={styles.actionButtons}>
                                 <button
                                   onClick={() => showEventTicket(ticket)}
-                                  className="view-ticket-btn"
+                                  className={`${styles.btn} ${styles.btnPrimary}`}
                                 >
                                   <Ticket size={14} />
                                   <span>Виж билет</span>
@@ -1655,7 +2056,7 @@ const UserDashboard: React.FC = () => {
                                         unregisterFromEvent(event.id);
                                       }
                                     }}
-                                    className="btn delete-btn"
+                                    className={`${styles.btn} ${styles.btnDanger}`}
                                     title="Откажи участие"
                                   >
                                     <X size={14} />
@@ -1665,7 +2066,7 @@ const UserDashboard: React.FC = () => {
                                 
                                 <button
                                   onClick={printTicket}
-                                  className="btn return-btn"
+                                  className={`${styles.btn} ${styles.btnPrimary}`}
                                   title="Принтирай билет"
                                 >
                                   <Printer size={14} />
@@ -1679,15 +2080,15 @@ const UserDashboard: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <Ticket size={48} />
+                  <div className={styles.empty}>
+                    <Ticket className={styles.emptyIcon} size={48} />
                     <p>Нямате билети за събития</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       Запишете се за събитие, за да генерирате билет
                     </p>
                     <button
                       onClick={() => navigate('/events')}
-                      className="register-btn"
+                      className={styles.registerBtn}
                       style={{ marginTop: '16px' }}
                     >
                       <Calendar size={16} />
@@ -1702,20 +2103,22 @@ const UserDashboard: React.FC = () => {
 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (
-          <div className="content-section">
-            <h2>Моите Резервации</h2>
-            <p className="tickets-subtitle">Активни резервации на книги</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Моите Резервации</h2>
+              <p className={styles.sectionSubtitle}>Активни резервации на книги</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на резервациите...</p>
               </div>
             ) : (
               <>
                 {filteredReservations.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className={styles.tableContainer}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
                           <th>Книга</th>
@@ -1727,69 +2130,93 @@ const UserDashboard: React.FC = () => {
                       </thead>
                       <tbody>
                         {filteredReservations.map(reservation => {
-                          const book = allBooks.find(b => b.id === reservation.bookId);
-                          if (!book) return null;
-                          
-                          const isProcessing = processingBook === book.id;
-                          const expiresAt = (reservation.expiresAt as any)?.toDate?.()?.toISOString()?.split('T')[0];
-                          
-                          return (
-                            <tr key={reservation.id}>
-                              <td>
-                                <div className="book-title">
-                                  <BookOpen className="book-icon" />
-                                  <div className="event-title-text">{book.title}</div>
-                                </div>
-                              </td>
-                              <td>
-                                <div className="book-author">{book.author}</div>
-                              </td>
-                              <td>
-                                {expiresAt && (
-                                  <div className="due-date">
-                                    <Clock size={14} style={{ marginRight: '8px', color: '#6b7280' }} />
-                                    {formatDate(expiresAt)}
-                                  </div>
-                                )}
-                              </td>
-                              <td>
-                                <span className="status-badge status-expiring">Резервирана</span>
-                              </td>
-                              <td>
-                                <div className="action-buttons">
-                                  <button
-                                    onClick={() => cancelReservation(reservation.id, book.id)}
-                                    className="btn delete-btn"
-                                    disabled={isProcessing}
-                                  >
-                                    <XCircle size={16} />
-                                    <span>Откажи</span>
-                                  </button>
-                                  <button
-                                    onClick={() => navigate(`/books/${book.id}`)}
-                                    className="btn return-btn"
-                                  >
-                                    <Eye size={16} />
-                                    <span>Детайли</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
+  const book = allBooks.find(b => b.id === reservation.bookId);
+  if (!book) return null;
+  
+  const isProcessing = processingBook === book.id;
+  let expiresAtString = '';
+  
+  // БЕЗОПАСНА ОБРАБОТКА НА ДАТИ
+  if (reservation.expiresAt) {
+    // Проверка за Timestamp
+    if ('toDate' in reservation.expiresAt && typeof reservation.expiresAt.toDate === 'function') {
+      expiresAtString = reservation.expiresAt.toDate().toISOString().split('T')[0];
+    } 
+    // Проверка за seconds (Firestore Timestamp)
+    else if ('seconds' in reservation.expiresAt && reservation.expiresAt.seconds) {
+      expiresAtString = new Date(reservation.expiresAt.seconds * 1000).toISOString().split('T')[0];
+    }
+    // Проверка за ISO стринг
+    else if (typeof reservation.expiresAt === 'string') {
+      expiresAtString = reservation.expiresAt;
+    }
+    // Проверка за Date обект
+    else if (reservation.expiresAt instanceof Date) {
+      expiresAtString = reservation.expiresAt.toISOString().split('T')[0];
+    }
+  }
+  
+  return (
+    <tr key={reservation.id}>
+      <td>
+        <div className={styles.bookTitle}>
+          <BookOpen className={styles.bookIcon} />
+          <div className={styles.eventTitleText}>{book.title}</div>
+        </div>
+      </td>
+      <td>
+        <div className={styles.bookAuthor}>{book.author}</div>
+      </td>
+      <td>
+        {expiresAtString ? (
+          <div className={styles.dueDate}>
+            <Clock size={14} />
+            {formatDate(expiresAtString)}
+          </div>
+        ) : (
+          <div className={styles.dueDate}>Няма срок</div>
+        )}
+      </td>
+      <td>
+        <span className={`${styles.badge} ${styles.expiringBadge}`}>
+          Резервирана
+        </span>
+      </td>
+      <td>
+        <div className={styles.actionButtons}>
+          <button
+            onClick={() => cancelReservation(reservation.id, book.id)}
+            className={`${styles.btn} ${styles.btnDanger}`}
+            disabled={isProcessing}
+          >
+            <XCircle size={16} />
+            <span>Откажи</span>
+          </button>
+          <button
+            onClick={() => navigate(`/books/${book.id}`)}
+            className={`${styles.btn} ${styles.btnPrimary}`}
+          >
+            <Eye size={16} />
+            <span>Детайли</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+})}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <Bookmark size={48} />
+                  <div className={styles.empty}>
+                    <Bookmark className={styles.emptyIcon} size={48} />
                     <p>Нямате активни резервации</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       Резервирайте книги от каталога, за да се появят тук
                     </p>
                     <button
                       onClick={() => navigate('/books')}
-                      className="register-btn"
+                      className={styles.registerBtn}
                       style={{ marginTop: '16px' }}
                     >
                       <Book size={16} />
@@ -1804,20 +2231,22 @@ const UserDashboard: React.FC = () => {
 
         {/* Wishlist Tab */}
         {activeTab === "wishlist" && (
-          <div className="content-section">
-            <h2>Желани Книги</h2>
-            <p className="tickets-subtitle">Книги, които сте добавили в списъка с желания</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Желани Книги</h2>
+              <p className={styles.sectionSubtitle}>Книги, които сте добавили в списъка с желания</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на списъка с желания...</p>
               </div>
             ) : (
               <>
                 {filteredWishlist.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className={styles.tableContainer}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
                           <th>Книга</th>
@@ -1834,36 +2263,31 @@ const UserDashboard: React.FC = () => {
                           return (
                             <tr key={book.id}>
                               <td>
-                                <div className="book-title">
-                                  <BookOpen className="book-icon" />
-                                  <div className="event-title-text">{book.title}</div>
+                                <div className={styles.bookTitle}>
+                                  <BookOpen className={styles.bookIcon} />
+                                  <div className={styles.eventTitleText}>{book.title}</div>
                                 </div>
                               </td>
                               <td>
-                                <div className="book-author">{book.author}</div>
+                                <div className={styles.bookAuthor}>{book.author}</div>
                               </td>
                               <td>
-                                <span className={`spots-count ${book.availableCopies <= 0 ? 'spots-full' : ''}`}>
+                                <span className={`${styles.spotsCount} ${book.availableCopies <= 0 ? styles.spotsFull : ''}`}>
                                   {book.availableCopies} налични
                                 </span>
                               </td>
                               <td>
                                 <span 
-                                  className="status-badge"
-                                  style={{
-                                    background: '#ec489920',
-                                    color: '#ec4899',
-                                    border: '1px solid #ec489940'
-                                  }}
+                                  className={`${styles.badge} ${styles.wishlistBadge}`}
                                 >
                                   В желани
                                 </span>
                               </td>
                               <td>
-                                <div className="action-buttons">
+                                <div className={styles.actionButtons}>
                                   <button
                                     onClick={() => toggleWishlist(book.id)}
-                                    className="btn delete-btn"
+                                    className={`${styles.btn} ${styles.btnDanger}`}
                                     disabled={isProcessing}
                                   >
                                     <Heart size={16} fill="currentColor" />
@@ -1872,7 +2296,7 @@ const UserDashboard: React.FC = () => {
                                   {book.availableCopies > 0 && (
                                     <button
                                       onClick={() => reserveBook(book.id)}
-                                      className="btn return-btn"
+                                      className={`${styles.btn} ${styles.btnPrimary}`}
                                       disabled={isProcessing}
                                     >
                                       <Bookmark size={16} />
@@ -1881,7 +2305,7 @@ const UserDashboard: React.FC = () => {
                                   )}
                                   <button
                                     onClick={() => navigate(`/books/${book.id}`)}
-                                    className="btn return-btn"
+                                    className={`${styles.btn} ${styles.btnPrimary}`}
                                   >
                                     <Eye size={16} />
                                     <span>Детайли</span>
@@ -1895,15 +2319,15 @@ const UserDashboard: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <Heart size={48} />
+                  <div className={styles.empty}>
+                    <Heart className={styles.emptyIcon} size={48} />
                     <p>Нямате книги в списъка с желания</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       Добавете книги в списъка с желания, за да ги следите
                     </p>
                     <button
                       onClick={() => navigate('/books')}
-                      className="register-btn"
+                      className={styles.registerBtn}
                       style={{ marginTop: '16px' }}
                     >
                       <Book size={16} />
@@ -1918,20 +2342,22 @@ const UserDashboard: React.FC = () => {
 
         {/* Recommendations Tab */}
         {activeTab === "recommendations" && (
-          <div className="content-section">
-            <h2>Препоръчани Книги</h2>
-            <p className="tickets-subtitle">Книги, които може да ви харесат</p>
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Препоръчани Книги</h2>
+              <p className={styles.sectionSubtitle}>Книги, които може да ви харесат</p>
+            </div>
 
             {loading ? (
-              <div className="loading-cell">
-                <div className="spinner"></div>
+              <div className={styles.loading}>
+                <div className={styles.spinner}></div>
                 <p>Зареждане на препоръките...</p>
               </div>
             ) : (
               <>
                 {filteredRecommendations.length > 0 ? (
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className={styles.tableContainer}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
                           <th>Книга</th>
@@ -1945,27 +2371,27 @@ const UserDashboard: React.FC = () => {
                         {filteredRecommendations.map(rec => (
                           <tr key={rec.bookId}>
                             <td>
-                              <div className="book-title">
-                                <BookOpen className="book-icon" />
-                                <div className="event-title-text">{rec.title}</div>
+                              <div className={styles.bookTitle}>
+                                <BookOpen className={styles.bookIcon} />
+                                <div className={styles.eventTitleText}>{rec.title}</div>
                               </div>
                             </td>
                             <td>
-                              <div className="book-author">{rec.author}</div>
+                              <div className={styles.bookAuthor}>{rec.author}</div>
                             </td>
                             <td>
-                              <div className="book-reason">{rec.reason}</div>
+                              <div className={styles.bookReason}>{rec.reason}</div>
                             </td>
                             <td>
-                              <span className="spots-count">
+                              <span className={styles.spotsCount}>
                                 {rec.score} точки
                               </span>
                             </td>
                             <td>
-                              <div className="action-buttons">
+                              <div className={styles.actionButtons}>
                                 <button
                                   onClick={() => navigate(`/books/${rec.bookId}`)}
-                                  className="btn return-btn"
+                                  className={`${styles.btn} ${styles.btnPrimary}`}
                                 >
                                   <Eye size={16} />
                                   <span>Детайли</span>
@@ -1973,7 +2399,7 @@ const UserDashboard: React.FC = () => {
                                 {rec.bookDetails?.availableCopies && rec.bookDetails.availableCopies > 0 ? (
                                   <button
                                     onClick={() => reserveBook(rec.bookId)}
-                                    className="btn return-btn"
+                                    className={`${styles.btn} ${styles.btnPrimary}`}
                                   >
                                     <Bookmark size={16} />
                                     <span>Резервирай</span>
@@ -1981,7 +2407,7 @@ const UserDashboard: React.FC = () => {
                                 ) : (
                                   <button
                                     onClick={() => toggleWishlist(rec.bookId)}
-                                    className="btn return-btn"
+                                    className={`${styles.btn} ${styles.btnPrimary}`}
                                   >
                                     <Heart size={16} />
                                     <span>Желая</span>
@@ -1995,15 +2421,15 @@ const UserDashboard: React.FC = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <Sparkles size={48} />
+                  <div className={styles.empty}>
+                    <Sparkles className={styles.emptyIcon} size={48} />
                     <p>Няма препоръки в момента</p>
-                    <p className="empty-subtext">
+                    <p className={styles.emptySubtext}>
                       Разгледайте повече книги, за да получавате по-точни препоръки
                     </p>
                     <button
                       onClick={() => navigate('/books')}
-                      className="register-btn"
+                      className={styles.registerBtn}
                       style={{ marginTop: '16px' }}
                     >
                       <Book size={16} />
@@ -2057,7 +2483,6 @@ const UserDashboard: React.FC = () => {
               eventImageUrl: ticketData.eventImageUrl
             };
             setUserTickets(prev => [...prev, newUserTicket]);
-            updateStats();
             
             setCurrentTicket(newUserTicket);
             setTimeout(() => {

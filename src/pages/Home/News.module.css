@@ -508,3 +508,56 @@
 [data-theme="dark"] .readMoreIcon {
   color: white;
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .newsSection {
+    padding: 40px 0;
+  }
+
+  .featuredNewsGrid, .newsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .newsCard {
+    flex-direction: column;
+  }
+
+  .newsImageContainer {
+    height: 200px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .newsContent {
+    padding: 15px;
+  }
+
+  .newsStats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .newsToggleBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .newsTitle {
+    font-size: 1.1rem;
+  }
+
+  .newsExcerpt {
+    font-size: 0.85rem;
+  }
+
+  .newsTags {
+    flex-wrap: wrap;
+  }
+
+  .newsTag {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+  }
+}

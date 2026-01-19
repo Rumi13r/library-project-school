@@ -87,3 +87,22 @@
 .btn:hover .btnIcon {
   transform: translateX(3px);
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+
+  .btnIcon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}

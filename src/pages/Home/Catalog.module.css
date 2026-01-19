@@ -399,3 +399,53 @@
 [data-theme="dark"] .catalogFooter {
   border-top-color: var(--border-medium);
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .catalogSection {
+    padding: 40px 0;
+  }
+
+  .booksGrid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+
+  .bookCard {
+    min-height: auto;
+  }
+
+  .bookCoverContainer {
+    height: 180px;
+  }
+
+  .bookTitle {
+    font-size: 1rem;
+  }
+
+  .bookAuthor {
+    font-size: 0.85rem;
+  }
+
+  .catalogFooter {
+    margin-top: 30px;
+  }
+
+  .catalogBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .booksGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bookCard {
+    max-width: 100%;
+  }
+
+  .reserveBtn {
+    width: 100%;
+  }
+}

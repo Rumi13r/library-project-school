@@ -556,3 +556,52 @@
 .visualStat:nth-child(3) {
   animation-delay: 0.3s;
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .aboutSection {
+    padding: 40px 0;
+  }
+
+  .aboutContent {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .aboutText, .aboutVisual {
+    width: 100%;
+  }
+
+  .aboutButtons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .aboutBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .visualStats {
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aboutDescription p {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+
+  .visualStat {
+    padding: 10px;
+  }
+
+  .statNumber {
+    font-size: 1.5rem;
+  }
+
+  .statLabel {
+    font-size: 0.8rem;
+  }
+}

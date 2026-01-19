@@ -51,3 +51,34 @@
   line-height: 1.6;
   font-weight: 300;
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .homeContainer {
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+    max-width: 100%;
+  }
+
+  .sectionHeader {
+    padding: 0 10px;
+    text-align: center;
+  }
+
+  .sectionSubtitle {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

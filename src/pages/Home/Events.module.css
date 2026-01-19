@@ -666,3 +666,58 @@
   background: #4285f4;
   border-color: #4285f4;
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .eventsSection {
+    padding: 40px 0;
+  }
+
+  .calendarEventsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .calendarEventCard {
+    flex-direction: column;
+  }
+
+  .calendarDate {
+    flex-direction: row;
+    width: 100%;
+    height: 60px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .calendarDay {
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+
+  .calendarMonth, .calendarWeekday {
+    font-size: 0.9rem;
+  }
+
+  .eventActions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .eventRegisterBtn, .addToCalendarBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .eventTitleCalendar {
+    font-size: 1.1rem;
+  }
+
+  .eventDescriptionCalendar {
+    font-size: 0.85rem;
+  }
+
+  .participantsInfo {
+    flex-wrap: wrap;
+  }
+}

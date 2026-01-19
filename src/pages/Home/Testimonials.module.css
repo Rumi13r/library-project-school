@@ -79,3 +79,36 @@
   color: var(--primary-green);
   font-weight: 500;
 }
+/* Добави в края на файла */
+@media (max-width: 768px) {
+  .testimonialsSection {
+    padding: 40px 0;
+  }
+
+  .testimonialsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .testimonialCard {
+    padding: 20px;
+  }
+
+  .testimonialContent {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .testimonialCard {
+    padding: 15px;
+  }
+
+  .authorName {
+    font-size: 1rem;
+  }
+
+  .authorRole {
+    font-size: 0.85rem;
+  }
+}

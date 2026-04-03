@@ -22,6 +22,7 @@ import "../../pages/EventsPage.css";
 import { getAllReservations } from "../../lib/services/reservationService";
 import { cancelReservation as cancelReservationService } from "../../lib/services/reservationService";
 import { RefreshCw } from "lucide-react";
+import Image from "@tiptap/extension-image";
 
 // ── Shared Firestore timestamp type ──────────────────────────────────────────
 type FSTimestamp =
@@ -295,13 +296,13 @@ const AdminDashboard: React.FC = () => {
   });
 
   // ── TipTap editor ──────────────────────────────────────────────────────────
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: modalEventData.description || "",
-    onUpdate: ({ editor: e }) => {
-      setModalEventData(prev => ({ ...prev, description: e.getHTML() }));
-    },
-  });
+const editor = useEditor({
+  extensions: [StarterKit, Image],  // Image добавен тук
+  content: modalEventData.description || "",
+  onUpdate: ({ editor: e }) => {
+    setModalEventData(prev => ({ ...prev, description: e.getHTML() }));
+  },
+});
 
   useEffect(() => {
     if (editor && modalEventData.description !== editor.getHTML()) {

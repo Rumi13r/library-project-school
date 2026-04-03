@@ -1,84 +1,44 @@
-/* Home.module.css */
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&family=Shadows+Into+Light&display=swap');
+/* ═══════════════════════════════════════════════════════════
+   Home.module.css — Unified admin-dashboard design language
+   Uses same CSS vars as AdminDashboard.css
+   ═══════════════════════════════════════════════════════════ */
 
-/* Modern Library Design System - Green, Yellow, Red Theme */
-/* Ръкописни шрифтове */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
 
+/* ── Keyframes ──────────────────────────────────────────────────────────────── */
+@keyframes dashIn    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes cardIn    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes shimmer   { 0%{transform:translateX(-130%)} 100%{transform:translateX(130%)} }
+@keyframes fadeUp    { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
+@keyframes statPop   { from{opacity:0;transform:translateY(12px) scale(.97)} to{opacity:1;transform:none} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes floatBook { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-10px) rotate(4deg)} }
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
 .homeContainer {
+  font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
+  background: var(--admin-bg-section, #f8fafc);
+  color: var(--admin-text-primary, #1f2937);
   min-height: 100vh;
-  background: var(--light-bg);
 }
 
-/* Container */
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 2rem;
 }
 
-/* Section Headers */
+/* ── Section Header ─────────────────────────────────────────────────────────── */
 .sectionHeader {
   text-align: center;
-  margin-bottom: 5rem;
-}
-
-.sectionTitle {
-  font-size: 3rem;
-  font-weight: 800;
-  margin-bottom: 1.5rem;
-  color: var(--text-dark);
-  position: relative;
-  display: inline-block;
-}
-
-.sectionTitle::after {
-  content: '';
-  position: absolute;
-  bottom: -15px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100px;
-  height: 5px;
-  background: var(--primary-green);
-  border-radius: 3px;
+  margin-bottom: 3rem;
+  animation: fadeUp .5s cubic-bezier(.4,0,.2,1) both;
 }
 
 .sectionSubtitle {
-  font-size: 1.3rem;
-  color: var(--text-gray);
+  font-size: 1.1rem;
+  color: var(--admin-text-secondary, #6b7280);
   max-width: 600px;
-  margin: 2rem auto 0;
+  margin: .75rem auto 0;
   line-height: 1.6;
-  font-weight: 300;
-}
-/* Добави в края на файла */
-@media (max-width: 768px) {
-  .homeContainer {
-    padding: 0;
-    overflow-x: hidden;
-  }
-
-  .container {
-    padding-left: 15px;
-    padding-right: 15px;
-    max-width: 100%;
-  }
-
-  .sectionHeader {
-    padding: 0 10px;
-    text-align: center;
-  }
-
-  .sectionSubtitle {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    padding: 0 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
 }

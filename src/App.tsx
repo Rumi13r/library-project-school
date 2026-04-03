@@ -17,6 +17,8 @@ import ReadersClubPage from "./pages/ReadersClubPage";
 import StudyMaterialsPage from "./pages/StudyMaterialsPage";
 import AdminUserDashboard from "./components/Dashboard/AdminDashboard"; 
 import LibrarianUserDashboard from "./components/Dashboard/LibrarianDashboard"; 
+import TopProgressBar from "./components/TopProgressbar";
+import Cookies from "./components/Cookies";
 
 function App() {
   // Protected route за всички логнати потребители
@@ -222,6 +224,12 @@ function App() {
           {/* Fallback route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <TopProgressBar
+        height={3}         
+        duration={500}      
+        color="#16a34a"     
+        />
+        <Cookies />
       </Router>
     </AuthProvider>
   );

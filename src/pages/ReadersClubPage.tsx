@@ -1,111 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { 
-  Users,
-  BookOpen,
-  MessageSquare,
-  Calendar,
-  Clock,
-  MapPin,
-  User,
-  Star,
-  Heart,
-  Share2,
-  Bookmark,
-  Search,
-  Filter,
-  Award,
-  Users as _UsersIcon,
-  Book,
-  ExternalLink,
-  Plus,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  X,
-  MessageCircle,
-  ThumbsUp,
-  BookmarkCheck,
-  Tag,
-  FileText
+  Users, BookOpen, MessageSquare, Calendar, Clock, MapPin, User,
+  Star, Heart, Share2, Bookmark, Search, Filter, Award, Book,
+  ExternalLink, Plus, ArrowRight, ChevronDown, ChevronUp, X,
+  MessageCircle, ThumbsUp, BookmarkCheck, Tag, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './ReadersClubPage.css';
 
 interface ClubMeeting {
-  id: string;
-  title: string;
-  description: string;
-  bookTitle: string;
-  bookAuthor: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  maxParticipants: number;
-  currentParticipants: number;
-  organizer: string;
-  organizerAvatar?: string;
-  discussionPoints: string[];
-  readingProgress: string;
-  featured: boolean;
-  createdAt: any;
+  id: string; title: string; description: string;
+  bookTitle: string; bookAuthor: string;
+  date: string; time: string; endTime: string; location: string;
+  maxParticipants: number; currentParticipants: number; organizer: string;
+  discussionPoints: string[]; readingProgress: string; featured: boolean;
+  createdAt: string | Date | { toDate?: () => Date; seconds?: number } | null;
   status: 'upcoming' | 'ongoing' | 'completed';
-  joinLink?: string;
-  materials?: {
-    type: 'pdf' | 'link' | 'video';
-    title: string;
-    url: string;
-  }[];
+  materials?: { type: 'pdf'|'link'|'video'; title: string; url: string; }[];
 }
-
 interface ClubMember {
-  id: string;
-  name: string;
-  role: 'organizer' | 'member' | 'moderator';
-  booksRead: number;
-  joinedAt: string;
-  avatar?: string;
-  favoriteGenres: string[];
-  currentlyReading?: string;
-  bio?: string;
+  id: string; name: string; role: 'organizer'|'member'|'moderator';
+  booksRead: number; joinedAt: string; avatar?: string;
+  favoriteGenres: string[]; currentlyReading?: string; bio?: string;
 }
-
 interface ClubDiscussion {
-  id: string;
-  bookId: string;
-  title: string;
-  content: string;
-  author: string;
-  authorAvatar?: string;
-  likes: number;
-  comments: number;
-  createdAt: any;
+  id: string; bookId: string; title: string; content: string;
+  author: string; likes: number; comments: number;
+  createdAt: string | Date | { toDate?: () => Date; seconds?: number } | null;
   tags: string[];
 }
-
 interface BookOfMonth {
-  id: string;
-  title: string;
-  author: string;
-  description: string;
-  coverImage: string;
-  genre: string;
-  rating: number;
-  pages: number;
-  readingSchedule: {
-    startDate: string;
-    endDate: string;
-    weeklyPages: number;
-  };
+  id: string; title: string; author: string; description: string;
+  coverImage: string; genre: string; rating: number; pages: number;
+  readingSchedule: { startDate: string; endDate: string; weeklyPages: number; };
   discussionQuestions: string[];
-  resources?: {
-    title: string;
-    type: 'guide' | 'interview' | 'analysis';
-    url: string;
-  }[];
 }
 
 const ReadersClubPage: React.FC = () => {
@@ -115,1041 +46,426 @@ const ReadersClubPage: React.FC = () => {
   const [bookOfMonth, setBookOfMonth] = useState<BookOfMonth | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'meetings' | 'discussions' | 'members'>('meetings');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'meetings'|'discussions'|'members'>('meetings');
   const [selectedMeeting, setSelectedMeeting] = useState<ClubMeeting | null>(null);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [userReview, setUserReview] = useState('');
   const [expandedMeetingId, setExpandedMeetingId] = useState<string | null>(null);
-  
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchClubData();
-  }, []);
-
-  const fetchClubData = async () => {
+  const fetchClubData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Зареждане на срещи
-      const meetingsQuery = query(collection(db, "readers_club_meetings"), orderBy("date", "asc"));
-      const meetingsSnapshot = await getDocs(meetingsQuery);
-      const meetingsData: ClubMeeting[] = meetingsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ClubMeeting));
-      
-      setMeetings(meetingsData);
+      const [mSnap, mbSnap, dSnap] = await Promise.all([
+        getDocs(query(collection(db,"readers_club_meetings"),orderBy("date","asc"))),
+        getDocs(query(collection(db,"readers_club_members"),orderBy("joinedAt","desc"))),
+        getDocs(query(collection(db,"readers_club_discussions"),orderBy("createdAt","desc"))),
+      ]);
+      setMeetings(mSnap.docs.map(d=>({id:d.id,...d.data()} as ClubMeeting)));
+      setMembers(mbSnap.docs.map(d=>({id:d.id,...d.data()} as ClubMember)));
+      setDiscussions(dSnap.docs.map(d=>({id:d.id,...d.data()} as ClubDiscussion)));
+      const cm = new Date().getMonth();
+      const bSnap = await getDocs(query(collection(db,"books_of_month"),where("readingSchedule.startDate",">=",new Date(new Date().getFullYear(),cm,1))));
+      if (!bSnap.empty) { const ds=bSnap.docs[0]; setBookOfMonth({id:ds.id,...ds.data()} as BookOfMonth); }
+    } catch(e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
 
-      // Зареждане на членове
-      const membersQuery = query(collection(db, "readers_club_members"), orderBy("joinedAt", "desc"));
-      const membersSnapshot = await getDocs(membersQuery);
-      const membersData: ClubMember[] = membersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ClubMember));
-      
-      setMembers(membersData);
-
-      // Зареждане на дискусии
-      const discussionsQuery = query(collection(db, "readers_club_discussions"), orderBy("createdAt", "desc"));
-      const discussionsSnapshot = await getDocs(discussionsQuery);
-      const discussionsData: ClubDiscussion[] = discussionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ClubDiscussion));
-      
-      setDiscussions(discussionsData);
-
-      // Зареждане на книга на месеца
-      const currentMonth = new Date().getMonth();
-      const bookQuery = query(
-        collection(db, "books_of_month"), 
-        where("readingSchedule.startDate", ">=", new Date(new Date().getFullYear(), currentMonth, 1))
-      );
-      const bookSnapshot = await getDocs(bookQuery);
-      if (!bookSnapshot.empty) {
-        const doc = bookSnapshot.docs[0];
-        const bookData = doc.data() as Omit<BookOfMonth, 'id'>;
-        setBookOfMonth({ 
-          id: doc.id, 
-          ...bookData 
-        });
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching club data:", error);
-      setLoading(false);
-    }
-  };
+  // FIX: void prevents "setState synchronously within effect" lint warning
+  useEffect(()=>{ void fetchClubData(); },[fetchClubData]);
 
   const handleJoinMeeting = async (meeting: ClubMeeting) => {
-    if (!user) {
-      navigate('/login', { 
-        state: { 
-          redirectTo: '/readers-club',
-          message: 'Моля, влезте в профила си, за да се присъедините към среща.' 
-        }
-      });
-      return;
-    }
-
-    if (meeting.currentParticipants >= meeting.maxParticipants) {
-      alert('Срещата е пълна! Моля, изчакайте следващата.');
-      return;
-    }
-
-    try {
-      setShowJoinForm(true);
-    } catch (error) {
-      console.error("Error joining meeting:", error);
-      alert('Възникна грешка при присъединяването.');
-    }
+    if (!user) { navigate('/login',{state:{redirectTo:'/readers-club'}}); return; }
+    if (meeting.currentParticipants>=meeting.maxParticipants) { alert('Срещата е пълна!'); return; }
+    setShowJoinForm(true);
   };
-
-  const handleSubmitJoinForm = async () => {
+  const handleSubmitJoin = async () => {
     if (!selectedMeeting) return;
-    
-    try {
-      alert(`Успешно се присъединихте към срещата "${selectedMeeting.title}"!`);
-      setShowJoinForm(false);
-      
-      // Обновяване на местоположението на срещата
-      setMeetings(prev => prev.map(meeting => 
-        meeting.id === selectedMeeting.id 
-          ? { ...meeting, currentParticipants: meeting.currentParticipants + 1 }
-          : meeting
-      ));
-    } catch (error) {
-      console.error("Error submitting join form:", error);
-      alert('Възникна грешка при присъединяването.');
-    }
+    alert(`Успешно се присъединихте към „${selectedMeeting.title}"!`);
+    setShowJoinForm(false);
+    setMeetings(p=>p.map(m=>m.id===selectedMeeting.id?{...m,currentParticipants:m.currentParticipants+1}:m));
+  };
+  const handleStartDiscussion = () => { if(!user){navigate('/login',{state:{redirectTo:'/readers-club'}});return;} navigate('/readers-club/discussions/new'); };
+  const handleLike = (id: string) => { if(!user){navigate('/login');return;} setDiscussions(p=>p.map(d=>d.id===id?{...d,likes:d.likes+1}:d)); };
+  const handleSave = (id: string) => { if(!user){navigate('/login');return;} console.log('save',id); alert('Запазено!'); };
+  const handleShare = (d: ClubDiscussion) => { if(navigator.share){navigator.share({title:d.title,url:window.location.href}).catch(()=>{});}else{navigator.clipboard.writeText(window.location.href).then(()=>alert('Копирано!')).catch(()=>{});} };
+
+  const getStatusColor=(s:string)=>({'upcoming':'#3b82f6','ongoing':'#10b981','completed':'#6b7280'}[s]||'#6b7280');
+  const getStatusLabel=(s:string)=>({'upcoming':'Предстои','ongoing':'В ход','completed':'Завършила'}[s]||s);
+
+  const formatDate=(ds:string)=>new Date(ds).toLocaleDateString('bg-BG',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeUntil=(ds:string,ts:string)=>{
+    const diff=new Date(`${ds}T${ts}`).getTime()-Date.now();
+    if(diff<=0) return null;
+    const days=Math.floor(diff/86400000); const hours=Math.floor((diff%86400000)/3600000);
+    return days>0?`${days} ${days===1?'ден':'дни'}`:hours>0?`${hours} ${hours===1?'час':'часа'}`:'скоро';
   };
 
-  const handleStartDiscussion = () => {
-    if (!user) {
-      navigate('/login', { 
-        state: { 
-          redirectTo: '/readers-club',
-          message: 'Моля, влезте в профила си, за да започнете дискусия.' 
-        }
-      });
-      return;
-    }
-    navigate('/readers-club/discussions/new');
-  };
-
-  const handleViewMemberProfile = (memberId: string) => {
-    navigate(`/profile/${memberId}`);
-  };
-
-  const handleLikeDiscussion = (discussionId: string) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    setDiscussions(prev => prev.map(discussion => 
-      discussion.id === discussionId 
-        ? { ...discussion, likes: discussion.likes + 1 }
-        : discussion
-    ));
-    
-    alert('Харесахте дискусията!');
-  };
-
-  const handleSaveDiscussion = (_discussionId: string) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    alert('Дискусията е запазена в любими!');
-  };
-
-  const handleShareDiscussion = (discussion: ClubDiscussion) => {
-    if (navigator.share) {
-      navigator.share({
-        title: discussion.title,
-        text: `Прочетете тази интересна дискусия за книги: ${discussion.title}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Линкът е копиран в клипборда!');
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming': return '#3b82f6';
-      case 'ongoing': return '#10b981';
-      case 'completed': return '#6b7280';
-      default: return '#6b7280';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('bg-BG', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
-  const getTimeUntilMeeting = (dateString: string, timeString: string) => {
-    const meetingTime = new Date(`${dateString}T${timeString}`);
-    const now = new Date();
-    const diff = meetingTime.getTime() - now.getTime();
-    
-    if (diff <= 0) return null;
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) {
-      return `${days} ${days === 1 ? 'ден' : 'дни'}`;
-    } else if (hours > 0) {
-      return `${hours} ${hours === 1 ? 'час' : 'часа'}`;
-    } else {
-      return 'Мене от сега';
-    }
-  };
-
-  const filteredMeetings = meetings.filter(meeting => {
-    if (statusFilter !== 'all' && meeting.status !== statusFilter) return false;
-    if (searchTerm && !meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !meeting.bookTitle.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+  const filteredMeetings = meetings.filter(m=>{
+    if(statusFilter!=='all'&&m.status!==statusFilter) return false;
+    if(searchTerm&&!m.title.toLowerCase().includes(searchTerm.toLowerCase())&&!m.bookTitle.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
   });
 
-  if (loading) {
-    return (
-      <div className="readers-club-page">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <span>Зареждане на читателския клуб...</span>
-        </div>
-      </div>
-    );
-  }
+  if(loading) return(
+    <div className="readers-club-page"><div className="loading-spinner"><div className="spinner"/><span>Зареждане на читателския клуб...</span></div></div>
+  );
 
   return (
     <div className="readers-club-page">
-      <div className="readers-club-container">
-        {/* НОВ ХЕДЪР по модел на AIResourcesPage */}
-        <div className="readers-club-header">
-          <div className="readers-club-title-section">
-            <div className="title-icon-wrapper club">
-              <BookOpen className="readers-club-title-icon" />
-            </div>
-            <div className="title-content">
-              <h1 className="handwritten-title">Читателски Клуб</h1>
-              <p className="readers-club-subtitle">
-                Споделете вашите книжни приключения, обсъждайте и откривайте нови светове с други читатели
-              </p>
-            </div>
-          </div>
+      <div className="dashboard-container">
 
-          <div className="readers-club-actions">
-            {user && (
-              <button 
-                className="join-club-btn"
-                onClick={() => navigate('/readers-club/join')}
-              >
-                <span>Присъедини се</span>
-              </button>
-            )}
-            <div className="view-toggle">
-              <button 
-                className={`view-btn ${viewMode === 'meetings' ? 'active' : ''}`}
-                onClick={() => setViewMode('meetings')}
-                title="Срещи"
-              >
-                ▫▫
-              </button>
-              <button 
-                className={`view-btn ${viewMode === 'discussions' ? 'active' : ''}`}
-                onClick={() => setViewMode('discussions')}
-                title="Дискусии"
-              >
-                ≡
-              </button>
-              <button 
-                className={`view-btn ${viewMode === 'members' ? 'active' : ''}`}
-                onClick={() => setViewMode('members')}
-                title="Членове"
-              >
-                ≡
-              </button>
-            </div>
-          </div>
+        {/* Header */}
+        <div className="dashboard-header">
+          <h1>Читателски Клуб</h1>
+          <p>Споделете книжните си приключения, обсъждайте и откривайте нови светове с други читатели</p>
+          {user && <button className="primary-btn rc-join-btn" onClick={()=>navigate('/readers-club/join')}><Users size={16}/>Присъедини се</button>}
         </div>
 
-        {/* Stats Summary - подобно на AIResourcesPage */}
-        <div className="readers-club-stats">
-          <div className="stat-card club">
-            <div className="stat-content">
-              <div className="stat-number">
-                {members.length}
-              </div>
-              <div className="stat-label">Членове</div>
+        {/* Stats */}
+        <div className="stats-grid">
+          {[
+            {icon:<Users size={22}/>,label:'Членове',value:members.length,color:'#3b82f6'},
+            {icon:<Calendar size={22}/>,label:'Предстоящи срещи',value:meetings.filter(m=>m.status==='upcoming').length,color:'#10b981'},
+            {icon:<MessageSquare size={22}/>,label:'Дискусии',value:discussions.length,color:'#8b5cf6'},
+            {icon:<Award size={22}/>,label:'Книга на месеца',value:bookOfMonth?1:0,color:'#f59e0b'},
+          ].map((s,i)=>(
+            <div key={i} className="stat-card">
+              <div className="stat-icon" style={{color:s.color}}>{s.icon}</div>
+              <div className="stat-info"><span className="stat-value">{s.value}</span><span className="stat-label">{s.label}</span></div>
             </div>
-          </div>
-          <div className="stat-card club">
-            <div className="stat-content">
-              <div className="stat-number">
-                {meetings.filter(m => m.status === 'upcoming').length}
-              </div>
-              <div className="stat-label">Предстоящи срещи</div>
-            </div>
-          </div>
-          <div className="stat-card club">
-            <div className="stat-content">
-              <div className="stat-number">
-                {discussions.length}
-              </div>
-              <div className="stat-label">Активни дискусии</div>
-            </div>
-          </div>
-          <div className="stat-card club">
-            <div className="stat-content">
-              <div className="stat-number">
-                {bookOfMonth ? 1 : 0}
-              </div>
-              <div className="stat-label">Книга на месеца</div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Книга на месеца */}
+        {/* Book of the Month */}
         {bookOfMonth && (
-          <div className="book-of-month-section">
-            <div className="book-of-month-header">
-              <Award className="section-icon" />
+          <div className="content-section rc-bom-section">
+            <div className="rc-bom-header">
+              <Award size={20} style={{color:'#f59e0b'}}/>
               <h3>Книга на месеца</h3>
-              <span className="month-badge">{new Date().toLocaleDateString('bg-BG', { month: 'long' })}</span>
+              <span className="rc-month-badge">{new Date().toLocaleDateString('bg-BG',{month:'long'})}</span>
             </div>
-            
-            <div className="book-of-month-content">
-              <div className="book-cover">
-                <div className="book-cover-placeholder">
-                  <Book className="cover-icon" />
-                </div>
-                <div className="reading-progress">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '45%' }}></div>
-                  </div>
-                  <span className="progress-text">45% прочетени</span>
+            <div className="rc-bom-body">
+              <div className="rc-bom-cover">
+                <Book size={48} style={{color:'var(--admin-primary,#3b82f6)'}}/>
+                <div className="rc-progress-wrap">
+                  <div className="rc-progress-bar"><div className="rc-progress-fill" style={{width:'45%'}}/></div>
+                  <span className="rc-progress-label">45% прочетени</span>
                 </div>
               </div>
-              
-              <div className="book-info">
+              <div className="rc-bom-info">
                 <h4>{bookOfMonth.title}</h4>
-                <p className="book-author">от {bookOfMonth.author}</p>
-                <p className="book-description">{bookOfMonth.description}</p>
-                
-                <div className="book-meta">
-                  <div className="meta-item">
-                    <Book size={14} />
-                    <span>{bookOfMonth.pages} страници</span>
-                  </div>
-                  <div className="meta-item">
-                    <Star size={14} />
-                    <span>{bookOfMonth.rating}/5.0</span>
-                  </div>
-                  <div className="meta-item">
-                    <Tag size={14} />
-                    <span>{bookOfMonth.genre}</span>
-                  </div>
+                <p className="rc-bom-author">от {bookOfMonth.author}</p>
+                <p className="rc-bom-desc">{bookOfMonth.description}</p>
+                <div className="sm-chips-row">
+                  <span className="sm-chip"><Book size={11}/>{bookOfMonth.pages} стр.</span>
+                  <span className="sm-chip"><Star size={11}/>{bookOfMonth.rating}/5.0</span>
+                  <span className="sm-chip"><Tag size={11}/>{bookOfMonth.genre}</span>
                 </div>
-                
-                <div className="reading-schedule">
-                  <h5>График за четене:</h5>
-                  <div className="schedule-dates">
-                    <span>{new Date(bookOfMonth.readingSchedule.startDate).toLocaleDateString('bg-BG')}</span>
-                    <ArrowRight size={12} />
-                    <span>{new Date(bookOfMonth.readingSchedule.endDate).toLocaleDateString('bg-BG')}</span>
-                  </div>
-                  <p className="weekly-target">{bookOfMonth.readingSchedule.weeklyPages} страници седмично</p>
+                <div className="rc-schedule-row">
+                  <Calendar size={13}/>{new Date(bookOfMonth.readingSchedule.startDate).toLocaleDateString('bg-BG')}
+                  <ArrowRight size={13}/>
+                  {new Date(bookOfMonth.readingSchedule.endDate).toLocaleDateString('bg-BG')}
+                  <span style={{marginLeft:8,color:'var(--admin-text-muted,#9ca3af)'}}>· {bookOfMonth.readingSchedule.weeklyPages} стр./седм.</span>
                 </div>
-                
-                <div className="book-actions">
-                  <button className="btn-discuss">
-                    <MessageCircle size={16} />
-                    <span>Присъедини се към дискусията</span>
-                  </button>
-                  <button className="btn-save">
-                    <BookmarkCheck size={16} />
-                    <span>Запази книгата</span>
-                  </button>
+                <div className="rc-bom-actions">
+                  <button className="primary-btn rc-sm-btn"><MessageCircle size={14}/>Дискусия</button>
+                  <button className="secondary-btn rc-sm-btn"><BookmarkCheck size={14}/>Запази</button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Search and Filters - обновен */}
-        <div className="readers-club-filters">
+        {/* Search + Tabs */}
+        <div className="search-section">
           <div className="search-box">
-            <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Търсете срещи, книги или дискусии..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          
-          <div className="advanced-filters">
-            <div className="filter-group">
-              <Filter size={16} />
-              <span className="filter-label">Филтрирай по:</span>
-            </div>
-            
-            <select 
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Всички срещи</option>
-              <option value="upcoming">Предстоящи</option>
-              <option value="ongoing">Текущи</option>
-              <option value="completed">Завършили</option>
-            </select>
-
-            <div className="view-mode-toggle">
-              <button 
-                className={`view-mode-btn ${viewMode === 'meetings' ? 'active' : ''}`}
-                onClick={() => setViewMode('meetings')}
-              >
-                <Calendar size={16} />
-                <span>Срещи</span>
-              </button>
-              <button 
-                className={`view-mode-btn ${viewMode === 'discussions' ? 'active' : ''}`}
-                onClick={() => setViewMode('discussions')}
-              >
-                <MessageSquare size={16} />
-                <span>Дискусии</span>
-              </button>
-              <button 
-                className={`view-mode-btn ${viewMode === 'members' ? 'active' : ''}`}
-                onClick={() => setViewMode('members')}
-              >
-                <Users size={16} />
-                <span>Членове</span>
-              </button>
-            </div>
-            
-            {user && (
-              <button 
-                className="create-meeting-btn"
-                onClick={() => navigate('/readers-club/meetings/new')}
-              >
-                <Plus size={16} />
-                <span>Предложи среща</span>
-              </button>
-            )}
-          </div>
-
-          {/* Popular Genres */}
-          <div className="popular-genres">
-            <span className="genres-label">Популярни жанрове:</span>
-            <div className="genres-list">
-              {['Фантастика', 'Биография', 'История', 'Научна литература', 'Поетика', 'Роман', 'Класика'].map(genre => (
-                <button
-                  key={genre}
-                  className="genre-btn"
-                  onClick={() => setSearchTerm(genre)}
-                >
-                  {genre}
-                </button>
-              ))}
-            </div>
+            <Search className="search-icon"/>
+            <input type="text" className="search-input" placeholder="Търсете срещи, книги или дискусии..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}/>
           </div>
         </div>
 
-        {/* Main Content based on view mode */}
-        <div className="readers-club-content">
-          <div className="content-header">
-            <div className="header-left">
-              <BookOpen className="content-icon" />
-              <span className="content-title">
-                {viewMode === 'meetings' ? 'Предстоящи срещи' : 
-                 viewMode === 'discussions' ? 'Активни дискусии' : 'Членове на клуба'}
-              </span>
+        {/* Tabs */}
+        <div className="tabs-section">
+          {[
+            {id:'meetings',    label:`Срещи (${meetings.length})`,       icon:<Calendar size={16}/>},
+            {id:'discussions', label:`Дискусии (${discussions.length})`, icon:<MessageSquare size={16}/>},
+            {id:'members',     label:`Членове (${members.length})`,      icon:<Users size={16}/>},
+          ].map(t=>(
+            <button key={t.id} className={`tab-button ${viewMode===t.id?'active':''}`} onClick={()=>setViewMode(t.id as typeof viewMode)}>
+              {t.icon}{t.label}
+            </button>
+          ))}
+          <div className="rc-tab-actions">
+            <div className="rc-status-filter">
+              <Filter size={14}/>
+              <select className="form-input rc-status-select" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
+                <option value="all">Всички</option>
+                <option value="upcoming">Предстоящи</option>
+                <option value="ongoing">Текущи</option>
+                <option value="completed">Завършили</option>
+              </select>
             </div>
-            <div className="header-right">
-              <span className="results-count">
-                {viewMode === 'meetings' && `${filteredMeetings.length} от ${meetings.length} срещи`}
-                {viewMode === 'discussions' && `${discussions.length} дискусии`}
-                {viewMode === 'members' && `${members.length} членове`}
-              </span>
-              {viewMode === 'discussions' && user && (
-                <button 
-                  className="start-discussion-btn"
-                  onClick={handleStartDiscussion}
-                >
-                  <MessageSquare size={16} />
-                  <span>Започни дискусия</span>
-                </button>
-              )}
-            </div>
+            {user && viewMode==='meetings' && (
+              <button className="primary-btn rc-sm-btn" onClick={()=>navigate('/readers-club/meetings/new')}><Plus size={14}/>Предложи среща</button>
+            )}
+            {user && viewMode==='discussions' && (
+              <button className="primary-btn rc-sm-btn" onClick={handleStartDiscussion}><MessageSquare size={14}/>Нова дискусия</button>
+            )}
           </div>
-          
-          {viewMode === 'meetings' ? (
-            <>
-              {filteredMeetings.length > 0 ? (
-                <div className="meetings-grid">
-                  {filteredMeetings.map((meeting, index) => {
-                    const timeUntil = getTimeUntilMeeting(meeting.date, meeting.time);
-                    const isExpanded = expandedMeetingId === meeting.id;
-                    
-                    return (
-                      <div 
-                        key={meeting.id} 
-                        className={`meeting-card ${meeting.featured ? 'featured' : ''}`}
-                        style={{ animationDelay: `${index * 100}ms` }}
-                      >
-                        <div className="meeting-header">
-                          <div className="meeting-date">
-                            <Calendar size={20} />
-                            <div className="date-content">
-                              <div className="date-day">{new Date(meeting.date).getDate()}</div>
-                              <div className="date-month">
-                                {new Date(meeting.date).toLocaleDateString('bg-BG', { month: 'short' })}
-                              </div>
+        </div>
+
+        {/* Popular Genres */}
+        <div className="rc-genres-row">
+          <span className="rc-genres-label">Популярни жанрове:</span>
+          {['Фантастика','Биография','История','Научна литература','Роман','Класика'].map(g=>(
+            <button key={g} className="rc-genre-chip" onClick={()=>setSearchTerm(g)}>{g}</button>
+          ))}
+        </div>
+
+        {/* ── MEETINGS ── */}
+        {viewMode==='meetings' && (
+          <div className="content-section">
+            <div className="sm-section-head">
+              <h2><Calendar size={20}/>Срещи ({filteredMeetings.length})</h2>
+            </div>
+            {filteredMeetings.length>0 ? (
+              <div className="rc-meetings-grid">
+                {filteredMeetings.map((meeting,i)=>{
+                  const tu = timeUntil(meeting.date,meeting.time);
+                  const isExp = expandedMeetingId===meeting.id;
+                  return (
+                    <div key={meeting.id} className={`rc-meeting-card ${meeting.featured?'rc-meeting-featured':''}`} style={{animationDelay:`${i*80}ms`}}>
+                      <div className="rc-meeting-top">
+                        <div className="rc-date-box">
+                          <span className="rc-date-day">{new Date(meeting.date).getDate()}</span>
+                          <span className="rc-date-mon">{new Date(meeting.date).toLocaleDateString('bg-BG',{month:'short'})}</span>
+                        </div>
+                        <div className="rc-meeting-main">
+                          <h4 className="rc-meeting-title">{meeting.title}</h4>
+                          <div className="rc-meeting-book"><Book size={13}/><span>{meeting.bookTitle}</span><span className="rc-book-auth">от {meeting.bookAuthor}</span></div>
+                        </div>
+                        <div className="rc-meeting-status-col">
+                          <span className="rc-status-pill" style={{background:getStatusColor(meeting.status)+'20',color:getStatusColor(meeting.status),border:`1px solid ${getStatusColor(meeting.status)}40`}}>{getStatusLabel(meeting.status)}</span>
+                          {tu && <span className="rc-time-until">ощe {tu}</span>}
+                        </div>
+                      </div>
+                      <div className="rc-meeting-meta">
+                        <span><Clock size={13}/>{meeting.time} – {meeting.endTime}</span>
+                        <span><MapPin size={13}/>{meeting.location}</span>
+                        <span><User size={13}/>{meeting.organizer}</span>
+                        <span><Users size={13}/>{meeting.currentParticipants}/{meeting.maxParticipants}</span>
+                      </div>
+                      <p className="rc-meeting-desc">{meeting.description}</p>
+                      {isExp && (
+                        <div className="rc-expanded-meeting">
+                          <h5>Теми за дискусия:</h5>
+                          <ul>{meeting.discussionPoints.map((p,i)=><li key={i}>{p}</li>)}</ul>
+                          {meeting.materials && meeting.materials.length>0 && (
+                            <div className="rc-materials-list">
+                              <h5>Материали:</h5>
+                              {meeting.materials.map((m,i)=><a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="sm-direct-link" style={{marginTop:4}}><FileText size={12}/>{m.title}</a>)}
                             </div>
-                          </div>
-                          
-                          <div className="meeting-main-info">
-                            <h4>{meeting.title}</h4>
-                            <div className="meeting-book">
-                              <Book size={14} />
-                              <span>{meeting.bookTitle}</span>
-                              <span className="book-author">от {meeting.bookAuthor}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="meeting-status">
-                            <span 
-                              className="status-badge"
-                              style={{ backgroundColor: getStatusColor(meeting.status) }}
-                            >
-                              {meeting.status === 'upcoming' ? 'Предстои' : 
-                               meeting.status === 'ongoing' ? 'В ход' : 'Завършила'}
-                            </span>
-                            {timeUntil && (
-                              <span className="time-until">още {timeUntil}</span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                        
-                        <div className="meeting-details">
-                          <div className="detail-row">
-                            <Clock size={16} />
-                            <span>{meeting.time} - {meeting.endTime}</span>
-                          </div>
-                          <div className="detail-row">
-                            <MapPin size={16} />
-                            <span>{meeting.location}</span>
-                          </div>
-                          <div className="detail-row">
-                            <User size={16} />
-                            <span>Организатор: {meeting.organizer}</span>
-                          </div>
-                          <div className="detail-row">
-                            <Users size={16} />
-                            <span>{meeting.currentParticipants}/{meeting.maxParticipants} участници</span>
-                          </div>
-                        </div>
-                        
-                        <div className="meeting-description">
-                          <p>{meeting.description}</p>
-                        </div>
-                        
-                        {isExpanded && (
-                          <div className="meeting-expanded">
-                            <div className="discussion-points">
-                              <h5>Теми за дискусия:</h5>
-                              <ul>
-                                {meeting.discussionPoints.map((point, idx) => (
-                                  <li key={idx}>{point}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            
-                            {meeting.materials && meeting.materials.length > 0 && (
-                              <div className="meeting-materials">
-                                <h5>Материали:</h5>
-                                <div className="materials-list">
-                                  {meeting.materials.map((material, idx) => (
-                                    <a 
-                                      key={idx}
-                                      href={material.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="material-link"
-                                    >
-                                      <FileText size={14} />
-                                      <span>{material.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="meeting-actions">
-                          <button 
-                            className="join-btn"
-                            onClick={() => {
-                              setSelectedMeeting(meeting);
-                              handleJoinMeeting(meeting);
-                            }}
-                            disabled={meeting.currentParticipants >= meeting.maxParticipants}
-                          >
-                            {meeting.currentParticipants >= meeting.maxParticipants 
-                              ? 'Срещата е пълна'
-                              : 'Присъедини се'}
-                          </button>
-                          
-                          <div className="action-buttons">
-                            <button 
-                              className="action-btn"
-                              onClick={() => setExpandedMeetingId(isExpanded ? null : meeting.id)}
-                              title={isExpanded ? 'Скрий детайли' : 'Покажи детайли'}
-                            >
-                              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                            </button>
-                            <button 
-                              className="action-btn"
-                              onClick={() => {
-                                setSelectedMeeting(meeting);
-                                setShowMeetingModal(true);
-                              }}
-                              title="Виж повече"
-                            >
-                              <ExternalLink size={18} />
-                            </button>
-                            {user && (
-                              <button className="action-btn" title="Запази срещата">
-                                <Bookmark size={18} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="no-meetings">
-                  <Calendar size={60} />
-                  <h4>Няма предстоящи срещи</h4>
-                  <p>Бъдете първият, който организира среща!</p>
-                  {user && (
-                    <button 
-                      className="organize-btn"
-                      onClick={() => navigate('/readers-club/meetings/new')}
-                    >
-                      Организирай среща
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          ) : viewMode === 'discussions' ? (
-            <>
-              {discussions.length > 0 ? (
-                <div className="discussions-grid">
-                  {discussions.map((discussion, index) => (
-                    <div 
-                      key={discussion.id} 
-                      className="discussion-card"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="discussion-header">
-                        <div className="author-info">
-                          <div className="author-avatar">
-                            <User size={24} />
-                          </div>
-                          <div className="author-details">
-                            <h5>{discussion.author}</h5>
-                            <span className="discussion-date">
-                              {new Date(discussion.createdAt).toLocaleDateString('bg-BG')}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="discussion-tags">
-                          {discussion.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="discussion-content">
-                        <h4>{discussion.title}</h4>
-                        <p>{discussion.content.substring(0, 200)}...</p>
-                      </div>
-                      
-                      <div className="discussion-stats">
-                        <div className="stat">
-                          <ThumbsUp size={16} />
-                          <span>{discussion.likes} харесвания</span>
-                        </div>
-                        <div className="stat">
-                          <MessageCircle size={16} />
-                          <span>{discussion.comments} коментара</span>
-                        </div>
-                      </div>
-                      
-                      <div className="discussion-actions">
-                        <button 
-                          className="like-btn"
-                          onClick={() => handleLikeDiscussion(discussion.id)}
-                        >
-                          <Heart size={16} />
-                          <span>Харесай</span>
+                      )}
+                      <div className="rc-meeting-actions">
+                        <button className="primary-btn rc-sm-btn" onClick={()=>{setSelectedMeeting(meeting);handleJoinMeeting(meeting);}} disabled={meeting.currentParticipants>=meeting.maxParticipants}>
+                          {meeting.currentParticipants>=meeting.maxParticipants?'Пълно':'Присъедини се'}
                         </button>
-                        <button 
-                          className="comment-btn"
-                          onClick={() => navigate(`/readers-club/discussions/${discussion.id}`)}
-                        >
-                          <MessageSquare size={16} />
-                          <span>Коментирай</span>
-                        </button>
-                        <div className="action-buttons">
-                          <button 
-                            className="action-btn"
-                            onClick={() => handleSaveDiscussion(discussion.id)}
-                            title="Запази"
-                          >
-                            <Bookmark size={16} />
-                          </button>
-                          <button 
-                            className="action-btn"
-                            onClick={() => handleShareDiscussion(discussion)}
-                            title="Сподели"
-                          >
-                            <Share2 size={16} />
-                          </button>
+                        <div className="sm-icon-actions">
+                          <button className="icon-action-btn" onClick={()=>setExpandedMeetingId(isExp?null:meeting.id)} title={isExp?'Скрий':'Детайли'}>{isExp?<ChevronUp size={15}/>:<ChevronDown size={15}/>}</button>
+                          <button className="icon-action-btn" onClick={()=>{setSelectedMeeting(meeting);setShowMeetingModal(true);}} title="Подробности"><ExternalLink size={15}/></button>
+                          {user && <button className="icon-action-btn" title="Запази"><Bookmark size={15}/></button>}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-discussions">
-                  <MessageSquare size={60} />
-                  <h4>Все още няма дискусии</h4>
-                  <p>Бъдете първият, който започне разговор!</p>
-                  {user && (
-                    <button 
-                      className="start-discussion-btn-large"
-                      onClick={handleStartDiscussion}
-                    >
-                      <MessageSquare size={20} />
-                      <span>Започни първата дискусия</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="members-grid">
-                {members.map((member, index) => (
-                  <div 
-                    key={member.id} 
-                    className="member-card"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="member-header">
-                      <div className="member-avatar">
-                        {member.avatar ? (
-                          <img src={member.avatar} alt={member.name} />
-                        ) : (
-                          <User size={32} />
-                        )}
-                        {member.role === 'organizer' && (
-                          <span className="role-badge organizer">Организатор</span>
-                        )}
-                      </div>
-                      
-                      <div className="member-info">
-                        <h4>{member.name}</h4>
-                        <p className="member-role">
-                          {member.role === 'organizer' ? 'Основател' : 
-                           member.role === 'moderator' ? 'Модератор' : 'Член'}
-                        </p>
-                        <div className="member-stats">
-                          <div className="stat">
-                            <Book size={14} />
-                            <span>{member.booksRead} книги</span>
-                          </div>
-                          <div className="stat">
-                            <Calendar size={14} />
-                            <span>{new Date(member.joinedAt).toLocaleDateString('bg-BG')}</span>
-                          </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <Calendar size={48}/><p>Няма срещи за избраните критерии</p>
+                {user && <button className="primary-btn" style={{marginTop:'1rem'}} onClick={()=>navigate('/readers-club/meetings/new')}>Организирай среща</button>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── DISCUSSIONS ── */}
+        {viewMode==='discussions' && (
+          <div className="content-section">
+            <div className="sm-section-head"><h2><MessageSquare size={20}/>Дискусии ({discussions.length})</h2></div>
+            {discussions.length>0 ? (
+              <div className="rc-discussions-grid">
+                {discussions.map((d,i)=>(
+                  <div key={d.id} className="rc-disc-card" style={{animationDelay:`${i*80}ms`}}>
+                    <div className="rc-disc-header">
+                      <div className="rc-disc-author">
+                        <div className="rc-avatar"><User size={20}/></div>
+                        <div>
+                          <strong>{d.author}</strong>
+                          <span className="rc-disc-date">
+                            {d.createdAt
+                              ? new Date(typeof d.createdAt==='object'&&'seconds' in (d.createdAt as object)
+                                  ?((d.createdAt as {seconds:number}).seconds*1000)
+                                  :d.createdAt instanceof Date?d.createdAt:String(d.createdAt)).toLocaleDateString('bg-BG')
+                              : ''}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                    
-                    {member.bio && (
-                      <div className="member-bio">
-                        <p>{member.bio}</p>
-                      </div>
-                    )}
-                    
-                    <div className="member-genres">
-                      <h5>Любими жанрове:</h5>
-                      <div className="genres-list">
-                        {member.favoriteGenres.map(genre => (
-                          <span key={genre} className="genre-tag">{genre}</span>
-                        ))}
+                      <div className="sm-chips-row">
+                        {d.tags.slice(0,2).map(t=><span key={t} className="sm-chip sm-tag">{t}</span>)}
                       </div>
                     </div>
-                    
-                    {member.currentlyReading && (
-                      <div className="currently-reading">
-                        <h5>Чете в момента:</h5>
-                        <p>{member.currentlyReading}</p>
+                    <h4 className="rc-disc-title">{d.title}</h4>
+                    <p className="rc-disc-content">{d.content.substring(0,200)}…</p>
+                    <div className="rc-disc-stats">
+                      <span><ThumbsUp size={13}/>{d.likes}</span>
+                      <span><MessageCircle size={13}/>{d.comments}</span>
+                    </div>
+                    <div className="rc-disc-actions">
+                      <button className="primary-btn rc-sm-btn" onClick={()=>handleLike(d.id)}><Heart size={13}/>Харесай</button>
+                      <button className="edit-btn rc-sm-btn" onClick={()=>navigate(`/readers-club/discussions/${d.id}`)}><MessageSquare size={13}/>Коментирай</button>
+                      <div className="sm-icon-actions">
+                        <button className="icon-action-btn" onClick={()=>handleSave(d.id)} title="Запази"><Bookmark size={15}/></button>
+                        <button className="icon-action-btn" onClick={()=>handleShare(d)} title="Сподели"><Share2 size={15}/></button>
                       </div>
-                    )}
-                    
-                    <div className="member-actions">
-                      <button 
-                        className="view-profile-btn"
-                        onClick={() => handleViewMemberProfile(member.id)}
-                      >
-                        Виж профил
-                      </button>
-                      <button 
-                        className="message-btn"
-                        onClick={() => navigate(`/messages?user=${member.id}`)}
-                      >
-                        <MessageSquare size={16} />
-                        <span>Съобщение</span>
-                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <div className="empty-state">
+                <MessageSquare size={48}/><p>Все още няма дискусии</p>
+                {user && <button className="primary-btn" style={{marginTop:'1rem'}} onClick={handleStartDiscussion}>Започни дискусия</button>}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Quote of the Day */}
-        <div className="quote-section">
-          <blockquote>
-            "Един читател живее хиляди животи, преди да умре. Човекът, който никога не чете, живее само един."
-          </blockquote>
-          <cite>— Джордж Р. Р. Мартин</cite>
-        </div>
-
-        {/* Benefits Section */}
-        <div className="benefits-section">
-          <h3>Защо да се присъедините?</h3>
-          <div className="benefits-grid">
-            <div className="benefit-card">
-              <div className="benefit-icon">
-                <Users size={24} />
-              </div>
-              <h4>Социална общност</h4>
-              <p>Запознайте се с хора, които споделят вашата любов към книгите</p>
-            </div>
-            <div className="benefit-card">
-              <div className="benefit-icon">
-                <BookOpen size={24} />
-              </div>
-              <h4>Разширете хоризонтите си</h4>
-              <p>Открийте нови жанрове и автори чрез препоръките на други читатели</p>
-            </div>
-            <div className="benefit-card">
-              <div className="benefit-icon">
-                <MessageSquare size={24} />
-              </div>
-              <h4>Дълбоки дискусии</h4>
-              <p>Споделете вашите мисли и разберете нови перспективи за книгите</p>
-            </div>
-            <div className="benefit-card">
-              <div className="benefit-icon">
-                <Award size={24} />
-              </div>
-              <h4>Предизвикателства</h4>
-              <p>Участвайте в книжни предизвикателства и получавайте награди</p>
+        {/* ── MEMBERS ── */}
+        {viewMode==='members' && (
+          <div className="content-section">
+            <div className="sm-section-head"><h2><Users size={20}/>Членове ({members.length})</h2></div>
+            <div className="rc-members-grid">
+              {members.map((m,i)=>(
+                <div key={m.id} className="rc-member-card" style={{animationDelay:`${i*60}ms`}}>
+                  <div className="rc-member-top">
+                    <div className="rc-member-avatar">
+                      {m.avatar?<img src={m.avatar} alt={m.name}/>:<User size={28}/>}
+                      {m.role==='organizer' && <span className="rc-role-pip org">★</span>}
+                    </div>
+                    <div>
+                      <h4 className="rc-member-name">{m.name}</h4>
+                      <span className="rc-member-role-label">{m.role==='organizer'?'Основател':m.role==='moderator'?'Модератор':'Член'}</span>
+                      <div className="rc-member-stats">
+                        <span><Book size={11}/>{m.booksRead} книги</span>
+                        <span><Calendar size={11}/>{new Date(m.joinedAt).toLocaleDateString('bg-BG')}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {m.bio && <p className="rc-member-bio">{m.bio}</p>}
+                  <div className="rc-genres-chips">
+                    {m.favoriteGenres.map(g=><span key={g} className="sm-chip">{g}</span>)}
+                  </div>
+                  {m.currentlyReading && <p className="rc-reading-now"><Book size={12}/><em>{m.currentlyReading}</em></p>}
+                  <div className="rc-member-actions">
+                    <button className="primary-btn rc-sm-btn" onClick={()=>navigate(`/profile/${m.id}`)}>Профил</button>
+                    <button className="secondary-btn rc-sm-btn" onClick={()=>navigate(`/messages?user=${m.id}`)}><MessageSquare size={13}/>Съобщение</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* Quote */}
+        <blockquote className="rc-quote">
+          <p>"Един читател живее хиляди животи, преди да умре. Човекът, който никога не чете, живее само един."</p>
+          <cite>— Джордж Р. Р. Мартин</cite>
+        </blockquote>
+
+        {/* Benefits */}
+        <div className="sm-info-grid">
+          {[
+            {icon:<Users size={24}/>,title:'Социална общност',text:'Запознайте се с хора, споделящи вашата любов към книгите.'},
+            {icon:<BookOpen size={24}/>,title:'Разширете хоризонтите',text:'Открийте нови жанрове чрез препоръките на другите читатели.'},
+            {icon:<MessageSquare size={24}/>,title:'Дълбоки дискусии',text:'Споделете мислите си и разберете нови перспективи.'},
+            {icon:<Award size={24}/>,title:'Предизвикателства',text:'Участвайте в книжни предизвикателства и спечелете награди.'},
+          ].map((c,i)=>(
+            <div key={i} className="sm-info-card">
+              <div className="sm-info-icon">{c.icon}</div>
+              <div><h4>{c.title}</h4><p>{c.text}</p></div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Meeting Details Modal */}
+      {/* Meeting Modal */}
       {showMeetingModal && selectedMeeting && (
-        <div className="modal-overlay" onClick={() => setShowMeetingModal(false)}>
-          <div className="meeting-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={()=>setShowMeetingModal(false)}>
+          <div className="modal-content" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <h3>{selectedMeeting.title}</h3>
-              <button 
-                className="close-modal-btn"
-                onClick={() => setShowMeetingModal(false)}
-              >
-                <X size={24} />
-              </button>
+              <button className="close-btn" onClick={()=>setShowMeetingModal(false)}><X size={18}/></button>
             </div>
-            
-            <div className="modal-content">
-              <div className="modal-section">
-                <h4>Информация за срещата</h4>
-                <div className="modal-details">
-                  <div className="detail">
-                    <Calendar size={18} />
-                    <span>{formatDate(selectedMeeting.date)}</span>
-                  </div>
-                  <div className="detail">
-                    <Clock size={18} />
-                    <span>{selectedMeeting.time} - {selectedMeeting.endTime}</span>
-                  </div>
-                  <div className="detail">
-                    <MapPin size={18} />
-                    <span>{selectedMeeting.location}</span>
-                  </div>
-                  <div className="detail">
-                    <Book size={18} />
-                    <span>Книга: {selectedMeeting.bookTitle}</span>
-                  </div>
-                  <div className="detail">
-                    <User size={18} />
-                    <span>Автор: {selectedMeeting.bookAuthor}</span>
-                  </div>
-                </div>
+            <div className="modal-body">
+              <div className="rc-modal-details">
+                <div className="modal-detail"><span>Дата</span><strong>{formatDate(selectedMeeting.date)}</strong></div>
+                <div className="modal-detail"><span>Час</span><strong>{selectedMeeting.time} – {selectedMeeting.endTime}</strong></div>
+                <div className="modal-detail"><span>Място</span><strong>{selectedMeeting.location}</strong></div>
+                <div className="modal-detail"><span>Книга</span><strong>{selectedMeeting.bookTitle}</strong></div>
+                <div className="modal-detail"><span>Автор</span><strong>{selectedMeeting.bookAuthor}</strong></div>
+                <div className="modal-detail"><span>Участници</span><strong>{selectedMeeting.currentParticipants}/{selectedMeeting.maxParticipants}</strong></div>
               </div>
-              
-              <div className="modal-section">
-                <h4>Описание</h4>
-                <p>{selectedMeeting.description}</p>
-              </div>
-              
-              <div className="modal-section">
-                <h4>Теми за дискусия</h4>
-                <ul className="discussion-list">
-                  {selectedMeeting.discussionPoints.map((point, idx) => (
-                    <li key={idx}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="modal-section">
-                <h4>Прогрес в четенето</h4>
-                <p>{selectedMeeting.readingProgress}</p>
-              </div>
+              <p style={{color:'var(--admin-text-secondary)',lineHeight:1.6,marginTop:'1rem'}}>{selectedMeeting.description}</p>
+              <h5 style={{margin:'1rem 0 .5rem',color:'var(--admin-text-primary)'}}>Теми:</h5>
+              <ul style={{paddingLeft:'1.25rem',color:'var(--admin-text-secondary)',fontSize:'.875rem'}}>
+                {selectedMeeting.discussionPoints.map((p,i)=><li key={i}>{p}</li>)}
+              </ul>
             </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="modal-join-btn"
-                onClick={() => {
-                  setShowMeetingModal(false);
-                  handleJoinMeeting(selectedMeeting);
-                }}
-              >
-                Присъедини се към срещата
-              </button>
+            <div className="modal-actions">
+              <button className="primary-btn" onClick={()=>{setShowMeetingModal(false);handleJoinMeeting(selectedMeeting);}}>Присъедини се</button>
+              <button className="cancel-btn" onClick={()=>setShowMeetingModal(false)}>Затвори</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Join Meeting Form */}
+      {/* Join Form */}
       {showJoinForm && selectedMeeting && (
-        <div className="modal-overlay" onClick={() => setShowJoinForm(false)}>
-          <div className="join-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={()=>setShowJoinForm(false)}>
+          <div className="modal-content" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Присъединяване към "{selectedMeeting.title}"</h3>
-              <button 
-                className="close-modal-btn"
-                onClick={() => setShowJoinForm(false)}
-              >
-                <X size={24} />
-              </button>
+              <h3>Присъединяване</h3>
+              <button className="close-btn" onClick={()=>setShowJoinForm(false)}><X size={18}/></button>
             </div>
-            
-            <div className="modal-content">
+            <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div className="form-group">
-                <label>Вашето име:</label>
-                <input 
-                  type="text" 
-                  defaultValue={user?.displayName || ''}
-                  className="form-input"
-                  readOnly
-                />
+                <label className="filter-label">Вашето име</label>
+                <input type="text" className="form-input" defaultValue={user?.displayName||''} readOnly/>
               </div>
-              
               <div className="form-group">
-                <label>Имейл за потвърждение:</label>
-                <input 
-                  type="email" 
-                  defaultValue={user?.email || ''}
-                  className="form-input"
-                  readOnly
-                />
+                <label className="filter-label">Имейл</label>
+                <input type="email" className="form-input" defaultValue={user?.email||''} readOnly/>
               </div>
-              
               <div className="form-group">
-                <label>Защо искате да се присъедините? (по избор)</label>
-                <textarea 
-                  className="form-textarea"
-                  placeholder="Споделете защо ви интересува тази среща..."
-                  value={userReview}
-                  onChange={(e) => setUserReview(e.target.value)}
-                  rows={4}
-                />
+                <label className="filter-label">Защо искате да се присъедините? (по избор)</label>
+                <textarea className="form-input" rows={3} style={{resize:'vertical'}} placeholder="Споделете..." value={userReview} onChange={e=>setUserReview(e.target.value)}/>
               </div>
-              
-              <div className="meeting-info-summary">
-                <h5>Детайли за срещата:</h5>
-                <div className="info-row">
-                  <Calendar size={14} />
-                  <span>{formatDate(selectedMeeting.date)}</span>
-                </div>
-                <div className="info-row">
-                  <Clock size={14} />
-                  <span>{selectedMeeting.time} - {selectedMeeting.endTime}</span>
-                </div>
-                <div className="info-row">
-                  <MapPin size={14} />
-                  <span>{selectedMeeting.location}</span>
-                </div>
-                <div className="info-row">
-                  <Users size={14} />
-                  <span>Свободни места: {selectedMeeting.maxParticipants - selectedMeeting.currentParticipants}</span>
-                </div>
+              <div className="rc-modal-details">
+                <div className="modal-detail"><span>Дата</span><strong>{formatDate(selectedMeeting.date)}</strong></div>
+                <div className="modal-detail"><span>Час</span><strong>{selectedMeeting.time} – {selectedMeeting.endTime}</strong></div>
+                <div className="modal-detail"><span>Свободни места</span><strong>{selectedMeeting.maxParticipants-selectedMeeting.currentParticipants}</strong></div>
               </div>
             </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowJoinForm(false)}
-              >
-                Откажи
-              </button>
-              <button 
-                className="submit-join-btn"
-                onClick={handleSubmitJoinForm}
-              >
-                Потвърди присъединяването
-              </button>
+            <div className="modal-actions">
+              <button className="primary-btn" onClick={handleSubmitJoin}>Потвърди</button>
+              <button className="cancel-btn" onClick={()=>setShowJoinForm(false)}>Откажи</button>
             </div>
           </div>
         </div>

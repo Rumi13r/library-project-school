@@ -1,0 +1,201 @@
+/* ─── Cookies.css ──────────────────────────────────────────────────────────── */
+
+/* ── Overlay (bottom anchor, not full-screen block) ── */
+.ckb-overlay {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  width: calc(100% - 2rem);
+  max-width: 780px;
+  pointer-events: none; /* overlay itself doesn't block clicks */
+
+  /* Entrance animation */
+  animation: ckb-slide-up 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes ckb-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(24px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Banner card ── */
+.ckb-banner {
+  pointer-events: all;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  overflow: hidden;
+
+  /* Light theme */
+  background: #ffffff;
+  border: 1.5px solid rgba(58,134,255,.18);
+  border-radius: 18px;
+  box-shadow:
+    0 8px 32px rgba(58,134,255,.14),
+    0 2px 8px rgba(0,0,0,.08);
+}
+
+/* Dark theme */
+[data-theme="dark"] .ckb-banner {
+  background: #111827;
+  border-color: rgba(58,134,255,.20);
+  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+}
+
+/* ── RGBY top stripe ── */
+.ckb-stripe {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #e63946, #ffb703, #2a9d8f, #3a86ff);
+  border-radius: 18px 18px 0 0;
+}
+
+/* ── Cookie icon box ── */
+.ckb-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(58,134,255,.1);
+  color: #3a86ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(58,134,255,.18);
+}
+
+[data-theme="dark"] .ckb-icon-wrap {
+  background: rgba(58,134,255,.15);
+  border-color: rgba(58,134,255,.25);
+  color: #93c5fd;
+}
+
+/* ── Body text ── */
+.ckb-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ckb-title {
+  font-size: .9rem;
+  font-weight: 700;
+  color: #0d1117;
+  margin: 0 0 .25rem;
+  letter-spacing: -.01em;
+}
+
+[data-theme="dark"] .ckb-title { color: #e8edf8; }
+
+.ckb-text {
+  font-size: .8rem;
+  color: #4b5675;
+  line-height: 1.55;
+  margin: 0;
+}
+
+[data-theme="dark"] .ckb-text { color: #94a3b8; }
+
+.ckb-link {
+  color: #3a86ff;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color .2s;
+}
+.ckb-link:hover { color: #1d6fe8; text-decoration: underline; }
+
+/* ── Buttons ── */
+.ckb-actions {
+  display: flex;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+.ckb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .55rem 1.1rem;
+  border: none;
+  border-radius: 11px;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background .22s ease,
+    transform .22s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow .22s ease;
+}
+.ckb-btn:hover { transform: translateY(-2px); }
+.ckb-btn:active { transform: scale(.96); }
+
+.ckb-btn--accept {
+  background: linear-gradient(135deg, #3a86ff, #2a9d8f);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(58,134,255,.30);
+}
+.ckb-btn--accept:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 18px rgba(58,134,255,.38);
+}
+
+.ckb-btn--decline {
+  background: rgba(58,134,255,.08);
+  color: #4b5675;
+  border: 1.5px solid rgba(58,134,255,.15);
+}
+.ckb-btn--decline:hover {
+  background: rgba(58,134,255,.14);
+  color: #3a86ff;
+}
+
+[data-theme="dark"] .ckb-btn--decline {
+  background: rgba(255,255,255,.07);
+  color: #94a3b8;
+  border-color: rgba(255,255,255,.12);
+}
+[data-theme="dark"] .ckb-btn--decline:hover {
+  background: rgba(58,134,255,.18);
+  color: #93c5fd;
+}
+
+/* ── Close button ── */
+.ckb-close {
+  position: absolute;
+  top: .65rem;
+  right: .65rem;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8b93a7;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, color .2s;
+}
+.ckb-close:hover { background: rgba(230,57,70,.1); color: #e63946; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .ckb-overlay { bottom: 0; width: 100%; max-width: 100%; border-radius: 0; left: 0; transform: none; }
+  .ckb-banner  { border-radius: 0; flex-wrap: wrap; gap: .75rem; padding: 1rem; }
+  .ckb-icon-wrap { display: none; }
+  .ckb-actions { width: 100%; }
+  .ckb-btn     { flex: 1; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ckb-overlay { animation: none; }
+  .ckb-btn     { transition: none; }
+}

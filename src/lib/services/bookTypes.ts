@@ -106,3 +106,4 @@ export type BookFilter = {
 export type BookStatus = 'available' | 'borrowed' | 'reserved' | 'maintenance';
 export type CoverType = 'hard' | 'soft';
 export type BookCondition = 'new' | 'good' | 'fair' | 'poor';
+

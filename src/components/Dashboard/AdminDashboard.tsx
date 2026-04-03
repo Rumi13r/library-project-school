@@ -1,28 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { db } from "../../firebase/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, getDoc, Timestamp} from "firebase/firestore";
+import {
+  collection, getDocs, doc, updateDoc, deleteDoc,
+  addDoc, getDoc, Timestamp,
+} from "firebase/firestore";
 import type { BookLibrary } from "../../lib/services/bookTypes";
 import * as bookService from "../../lib/services/bookService";
-import { 
-  Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save, Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3, Image as ImageIcon,
-  Shield, BookOpen, List, Grid,
-  Tag,
-  Copy,
-  Bookmark,
-  Newspaper,
-  Eye,
-  Heart
+import {
+  Users, Calendar, Trash2, Plus, Search, Clock, MapPin, User, Edit, X, Save,
+  Building, Upload, Type, QrCode, Check, XCircle, CameraOff, BarChart3,
+  Image as ImageIcon, Shield, BookOpen, List, Grid, Tag, Copy, Bookmark,
+  Newspaper, Eye, Heart,
 } from "lucide-react";
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { Scanner } from '@yudiel/react-qr-scanner';
-import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
-import './AdminDashboard.css';
-import '../../pages/EventsPage.css';
-import { getAllReservations } from "../../lib/services/reservationService"; 
+import { useEditor, EditorContent } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { Scanner } from "@yudiel/react-qr-scanner";
+import type { IDetectedBarcode } from "@yudiel/react-qr-scanner";
+import "./AdminDashboard.css";
+import "../../pages/EventsPage.css";
+import { getAllReservations } from "../../lib/services/reservationService";
 import { cancelReservation as cancelReservationService } from "../../lib/services/reservationService";
 import { RefreshCw } from "lucide-react";
 
+// ── Shared Firestore timestamp type ──────────────────────────────────────────
+type FSTimestamp =
+  | { toDate?: () => Date; seconds?: number }
+  | Date
+  | string
+  | null
+  | undefined;
+
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface ClassSchedule {
   subject: string;
@@ -38,7 +47,7 @@ interface RoomBooking {
   endTime: string;
   eventId: string;
   eventTitle: string;
-  type: 'event';
+  type: "event";
 }
 
 interface ScheduleBooking {
@@ -51,32 +60,32 @@ interface ScheduleBooking {
   classSchedules: ClassSchedule[];
   semester: string;
   academicYear: string;
-  type: 'schedule';
+  type: "schedule";
 }
 
 type BookingInfo = RoomBooking | ScheduleBooking;
 
 interface UserEvent {
   eventId: string;
-  registrationDate: any;
+  registrationDate: FSTimestamp;
   status?: string;
 }
 
 interface Ticket {
   ticketId: string;
-  registrationDate: any;
+  registrationDate: FSTimestamp;
   checkedIn: boolean;
-  checkedInTime?: any;
+  checkedInTime?: FSTimestamp;
 }
 
-interface User {
+interface AppUser {
   uid: string;
   id: string;
   email: string;
   role: string;
   events?: UserEvent[];
-  books?: any[];
-  createdAt?: any;
+  books?: BookLibrary[];
+  createdAt?: FSTimestamp;
   displayName?: string;
   firstName?: string;
   lastName?: string;
@@ -89,7 +98,7 @@ interface User {
   };
 }
 
-interface Event {
+interface AppEvent {
   id: string;
   title: string;
   description: string;
@@ -99,14 +108,12 @@ interface Event {
   location: string;
   maxParticipants: number;
   currentParticipants: number;
-  participants: string[];     
+  participants: string[];
   allowedRoles: string[];
-  createdAt: any;
+  createdAt: FSTimestamp;
   organizer: string;
   imageUrl?: string;
-  tickets?: {
-    [userId: string]: Ticket;
-  };
+  tickets?: Record<string, Ticket>;
 }
 
 interface CheckTicketModalData {
@@ -137,7 +144,7 @@ interface TicketDetail {
   userName: string;
   userEmail: string;
   scanTime: string;
-  status: 'checked' | 'pending';
+  status: "checked" | "pending";
 }
 
 interface NewsArticle {
@@ -147,1929 +154,790 @@ interface NewsArticle {
   content: string;
   category: string;
   image: string;
-  images?: string[]; 
+  images?: string[];
   author: string;
-  date: any; 
+  date: FSTimestamp;
   views: number;
   likes: number;
   tags: string[];
   featured: boolean;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: FSTimestamp;
+  updatedAt: FSTimestamp;
 }
 
-const EditorToolbar = ({ editor }: { editor: any }) => {
+interface AdminReservation {
+  id: string;
+  status: "active" | "fulfilled" | "cancelled" | "expired";
+  bookId: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  reservedAt: FSTimestamp;
+  expiresAt: FSTimestamp;
+}
+
+// ── EditorToolbar ─────────────────────────────────────────────────────────────
+
+const EditorToolbar = ({ editor }: { editor: Editor | null }) => {
   if (!editor) return null;
 
   const addImage = () => {
-    const url = window.prompt('Въведете URL на картинката:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+    const url = window.prompt("Въведете URL на картинката:");
+    if (url) editor.chain().focus().setImage({ src: url }).run();
   };
 
   return (
     <div className="editor-toolbar">
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
-        title="Удебелен текст"
-      >
+      <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`toolbar-btn ${editor.isActive("bold") ? "active" : ""}`} title="Удебелен текст">
         <strong>B</strong>
       </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
-        title="Курсив"
-      >
+      <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`toolbar-btn ${editor.isActive("italic") ? "active" : ""}`} title="Курсив">
         <em>I</em>
       </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
-        title="Списък"
-      >
+      <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={`toolbar-btn ${editor.isActive("bulletList") ? "active" : ""}`} title="Списък">
         <List size={16} />
       </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
-        title="Номериран списък"
-      >
+      <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={`toolbar-btn ${editor.isActive("orderedList") ? "active" : ""}`} title="Номериран списък">
         <Grid size={16} />
       </button>
-      <div className="toolbar-divider"></div>
-      <button
-        type="button"
-        onClick={addImage}
-        className="toolbar-btn"
-        title="Добави картинка"
-      >
+      <div className="toolbar-divider" />
+      <button type="button" onClick={addImage} className="toolbar-btn" title="Добави картинка">
         <ImageIcon size={16} />
       </button>
     </div>
   );
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const formatFSDate = (d: FSTimestamp): string => {
+  if (!d) return "Няма дата";
+  try {
+    if (typeof d === "string") return new Date(d).toLocaleDateString("bg-BG");
+    if (d instanceof Date)     return d.toLocaleDateString("bg-BG");
+    if (typeof d === "object") {
+      if ("toDate" in d && typeof d.toDate === "function") return d.toDate().toLocaleDateString("bg-BG");
+      if ("seconds" in d && typeof d.seconds === "number") return new Date(d.seconds * 1000).toLocaleDateString("bg-BG");
+    }
+  } catch { /* ignore */ }
+  return "Няма дата";
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═════════════════════════════════════════════════════════════════════════════
+
 const AdminDashboard: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [books, setBooks] = useState<BookLibrary[]>([]);
-  const [roomBookings, setRoomBookings] = useState<RoomBooking[]>([]);
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [users,            setUsers]            = useState<AppUser[]>([]);
+  const [events,           setEvents]           = useState<AppEvent[]>([]);
+  const [books,            setBooks]            = useState<BookLibrary[]>([]);
+  const [roomBookings,     setRoomBookings]     = useState<RoomBooking[]>([]);
   const [scheduleBookings, setScheduleBookings] = useState<ScheduleBooking[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"users" | "events" | "rooms" | "tickets" | "books" | "reservations" | "news">("users");
-  
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [editingCell, setEditingCell] = useState<{room: string, timeSlot: string, booking: BookingInfo | null} | null>(null);
-  const [addingEventFromCell, setAddingEventFromCell] = useState<{room: string, timeSlot: string} | null>(null);
-  
-  const [isImportingSchedule, setIsImportingSchedule] = useState(false);
-  const [importData, setImportData] = useState("");
-  const [selectedRoomForImport, setSelectedRoomForImport] = useState("1303");
-  const [academicYear, setAcademicYear] = useState("2024-2025");
-  const [semester, setSemester] = useState<"winter" | "summer">("winter");
-  const [cellEventImageUrl, setCellEventImageUrl] = useState<string>("");
+  const [reservations,     setReservations]     = useState<AdminReservation[]>([]);
+  const [news,             setNews]             = useState<NewsArticle[]>([]);
 
-  const [cellEventTitle, setCellEventTitle] = useState<string>("");
-  const [cellEventDesc, setCellEventDesc] = useState<string>("");
-  const [cellEventStartTime, setCellEventStartTime] = useState<string>("");
-  const [cellEventEndTime, setCellEventEndTime] = useState<string>("");
-  const [cellEventMaxParticipants, setCellEventMaxParticipants] = useState<number>(20);
-  const [cellEventOrganizer, setCellEventOrganizer] = useState<string>("");
+  const [searchTerm,   setSearchTerm]   = useState("");
+  const [activeTab,    setActiveTab]    = useState<
+    "users"|"events"|"rooms"|"tickets"|"books"|"reservations"|"news"
+  >("users");
 
-  const [showQrScanner, setShowQrScanner] = useState<boolean>(false);
-  const [cameraError, setCameraError] = useState<string>('');
+  const [selectedDate,         setSelectedDate]         = useState(new Date().toISOString().split("T")[0]);
+  const [editingCell,          setEditingCell]          = useState<{room:string;timeSlot:string;booking:BookingInfo|null}|null>(null);
+  const [addingEventFromCell,  setAddingEventFromCell]  = useState<{room:string;timeSlot:string}|null>(null);
+  const [isImportingSchedule,  setIsImportingSchedule]  = useState(false);
+  const [importData,           setImportData]           = useState("");
+  const [selectedRoomForImport,setSelectedRoomForImport]= useState("1303");
+  const [academicYear,         setAcademicYear]         = useState("2024-2025");
+  const [semester,             setSemester]             = useState<"winter"|"summer">("winter");
 
-  const [showEventModal, setShowEventModal] = useState<boolean>(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [modalEventData, setModalEventData] = useState<Partial<Event>>({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    endTime: "",
-    location: "",
-    maxParticipants: 20,
-    organizer: "",
-    allowedRoles: ["reader", "librarian"],
-    imageUrl: "" 
-  });
+  const [cellEventTitle,         setCellEventTitle]          = useState("");
+  const [cellEventDesc,          setCellEventDesc]           = useState("");
+  const [cellEventStartTime,     setCellEventStartTime]      = useState("");
+  const [cellEventEndTime,       setCellEventEndTime]        = useState("");
+  const [cellEventMaxParticipants,setCellEventMaxParticipants]= useState(20);
+  const [cellEventOrganizer,     setCellEventOrganizer]      = useState("");
+  const [cellEventImageUrl,      setCellEventImageUrl]       = useState("");
 
-  const [showBookModal, setShowBookModal] = useState<boolean>(false);
-  const [modalBookData, setModalBookData] = useState<Partial<BookLibrary>>({
-  // Основни полета
-  title: "",
-  author: "",
-  isbn: "",
-  publisher: "",
-  year: new Date().getFullYear(),
-  category: "",
-  description: "",
-  copies: 1,
-  availableCopies: 1,
-  location: "Библиотека",
-  coverUrl: "",
-  shelfNumber: "",
-  callNumber: "",
-  genres: [],
-  tags: [],
-  pages: 0,
-  language: "Български",
-  edition: "Първо издание",
-  coverType: "soft",
-  condition: "good",
-  ageRecommendation: "",
-  featured: false,
-  status: "available",
-  rating: 0,
-  ratingsCount: 0,
-  views: 0,
-  borrowPeriod: 14,
-  maxRenewals: 2,
-  reservationQueue: 0,
-  waitingList: [],
-  summary: "",
-  tableOfContents: [],
-  relatedBooks: [],
-  awards: [],
-  digitalVersion: {
-    available: false,
-    format: "",
-    url: ""
-  },
-  isActive: true,
-  underMaintenance: false
-});
+  const [showQrScanner,       setShowQrScanner]       = useState(false);
+  const [cameraError,         setCameraError]         = useState("");
+  const [showEventModal,      setShowEventModal]      = useState(false);
+  const [modalMode,           setModalMode]           = useState<"create"|"edit">("create");
+  const [showCheckTicketModal,setShowCheckTicketModal]= useState(false);
+  const [showTodayStats,      setShowTodayStats]      = useState(false);
+  const [showNewsModal,       setShowNewsModal]       = useState(false);
 
-  const [showCheckTicketModal, setShowCheckTicketModal] = useState<boolean>(false);
-  const [ticketSearchTerm, setTicketSearchTerm] = useState<string>("");
-  const [checkTicketModalData, setCheckTicketModalData] = useState<CheckTicketModalData | null>(null);
-  const [isCheckingTicket, setIsCheckingTicket] = useState<boolean>(false);
-  const [ticketStatusMessage, setTicketStatusMessage] = useState<string>("");
-  const [ticketStatusType, setTicketStatusType] = useState<"success" | "error" | "info" | "warning">("info");
+  const [ticketSearchTerm,    setTicketSearchTerm]    = useState("");
+  const [checkTicketModalData,setCheckTicketModalData]= useState<CheckTicketModalData|null>(null);
+  const [isCheckingTicket,    setIsCheckingTicket]    = useState(false);
+  const [ticketStatusMessage, setTicketStatusMessage] = useState("");
+  const [ticketStatusType,    setTicketStatusType]    = useState<"success"|"error"|"info"|"warning">("info");
 
-  const [showTodayStats, setShowTodayStats] = useState<boolean>(false);
   const [todayStats, setTodayStats] = useState<TodayStats>({
-    totalTickets: 0,
-    checkedInTickets: 0,
-    pendingTickets: 0,
-    todayScannedTickets: []
+    totalTickets: 0, checkedInTickets: 0, pendingTickets: 0, todayScannedTickets: [],
   });
-const [reservations, setReservations] = useState<any[]>([]);
-  const [news, setNews] = useState<NewsArticle[]>([]);
-const [showNewsModal, setShowNewsModal] = useState<boolean>(false);
-const [modalNewsData, setModalNewsData] = useState<Partial<NewsArticle>>({
-  title: "",
-  excerpt: "",
-  content: "",
-  category: "Общи",
-  image: "",
-  author: "Администратор",
-  tags: [],
-  featured: false
-});
 
+  const EMPTY_EVENT: Partial<AppEvent> = {
+    title:"", description:"", date:"", time:"", endTime:"",
+    location:"", maxParticipants:20, organizer:"",
+    allowedRoles:["reader","librarian"], imageUrl:"",
+  };
+
+  const [modalEventData, setModalEventData] = useState<Partial<AppEvent>>(EMPTY_EVENT);
+  const [modalNewsData,  setModalNewsData]  = useState<Partial<NewsArticle>>({
+    title:"", excerpt:"", content:"", category:"Общи",
+    image:"", author:"Администратор", tags:[], featured:false,
+  });
+
+  // ── TipTap editor ──────────────────────────────────────────────────────────
   const editor = useEditor({
     extensions: [StarterKit],
     content: modalEventData.description || "",
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      setModalEventData(prev => ({
-        ...prev,
-        description: html
-      }));
+    onUpdate: ({ editor: e }) => {
+      setModalEventData(prev => ({ ...prev, description: e.getHTML() }));
     },
   });
-  const fetchNews = async () => {
-  const snapshot = await getDocs(collection(db, "news"));
-  const newsData: NewsArticle[] = snapshot.docs.map(doc => ({ 
-    id: doc.id, 
-    ...doc.data() 
-  } as NewsArticle));
-  setNews(newsData);
-};
-useEffect(() => {
-  fetchUsers();
-  fetchEvents();
-  fetchBooks();
-  fetchScheduleBookings();
-  fetchNews();
-  fetchReservations(); // Добавете тази линия
-}, []);
+
   useEffect(() => {
     if (editor && modalEventData.description !== editor.getHTML()) {
       editor.commands.setContent(modalEventData.description || "");
     }
   }, [modalEventData.description, editor]);
 
-  useEffect(() => {
-    if (showTodayStats) {
-      loadTodayStats();
-    }
-  }, [showTodayStats, events]);
-
-  const loadTodayStats = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const scannedTickets: TicketDetail[] = [];
-    
-    let total = 0;
-    let checkedIn = 0;
-    let pending = 0;
-    
-    events.forEach(event => {
-      if (event.tickets) {
-        Object.entries(event.tickets).forEach(([userId, ticket]) => {
-          total++;
-          
-          if (ticket.checkedIn) {
-            checkedIn++;
-            
-            const checkedInDate = ticket.checkedInTime?.toDate?.();
-            const ticketDate = checkedInDate ? checkedInDate.toISOString().split('T')[0] : '';
-            
-            if (ticketDate === today) {
-              const user = users.find(u => u.id === userId);
-              scannedTickets.push({
-                ticketId: ticket.ticketId,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventTime: event.time,
-                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-                userEmail: user?.email || "Няма имейл",
-                scanTime: checkedInDate ? checkedInDate.toLocaleString('bg-BG') : "Днес",
-                status: 'checked'
-              });
-            }
-          } else {
-            pending++;
-            
-            const eventDate = event.date;
-            const todayDate = new Date();
-            const eventDateTime = new Date(eventDate + 'T' + event.time);
-            
-            if (eventDateTime >= todayDate) {
-              const user = users.find(u => u.id === userId);
-              scannedTickets.push({
-                ticketId: ticket.ticketId,
-                eventTitle: event.title,
-                eventDate: event.date,
-                eventTime: event.time,
-                userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-                userEmail: user?.email || "Няма имейл",
-                scanTime: "Очаква сканиране",
-                status: 'pending'
-              });
-            }
-          }
-        });
-      }
-    });
-    
-    scannedTickets.sort((a, b) => {
-      const dateA = new Date(a.eventDate + 'T' + a.eventTime);
-      const dateB = new Date(b.eventDate + 'T' + b.eventTime);
-      
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (b.status === 'pending' && a.status !== 'pending') return 1;
-      
-      return dateA.getTime() - dateB.getTime();
-    });
-    
-    setTodayStats({
-      totalTickets: total,
-      checkedInTickets: checkedIn,
-      pendingTickets: pending,
-      todayScannedTickets: scannedTickets
-    });
-  };
-
+  // ── Constants ──────────────────────────────────────────────────────────────
   const locationOptions = [
-    "1303", "3310", "3301-EOП", "3305-АНП", "библиотека", "Зала Европа", "Комп.каб.-ТЧ", 
-    "Физкултура3", "1201", "1202", "1203", "1206", "1408-КК", "1308-КК", 
-    "1101", "1102", "1103", "1104", "1105", "1106", "1204", "1205", "1207", 
-    "1209", "1301", "1302", "1304", "1305", "1307", "1309", "1401", "1402", 
-    "1403", "1404", "1405", "1406", "1407", "1409", "1306"
+    "1303","3310","3301-EOП","3305-АНП","библиотека","Зала Европа","Комп.каб.-ТЧ",
+    "Физкултура3","1201","1202","1203","1206","1408-КК","1308-КК",
+    "1101","1102","1103","1104","1105","1106","1204","1205","1207",
+    "1209","1301","1302","1304","1305","1307","1309","1401","1402",
+    "1403","1404","1405","1406","1407","1409","1306",
   ];
 
   const timeSlots = [
-    "07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", 
-    "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", 
-    "17:00-18:00", "18:00-19:00", "19:00-20:00"
+    "07:00-08:00","08:00-09:00","09:00-10:00","10:00-11:00","11:00-12:00",
+    "12:00-13:00","13:00-14:00","14:00-15:00","15:00-16:00","16:00-17:00",
+    "17:00-18:00","18:00-19:00","19:00-20:00",
   ];
 
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let hour = 7; hour <= 19; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        options.push(timeString);
-      }
-    }
-    return options;
-  };
+  const timeOptionsWithMinutes = (() => {
+    const opts: string[] = [];
+    for (let h = 7; h <= 19; h++)
+      for (let m = 0; m < 60; m += 15)
+        opts.push(`${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`);
+    return opts;
+  })();
 
-  const timeOptionsWithMinutes = generateTimeOptions();
+  // ── Fetch functions ────────────────────────────────────────────────────────
 
-  // ----------- handle QR scan -----------
-  const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
-    if (!detectedCodes?.length) return;
-
-    const raw = detectedCodes[0].rawValue;
-    if (!raw) return;
-
-    console.log("Raw QR value:", raw);
-
-    let ticketId = '';
-
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.TICKETID) {
-        ticketId = parsed.TICKETID;
-      } else {
-        ticketId = raw;
-      }
-    } catch {
-      ticketId = raw;
-    }
-
-    const match = ticketId.match(/TICKET-([A-Z0-9]+)/i);
-    const finalTicketId = match ? `TICKET-${match[1].toUpperCase()}` : ticketId;
-
-    setTicketSearchTerm(finalTicketId);
-    console.log("Сканиран ticketId:", finalTicketId);
-
-    await searchTicket(finalTicketId);
-  };
-
-  // ----------- handle QR error -----------
-  const handleQrError = (error: any) => {
-    console.error("QR Scanner error:", error);
-    setCameraError(
-      "Неуспешно зареждане на камерата. Моля, проверете разрешенията."
-    );
-  };
-
-  // ----------- QR scanner модал функции -----------
-  const openQrScanner = () => {
-    setShowQrScanner(true);
-    setShowCheckTicketModal(false);
-    setShowTodayStats(false);
-    setCameraError("");
-    setTicketStatusMessage("");
-    setCheckTicketModalData(null);
-  };
-
-  const closeQrScanner = () => {
-    setShowQrScanner(false);
-    setCameraError("");
-    if (!showCheckTicketModal) setShowCheckTicketModal(true);
-  };
-
-  const openCheckTicketModal = () => {
-    setShowCheckTicketModal(true);
-    setShowQrScanner(false);
-    setShowTodayStats(false);
-    setTicketSearchTerm("");
-    setCheckTicketModalData(null);
-    setTicketStatusMessage("");
-  };
-
-  // ----------- searchTicket -----------
-  const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
-    const ticketToSearch = ticketIdParam || ticketSearchTerm;
-
-    if (!ticketToSearch.trim()) {
-      setTicketStatusMessage("Моля, въведете номер на билет!");
-      setTicketStatusType("error");
-      return false;
-    }
-
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Търсене на билет...");
-      setTicketStatusType("info");
-
-      let ticketId = ticketToSearch.trim().toUpperCase();
-      
-      const match = ticketId.match(/TICKET-[A-Z0-9]+/);
-      if (match) {
-        ticketId = match[0];
-      } else {
-        ticketId = `TICKET-${ticketId}`;
-      }
-      
-      console.log("Търсим билет с ID:", ticketId);
-
-      let foundEvent: Event | null = null;
-      let foundUserId: string | null = null;
-      let foundTicketData: Ticket | null = null;
-
-      for (const event of events) {
-        if (event.tickets) {
-          for (const [userId, ticket] of Object.entries(event.tickets)) {
-            const currentTicket = ticket as Ticket;
-            const normalizedTicketId = currentTicket.ticketId.toUpperCase();
-            const normalizedSearchId = ticketId.toUpperCase();
-            
-            if (normalizedTicketId === normalizedSearchId) {
-              foundEvent = event;
-              foundUserId = userId;
-              foundTicketData = currentTicket;
-              break;
-            }
-          }
-          if (foundEvent) break;
-        }
-      }
-
-      if (!foundEvent || !foundUserId || !foundTicketData) {
-        setTicketStatusMessage("❌ Билетът не е намерен!");
-        setTicketStatusType("error");
-        return false;
-      }
-
-      const user = users.find(u => u.id === foundUserId);
-
-      setCheckTicketModalData({
-        eventId: foundEvent.id,
-        eventTitle: foundEvent.title,
-        eventDate: foundEvent.date,
-        eventTime: foundEvent.time,
-        ticketId: foundTicketData.ticketId,
-        userName: user?.displayName || user?.firstName || "Неизвестен потребител",
-        userEmail: user?.email || "Няма имейл",
-        registrationDate:
-          foundTicketData.registrationDate?.toDate?.().toLocaleString("bg-BG") ||
-          "Неизвестна дата",
-        checkedIn: foundTicketData.checkedIn || false,
-        checkedInTime: foundTicketData.checkedInTime?.toDate?.().toLocaleString("bg-BG"),
-      });
-
-      setShowCheckTicketModal(true);
-      setTicketStatusMessage("✅ Билетът е намерен!");
-      setTicketStatusType("success");
-      return true;
-    } catch (error) {
-      console.error("Грешка при търсене на билет:", error);
-      setTicketStatusMessage("Възникна грешка при търсенето!");
-      setTicketStatusType("error");
-      return false;
-    } finally {
-      setIsCheckingTicket(false);
-    }
-  };
-  const markReservationFulfilled = async (reservationId: string) => {
-  try {
-    await updateDoc(doc(db, "reservations", reservationId), {
-      status: 'fulfilled',
-      lastUpdated: Timestamp.now()
-    });
-    
-    fetchReservations();
-    alert("Резервацията е маркирана като изпълнена!");
-  } catch (error) {
-    console.error("Грешка при маркиране на резервация:", error);
-    alert("Грешка при маркиране на резервация!");
-  }
-};
-
-const cancelReservation = async (reservationId: string) => {
-  if (!window.confirm("Сигурни ли сте, че искате да отмените тази резервация?")) return;
-  
-  try {
-    await cancelReservationService(reservationId);
-    
-    // Обновете наличността на книгата
-    const reservation = reservations.find(r => r.id === reservationId);
-    if (reservation && reservation.bookId) {
-      const book = books.find(b => b.id === reservation.bookId);
-      if (book) {
-        await bookService.updateBook(book.id, {
-          availableCopies: book.availableCopies + 1
-        });
-      }
-    }
-    
-    fetchReservations();
-    fetchBooks();
-    alert("Резервацията е отменена успешно!");
-  } catch (error) {
-    console.error("Грешка при отмяна на резервация:", error);
-    alert("Грешка при отмяна на резервация!");
-  }
-};
-
-  // ----------- checkInTicket -----------
-  const checkInTicket = async (): Promise<boolean> => {
-    if (!checkTicketModalData) return false;
-
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Регистриране...");
-
-      const eventRef = doc(db, "events", checkTicketModalData.eventId);
-      const eventDoc = await getDoc(eventRef);
-
-      if (!eventDoc.exists()) throw new Error("Събитието не е намерено");
-
-      const eventData = eventDoc.data();
-      const tickets = eventData?.tickets || {};
-
-      const userIdToUpdate = Object.entries(tickets).find(
-        ([_, ticket]) => (ticket as Ticket).ticketId === checkTicketModalData.ticketId
-      )?.[0];
-
-      if (!userIdToUpdate) throw new Error("Билетът не е намерен в базата данни");
-
-      const now = Timestamp.fromDate(new Date());
-      await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: true,
-        [`tickets.${userIdToUpdate}.checkedInTime`]: now,
-      });
-
-      await fetchEvents();
-      setCheckTicketModalData(prev =>
-        prev
-          ? { ...prev, checkedIn: true, checkedInTime: now.toDate().toLocaleString("bg-BG") }
-          : null
-      );
-
-      return true;
-    } catch (error) {
-      console.error("❌ Грешка при check-in:", error);
-      const errorMessage = error instanceof Error ? error.message : "Неизвестна грешка";
-      setTicketStatusMessage(`❌ ${errorMessage}`);
-      setTicketStatusType("error");
-      return false;
-    } finally {
-      setIsCheckingTicket(false);
-    }
-  };
-
-  const uncheckTicket = async () => {
-    if (!checkTicketModalData) return;
-
-    try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Отмяна на регистрация...");
-
-      const eventRef = doc(db, "events", checkTicketModalData.eventId);
-      
-      const event = events.find(e => e.id === checkTicketModalData.eventId);
-      let userIdToUpdate = "";
-      
-      if (event && event.tickets) {
-        for (const [userId, ticket] of Object.entries(event.tickets)) {
-          if (ticket.ticketId === checkTicketModalData.ticketId) {
-            userIdToUpdate = userId;
-            break;
-          }
-        }
-      }
-      
-      if (!userIdToUpdate) {
-        throw new Error("Не може да се намери потребител за билета");
-      }
-
-      await updateDoc(eventRef, {
-        [`tickets.${userIdToUpdate}.checkedIn`]: false,
-        [`tickets.${userIdToUpdate}.checkedInTime`]: null
-      });
-
-      setEvents(prevEvents => 
-        prevEvents.map(event => {
-          if (event.id === checkTicketModalData.eventId && event.tickets) {
-            const updatedTickets = { ...event.tickets };
-            if (updatedTickets[userIdToUpdate]) {
-              const ticket = updatedTickets[userIdToUpdate] as Ticket;
-              updatedTickets[userIdToUpdate] = { 
-                ...ticket, 
-                checkedIn: false,
-                checkedInTime: null 
-              };
-            }
-            return { ...event, tickets: updatedTickets };
-          }
-          return event;
-        })
-      );
-
-      setCheckTicketModalData(prev => prev ? { 
-        ...prev, 
-        checkedIn: false,
-        checkedInTime: undefined 
-      } : null);
-      
-      setTicketStatusMessage("Регистрацията е отменена!");
-      setTicketStatusType("success");
-      
-      loadTodayStats();
-      
-      setTimeout(() => {
-        setTicketStatusMessage("");
-      }, 3000);
-
-    } catch (error) {
-      console.error("Грешка при отмяна на регистрация:", error);
-      setTicketStatusMessage("Възникна грешка при отмяната!");
-      setTicketStatusType("error");
-    } finally {
-      setIsCheckingTicket(false);
-    }
-  };
-
-  const openTodayStats = () => {
-    setShowTodayStats(true);
-    setShowCheckTicketModal(false);
-    loadTodayStats();
-  };
-
-  const validateTime = (time: string): boolean => {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
-  };
-
-  const validateTimeRange = (startTime: string, endTime: string): boolean => {
-    if (!startTime || !endTime) return true;
-    return endTime > startTime;
-  };
-
-  const convertToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + (minutes || 0);
-  };
-
-  const hasTimeOverlap = (
-    slotStart: string, 
-    slotEnd: string, 
-    eventStart: string, 
-    eventEnd: string
-  ): boolean => {
-    const slotStartMin = convertToMinutes(slotStart);
-    const slotEndMin = convertToMinutes(slotEnd);
-    const eventStartMin = convertToMinutes(eventStart);
-    const eventEndMin = convertToMinutes(eventEnd);
-    
-    return eventStartMin < slotEndMin && eventEndMin > slotStartMin;
-  };
-
-  //-----------Book-----------------
-
-  
-  const hasBookingConflict = (
-    room: string, 
-    date: string, 
-    startTime: string, 
-    endTime: string, 
-    excludeEventId?: string
-  ): boolean => {
-    const eventConflict = roomBookings.some(booking => {
-      if (excludeEventId && booking.id === excludeEventId) return false;
-      
-      if (booking.room !== room || booking.date !== date) return false;
-      
-      const newStart = startTime;
-      const newEnd = endTime;
-      const existingStart = booking.time;
-      const existingEnd = booking.endTime;
-      
-      return (
-        (newStart >= existingStart && newStart < existingEnd) ||
-        (newEnd > existingStart && newEnd <= existingEnd) ||
-        (newStart <= existingStart && newEnd >= existingEnd)
-      );
-    });
-    
-    if (eventConflict) return true;
-    
-    const dayOfWeek = new Date(date).getDay();
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      const scheduleConflicts = scheduleBookings.filter(
-        schedule => schedule.room === room && schedule.dayOfWeek === dayOfWeek
-      );
-      
-      const hasScheduleConflict = scheduleConflicts.some(schedule => {
-        const eventStart = startTime;
-        const eventEnd = endTime;
-        const scheduleStart = schedule.startTime;
-        const scheduleEnd = schedule.endTime;
-        
-        return (
-          (eventStart >= scheduleStart && eventStart < scheduleEnd) ||
-          (eventEnd > scheduleStart && eventEnd <= scheduleEnd) ||
-          (eventStart <= scheduleStart && eventEnd >= scheduleEnd)
-        );
-      });
-      
-      return hasScheduleConflict;
-    }
-    
-    return false;
-  };
-
-  const parseScheduleText = (text: string): { dayOfWeek: number, period: number, startTime: string, endTime: string, classSchedules: ClassSchedule[] }[] => {
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
-    const dayMap: { [key: string]: number } = {
-      'Понеделник': 1,
-      'Вторник': 2,
-      'Сряда': 3,
-      'Четвъртък': 4,
-      'Петък': 5
-    };
-    
-    const scheduleSlots: { dayOfWeek: number, period: number, startTime: string, endTime: string, classSchedules: ClassSchedule[] }[] = [];
-    
-    let currentDay: number = 0;
-    let periodCounter: number = 1;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      if (dayMap[line] !== undefined) {
-        currentDay = dayMap[line];
-        periodCounter = 1;
-        continue;
-      }
-      
-      if (currentDay > 0 && line.includes('–')) {
-        const parts = line.split(/\s+/);
-        if (parts.length >= 2) {
-          const timeRange = parts[0];
-          const [startTime, endTime] = timeRange.split('–').map(t => t.trim() + ':00');
-          
-          const scheduleText = parts.slice(1).join(' ');
-          let classSchedules: ClassSchedule[] = [];
-          
-          if (scheduleText !== '—' && scheduleText.trim() !== '') {
-            const classParts = scheduleText.split(',').map(part => part.trim()).filter(part => part !== '');
-            
-            classSchedules = classParts.map(part => {
-              const classMatch = part.match(/(\d+[а-яд\.]+)$/);
-              let className = '';
-              let subjectTeacher = part;
-              
-              if (classMatch) {
-                className = classMatch[1];
-                subjectTeacher = part.substring(0, part.length - className.length).trim();
-              }
-              
-              let subject = subjectTeacher;
-              let teacher = '';
-              
-              const teacherMatch = subjectTeacher.match(/\((.+?)\)/);
-              if (teacherMatch) {
-                teacher = teacherMatch[1];
-                subject = subjectTeacher.replace(`(${teacher})`, '').trim();
-              } else {
-                const nameParts = subjectTeacher.split(' ');
-                if (nameParts.length > 1) {
-                  const lastWord = nameParts[nameParts.length - 1];
-                  if (lastWord.match(/^[А-Я][а-я]+$/)) {
-                    teacher = lastWord;
-                    subject = nameParts.slice(0, -1).join(' ');
-                  }
-                }
-              }
-              
-              return {
-                subject: subject || 'Неизвестен предмет',
-                teacher,
-                className: className || 'Неизвестен клас'
-              };
-            });
-          }
-          
-          if (classSchedules.length > 0) {
-            scheduleSlots.push({
-              dayOfWeek: currentDay,
-              period: periodCounter,
-              startTime,
-              endTime,
-              classSchedules
-            });
-          }
-          
-          periodCounter++;
-        }
-      }
-    }
-    
-    return scheduleSlots;
-  };
-
-  const importScheduleToFirebase = async () => {
-    if (!importData.trim() || !selectedRoomForImport) {
-      alert("Моля, въведете данни за графика и изберете стая!");
-      return;
-    }
-    
-    try {
-      const scheduleSlots = parseScheduleText(importData);
-      
-      if (scheduleSlots.length === 0) {
-        alert("Не можахме да разчетем графика. Проверете формата на данните!");
-        return;
-      }
-      
-      const existingSchedules = await getDocs(collection(db, "scheduleBookings"));
-      const deletePromises: Promise<void>[] = [];
-      
-      existingSchedules.docs.forEach(doc => {
-        if (doc.data().room === selectedRoomForImport) {
-          deletePromises.push(deleteDoc(doc.ref));
-        }
-      });
-      
-      await Promise.all(deletePromises);
-      
-      const addPromises: Promise<any>[] = [];
-      
-      scheduleSlots.forEach(slot => {
-        const scheduleBooking: Omit<ScheduleBooking, 'id'> = {
-          room: selectedRoomForImport,
-          dayOfWeek: slot.dayOfWeek,
-          period: slot.period,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          classSchedules: slot.classSchedules,
-          semester,
-          academicYear,
-          type: 'schedule'
-        };
-        
-        addPromises.push(addDoc(collection(db, "scheduleBookings"), scheduleBooking));
-      });
-      
-      await Promise.all(addPromises);
-      alert(`Графикът за стая ${selectedRoomForImport} е импортиран успешно! Добавени са ${scheduleSlots.length} часа.`);
-      setIsImportingSchedule(false);
-      setImportData("");
-      fetchScheduleBookings();
-      
-    } catch (error) {
-      console.error("Грешка при импортиране:", error);
-      alert("Грешка при импортиране на графика!");
-    }
-  };
-
-  const isRoomBookedByEvent = (room: string, date: string, timeSlotHour: string): boolean => {
-    const slotStart = timeSlotHour + ':00';
-    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
-    
-    return roomBookings.some(booking => {
-      if (booking.room !== room || booking.date !== date) return false;
-      
-      return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
-    });
-  };
-
-  const getEventInfo = (room: string, date: string, timeSlotHour: string): RoomBooking | null => {
-    const slotStart = timeSlotHour + ':00';
-    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
-    
-    const booking = roomBookings.find(booking => {
-      if (booking.room !== room || booking.date !== date) return false;
-      
-      return hasTimeOverlap(slotStart, slotEnd, booking.time, booking.endTime);
-    });
-    
-    return booking || null;
-  };
-
-  const isRoomBookedInSchedule = (room: string, date: string, timeSlotHour: string): boolean => {
-    const dayOfWeek = new Date(date).getDay();
-    if (dayOfWeek < 1 || dayOfWeek > 5) return false;
-    
-    const slotStart = timeSlotHour + ':00';
-    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
-    
-    return scheduleBookings.some(
-      schedule => 
-        schedule.room === room && 
-        schedule.dayOfWeek === dayOfWeek &&
-        hasTimeOverlap(slotStart, slotEnd, schedule.startTime, schedule.endTime)
-    );
-  };
-
-  const getScheduleInfo = (room: string, date: string, timeSlotHour: string): ScheduleBooking | null => {
-    const dayOfWeek = new Date(date).getDay();
-    if (dayOfWeek < 1 || dayOfWeek > 5) return null;
-    
-    const slotStart = timeSlotHour + ':00';
-    const slotEnd = (parseInt(timeSlotHour) + 1) + ':00';
-    
-    const schedule = scheduleBookings.find(
-      schedule => 
-        schedule.room === room && 
-        schedule.dayOfWeek === dayOfWeek &&
-        hasTimeOverlap(slotStart, slotEnd, schedule.startTime, schedule.endTime)
-    );
-    
-    return schedule || null;
-  };
-
-  const getBookingInfo = (room: string, date: string, timeSlotHour: string): BookingInfo | null => {
-    const eventInfo = getEventInfo(room, date, timeSlotHour);
-    if (eventInfo) {
-      return eventInfo;
-    }
-    
-    const scheduleInfo = getScheduleInfo(room, date, timeSlotHour);
-    if (scheduleInfo) {
-      return scheduleInfo;
-    }
-    
-    return null;
-  };
-
-  const fetchUsers = async () => {
-    const snapshot = await getDocs(collection(db, "users"));
-    const usersData: User[] = snapshot.docs.map(doc => {
-      const data = doc.data();
+  const fetchUsers = useCallback(async () => {
+    const snap = await getDocs(collection(db, "users"));
+    setUsers(snap.docs.map(d => {
+      const data = d.data();
       return {
-        id: doc.id,
-        uid: doc.id,
-        email: data.email || '',
-        role: data.role || 'reader',
+        id: d.id, uid: d.id,
+        email: data.email || "",
+        role: data.role || "reader",
         events: data.events || [],
         books: data.books || [],
         createdAt: data.createdAt || null,
-        displayName: data.displayName || '',
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        profile: data.profile || {}
-      } as User;
-    });
-    setUsers(usersData);
-  };
+        displayName: data.displayName || "",
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        profile: data.profile || {},
+      } as AppUser;
+    }));
+  }, []);
 
-  const fetchEvents = async () => {
-    const snapshot = await getDocs(collection(db, "events"));
-    const eventsData: Event[] = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as Event));
+  const fetchEvents = useCallback(async () => {
+    const snap = await getDocs(collection(db, "events"));
+    const eventsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppEvent));
     setEvents(eventsData);
-    updateRoomBookings(eventsData);
-  };
+    setRoomBookings(
+      eventsData
+        .filter(e => e.date && e.time && e.endTime && e.location)
+        .map(e => ({
+          id: e.id, room: e.location, date: e.date,
+          time: e.time, endTime: e.endTime,
+          eventId: e.id, eventTitle: e.title, type: "event" as const,
+        }))
+    );
+  }, []);
 
-  const fetchBooks = async () => {
-  try {
-    const booksData = await bookService.fetchAllBooks();
-    
-    // ДЕБЪГ: Провери какво се връща
-    console.log("📚 Заредени книги:", booksData.length);
-    
-    if (booksData.length > 0) {
-      // Провери първите 3 книги
-      booksData.slice(0, 3).forEach((book, index) => {
-        console.log(`📖 Книга ${index + 1}:`, {
-          title: book.title,
-          shelfNumber: book.shelfNumber,
-          callNumber: book.callNumber,
-          location: book.location,
-          hasShelfNumber: !!book.shelfNumber,
-          hasCallNumber: !!book.callNumber
-        });
-      });
-      
-      // Провери всички рафтове
-      const allShelves = booksData
-        .map(b => b.shelfNumber)
-        .filter(s => s && s.trim() !== '');
-      console.log("🏷️ Всички рафтове:", allShelves);
-      console.log("🏷️ Уникални рафтове:", [...new Set(allShelves)]);
-    } else {
-      console.log("⚠️ Няма заредени книги!");
-    }
-    
-    setBooks(booksData);
-  } catch (error) {
-    console.error("❌ Error fetching books:", error);
-  }
-};
+  const fetchBooks = useCallback(async () => {
+    try { setBooks(await bookService.fetchAllBooks()); }
+    catch (e) { console.error("Error fetching books:", e); }
+  }, []);
 
-  const fetchScheduleBookings = async () => {
-    const snapshot = await getDocs(collection(db, "scheduleBookings"));
-    const schedulesData: ScheduleBooking[] = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as ScheduleBooking));
-    setScheduleBookings(schedulesData);
-  };
+  const fetchScheduleBookings = useCallback(async () => {
+    const snap = await getDocs(collection(db, "scheduleBookings"));
+    setScheduleBookings(snap.docs.map(d => ({ id: d.id, ...d.data() } as ScheduleBooking)));
+  }, []);
 
-  const fetchReservations = async () => {
-  try {
-    // Използвайте функцията от вашия service
-    const reservationsData = await getAllReservations();
-    setReservations(reservationsData);
-    
-    console.log("📚 Заредени резервации:", reservationsData.length);
-    if (reservationsData.length > 0) {
-      console.log("📋 Примерна резервация:", reservationsData[0]);
-    }
-  } catch (error) {
-    console.error("Грешка при зареждане на резервации:", error);
-  }
-};
+  const fetchNews = useCallback(async () => {
+    const snap = await getDocs(collection(db, "news"));
+    setNews(snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsArticle)));
+  }, []);
 
-const completeReservation = async (reservationId: string) => {
-  try {
-    await updateDoc(doc(db, "reservations", reservationId), {
-      status: 'completed',
-      completedAt: new Date()
-    });
-    
-    fetchReservations();
-    alert("Резервацията е маркирана като завършена!");
-  } catch (error) {
-    console.error("Грешка при маркиране на резервация:", error);
-    alert("Грешка при маркиране на резервация!");
-  }
-};
-console.log(completeReservation);
-  const updateRoomBookings = (eventsData: Event[]) => {
-    const bookings: RoomBooking[] = [];
-    eventsData.forEach(event => {
-      if (event.date && event.time && event.endTime && event.location) {
-        bookings.push({
-          id: event.id,
-          room: event.location,
-          date: event.date,
-          time: event.time,
-          endTime: event.endTime,
-          eventId: event.id,
-          eventTitle: event.title,
-          type: 'event'
-        });
-      }
-    });
-    setRoomBookings(bookings);
-  };
+  const fetchReservations = useCallback(async () => {
+    try {
+      const data = await getAllReservations();
+      setReservations(data as AdminReservation[]);
+    } catch (e) { console.error("Error fetching reservations:", e); }
+  }, []);
 
+  // ── Initial load ───────────────────────────────────────────────────────────
   useEffect(() => {
     fetchUsers();
     fetchEvents();
     fetchBooks();
     fetchScheduleBookings();
     fetchNews();
+    fetchReservations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changeUserRole = async (userId: string, newRole: string) => {
-    await updateDoc(doc(db, "users", userId), { 
-      role: newRole,
-      updatedAt: new Date()
-    });
-    fetchUsers();
-  };
+  // ── loadTodayStats ─────────────────────────────────────────────────────────
+  const loadTodayStats = useCallback(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const scanned: TicketDetail[] = [];
+    let total = 0, checkedIn = 0, pending = 0;
 
-  const openCreateNewsModal = () => {
-  setModalNewsData({
-    title: "",
-    excerpt: "",
-    content: "",
-    category: "Общи",
-    image: "",
-    author: "Администратор",
-    tags: [],
-    featured: false
-  });
-  setShowNewsModal(true);
-};
-
-const openEditNewsModal = (newsItem: NewsArticle) => {
-  setModalNewsData({
-    id: newsItem.id,
-    title: newsItem.title,
-    excerpt: newsItem.excerpt,
-    content: newsItem.content,
-    category: newsItem.category,
-    image: newsItem.image,
-    author: newsItem.author,
-    tags: newsItem.tags || [],
-    featured: newsItem.featured || false
-  });
-  setShowNewsModal(true);
-};
-
-const closeNewsModal = () => {
-  setShowNewsModal(false);
-  setModalNewsData({});
-};
-
-
-const handleCreateNews = async () => {
-  if (!modalNewsData.title?.trim() || !modalNewsData.excerpt?.trim() || 
-      !modalNewsData.content?.trim() || !modalNewsData.category?.trim() || 
-      !modalNewsData.image?.trim()) {
-    alert("Моля, попълнете всички задължителни полета (включително основната снимка)!");
-    return;
-  }
-  
-  try {
-    // Комбинираме основната снимка с допълнителните
-    const allImages = [
-      modalNewsData.image, // Основната снимка винаги е първа
-      ...(modalNewsData.images || []).filter(img => img.trim() !== "")
-    ].filter((value, index, self) => self.indexOf(value) === index); // Премахваме дубликати
-
-    const newsData = {
-      title: modalNewsData.title,
-      excerpt: modalNewsData.excerpt,
-      content: modalNewsData.content,
-      category: modalNewsData.category,
-      image: modalNewsData.image, // Основна снимка (задължителна)
-      images: allImages.length > 1 ? allImages : [], // Ако има повече от 1 снимка
-      author: modalNewsData.author || "Администратор",
-      date: Timestamp.now(),
-      views: 0,
-      likes: 0,
-      tags: modalNewsData.tags || [],
-      featured: modalNewsData.featured || false,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    };
-
-    await addDoc(collection(db, "news"), newsData);
-    
-    closeNewsModal();
-    await fetchNews();
-    alert("Новината е създадена успешно!");
-    
-  } catch (error) {
-    console.error("Грешка при създаване на новина:", error);
-    alert("Грешка при създаване на новина!");
-  }
-};
-
-const handleUpdateNews = async () => {
-  if (!modalNewsData.id) return;
-  
-  if (!modalNewsData.title?.trim() || !modalNewsData.excerpt?.trim() || 
-      !modalNewsData.content?.trim() || !modalNewsData.category?.trim() || 
-      !modalNewsData.image?.trim()) {
-    alert("Моля, попълнете всички задължителни полета!");
-    return;
-  }
-
-  try {
-    // Комбинираме снимките
-    const allImages = [
-      modalNewsData.image,
-      ...(modalNewsData.images || []).filter(img => img.trim() !== "")
-    ].filter((value, index, self) => self.indexOf(value) === index);
-
-    await updateDoc(doc(db, "news", modalNewsData.id), {
-      title: modalNewsData.title,
-      excerpt: modalNewsData.excerpt,
-      content: modalNewsData.content,
-      category: modalNewsData.category,
-      image: modalNewsData.image,
-      images: allImages.length > 1 ? allImages : [],
-      author: modalNewsData.author || "Администратор",
-      tags: modalNewsData.tags || [],
-      featured: modalNewsData.featured || false,
-      updatedAt: Timestamp.now()
-    });
-    
-    closeNewsModal();
-    await fetchNews();
-    alert("Новината е обновена успешно!");
-    
-  } catch (error) {
-    console.error("Грешка при обновяване на новина:", error);
-    alert("Грешка при обновяване на новина!");
-  }
-};
-console.log(handleCreateNews,handleUpdateNews);
-
-const deleteNews = async (newsId: string) => {
-  if (!window.confirm("Сигурни ли сте, че искате да изтриете новината?")) return;
-  
-  try {
-    await deleteDoc(doc(db, "news", newsId));
-    await fetchNews();
-    alert("Новината е изтрита успешно!");
-  } catch (error) {
-    console.error("Error deleting news:", error);
-    alert("Грешка при изтриване на новина!");
-  }
-};
-
-  const deleteUser = async (userId: string) => {
-    if (!window.confirm("Сигурни ли сте, че искате да изтриете потребителя?")) return;
-    await deleteDoc(doc(db, "users", userId));
-    fetchUsers();
-  };
-
-  const deleteEvent = async (eventId: string) => {
-    if (!window.confirm("Сигурни ли сте, че искате да изтриете събитието?")) return;
-    await deleteDoc(doc(db, "events", eventId));
-    fetchEvents();
-  };
-
-  const deleteBook = async (bookId: string) => {
-  if (!window.confirm("Сигурни ли сте, че искате да изтриете книгата?")) return;
-  
-  try {
-    await bookService.deleteBook(bookId);
-    await fetchBooks(); // Презареди книгите след изтриване
-    alert("Книгата е изтрита успешно!");
-  } catch (error) {
-    console.error("Error deleting book:", error);
-    alert("Грешка при изтриване на книга!");
-  }
-};
-
-  const startAddingEventFromCell = (room: string, timeSlot: string) => {
-    const [slotStart] = timeSlot.split('-');
-    const startHour = parseInt(slotStart);
-    
-    setCellEventStartTime(`${slotStart}:00`);
-    setCellEventEndTime(`${(startHour + 1).toString().padStart(2, '0')}:00`);
-    
-    setAddingEventFromCell({
-      room,
-      timeSlot
-    });
-  };
-
-  const createEventFromCell = async () => {
-    if (!addingEventFromCell || !cellEventTitle.trim() || !selectedDate || !cellEventStartTime || !cellEventEndTime) return;
-    
-    if (!validateTime(cellEventStartTime) || !validateTime(cellEventEndTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
-
-    if (!validateTimeRange(cellEventStartTime, cellEventEndTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-    
-    if (hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-    
-    const eventData = {
-      title: cellEventTitle,
-      description: cellEventDesc,
-      date: selectedDate,
-      time: cellEventStartTime,
-      endTime: cellEventEndTime,
-      location: addingEventFromCell.room,
-      maxParticipants: cellEventMaxParticipants,
-      currentParticipants: 0,
-      allowedRoles: ["reader", "librarian"],
-      organizer: cellEventOrganizer,
-      imageUrl: cellEventImageUrl, 
-      createdAt: new Date(),
-      registrations: []
-    };
-
-    await addDoc(collection(db, "events"), eventData);
-    
-    setCellEventTitle("");
-    setCellEventDesc("");
-    setCellEventStartTime("");
-    setCellEventEndTime("");
-    setCellEventMaxParticipants(20);
-    setCellEventOrganizer("");
-    setCellEventImageUrl(""); 
-    setAddingEventFromCell(null);
-    
-    fetchEvents();
-  };
-
-  const deleteBookingFromCell = async (booking: BookingInfo) => {
-    if (!window.confirm("Сигурни ли сте, че искате да изтриете тази резервация?")) return;
-    
-    try {
-      if (booking.type === 'event') {
-        await deleteDoc(doc(db, "events", booking.eventId));
-        fetchEvents();
-      } else if (booking.type === 'schedule') {
-        await deleteDoc(doc(db, "scheduleBookings", booking.id));
-        fetchScheduleBookings();
-      }
-      
-      setEditingCell(null);
-      alert("Резервацията е изтрита успешно!");
-    } catch (error) {
-      console.error("Грешка при изтриване:", error);
-      alert("Грешка при изтриване на резервацията!");
-    }
-  };
-
-  const startEditingCell = (room: string, timeSlot: string) => {
-    const [slotStart] = timeSlot.split('-');
-    const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
-    
-    if (bookingInfo) {
-      setEditingCell({
-        room,
-        timeSlot,
-        booking: bookingInfo
+    events.forEach(event => {
+      if (!event.tickets) return;
+      Object.entries(event.tickets).forEach(([userId, ticket]) => {
+        total++;
+        if (ticket.checkedIn) {
+          checkedIn++;
+          const checkedInDate =
+            typeof ticket.checkedInTime === "object" &&
+            ticket.checkedInTime &&
+            "toDate" in ticket.checkedInTime &&
+            typeof ticket.checkedInTime.toDate === "function"
+              ? ticket.checkedInTime.toDate()
+              : null;
+          if (checkedInDate && checkedInDate.toISOString().split("T")[0] === today) {
+            const user = users.find(u => u.id === userId);
+            scanned.push({
+              ticketId: ticket.ticketId,
+              eventTitle: event.title,
+              eventDate: event.date,
+              eventTime: event.time,
+              userName: user?.displayName || user?.firstName || "Неизвестен",
+              userEmail: user?.email || "Няма имейл",
+              scanTime: checkedInDate.toLocaleString("bg-BG"),
+              status: "checked",
+            });
+          }
+        } else {
+          pending++;
+          if (new Date(`${event.date}T${event.time}`) >= new Date()) {
+            const user = users.find(u => u.id === userId);
+            scanned.push({
+              ticketId: ticket.ticketId,
+              eventTitle: event.title,
+              eventDate: event.date,
+              eventTime: event.time,
+              userName: user?.displayName || user?.firstName || "Неизвестен",
+              userEmail: user?.email || "Няма имейл",
+              scanTime: "Очаква сканиране",
+              status: "pending",
+            });
+          }
+        }
       });
-    } else {
-      startAddingEventFromCell(room, timeSlot);
+    });
+
+    scanned.sort((a, b) => {
+      if (a.status === "pending" && b.status !== "pending") return -1;
+      if (b.status === "pending" && a.status !== "pending") return 1;
+      return new Date(`${a.eventDate}T${a.eventTime}`).getTime() -
+             new Date(`${b.eventDate}T${b.eventTime}`).getTime();
+    });
+
+    setTodayStats({ totalTickets: total, checkedInTickets: checkedIn, pendingTickets: pending, todayScannedTickets: scanned });
+  }, [events, users]);
+
+  useEffect(() => {
+    if (showTodayStats) loadTodayStats();
+  }, [showTodayStats, loadTodayStats]);
+
+  // ── Validation helpers ─────────────────────────────────────────────────────
+  const validateTime      = (t: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(t);
+  const validateTimeRange = (s: string, e: string) => !s || !e || e > s;
+  const convertToMinutes  = (t: string) => { const [h,m] = t.split(":").map(Number); return h*60+(m||0); };
+
+  const hasTimeOverlap = (ss: string, se: string, es: string, ee: string) => {
+    const [ssm,sem,esm,eem] = [ss,se,es,ee].map(convertToMinutes);
+    return esm < sem && eem > ssm;
+  };
+
+  const hasBookingConflict = (room: string, date: string, start: string, end: string, excludeId?: string) => {
+    if (roomBookings.some(b => {
+      if (excludeId && b.id === excludeId) return false;
+      if (b.room !== room || b.date !== date) return false;
+      return hasTimeOverlap(start, end, b.time, b.endTime);
+    })) return true;
+
+    const dow = new Date(date).getDay();
+    if (dow >= 1 && dow <= 5) {
+      return scheduleBookings
+        .filter(s => s.room === room && s.dayOfWeek === dow)
+        .some(s => hasTimeOverlap(start, end, s.startTime, s.endTime));
     }
+    return false;
   };
 
-  const openCreateEventModal = () => {
-    setModalMode('create');
-    setModalEventData({
-      title: "",
-      description: "",
-      date: "",
-      time: "",
-      endTime: "",
-      location: "",
-      maxParticipants: 20,
-      organizer: "",
-      allowedRoles: ["reader", "librarian"],
-      imageUrl: ""
-    });
-    setShowEventModal(true);
+  const isRoomBookedByEvent    = (room: string, date: string, h: string) =>
+    roomBookings.some(b => b.room === room && b.date === date && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, b.time, b.endTime));
+
+  const isRoomBookedInSchedule = (room: string, date: string, h: string) => {
+    const dow = new Date(date).getDay();
+    if (dow < 1 || dow > 5) return false;
+    return scheduleBookings.some(s => s.room === room && s.dayOfWeek === dow && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, s.startTime, s.endTime));
   };
 
-  const openEditEventModal = (event: Event) => {
-    setModalMode('edit');
-    setModalEventData({
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      endTime: event.endTime,
-      location: event.location,
-      maxParticipants: event.maxParticipants,
-      organizer: event.organizer,
-      allowedRoles: event.allowedRoles,
-      currentParticipants: event.currentParticipants,
-      imageUrl: event.imageUrl || ""
-    });
-    setShowEventModal(true);
+  const getEventInfo    = (room: string, date: string, h: string): RoomBooking | null =>
+    roomBookings.find(b => b.room === room && b.date === date && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, b.time, b.endTime)) ?? null;
+
+  const getScheduleInfo = (room: string, date: string, h: string): ScheduleBooking | null => {
+    const dow = new Date(date).getDay();
+    if (dow < 1 || dow > 5) return null;
+    return scheduleBookings.find(s => s.room === room && s.dayOfWeek === dow && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, s.startTime, s.endTime)) ?? null;
   };
 
-  const openCreateBookModal = () => {
-  setModalBookData({
-    // Основни полета
-    title: "",
-    author: "",
-    isbn: "",
-    publisher: "",
-    year: new Date().getFullYear(),
-    category: "",
-    genres: [], // ЗАМЕНЯ subcategory
-    tags: [],
-    description: "",
-    copies: 1,
-    location: "Библиотека",
-    coverUrl: "",
-    
-    // Допълнителни полета
-    language: "Български",
-    edition: "Първо издание",
-    coverType: "soft",
-    shelfNumber: "",
-    callNumber: "",
-    condition: "good",
-    ageRecommendation: "",
-    featured: false,
-    pages: 0,
-    availableCopies: 1,
-    status: "available", 
-    rating: 0,
-    ratingsCount: 0,
-    views: 0,
-    borrowPeriod: 14,
-    maxRenewals: 2,
-    reservationQueue: 0,
-    waitingList: [],
-    summary: "",
-    tableOfContents: [],
-    relatedBooks: [],
-    awards: [],
-    digitalVersion: {
-      available: false,
-      format: "",
-      url: ""
-    },
-    isActive: true,
-    underMaintenance: false
-  });
-  setShowBookModal(true);
-};
+  const getBookingInfo  = (room: string, date: string, h: string): BookingInfo | null =>
+    getEventInfo(room, date, h) ?? getScheduleInfo(room, date, h);
 
-  const openEditBookModal = (book: BookLibrary) => {
-  setModalBookData({
-    // Основни полета
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    isbn: book.isbn,
-    publisher: book.publisher || "",
-    year: book.year || new Date().getFullYear(),
-    category: book.category,
-    genres: book.genres || [], // ЗАМЕНЯ subcategory
-    tags: book.tags || [],
-    description: book.description || "",
-    copies: book.copies || 1,
-    availableCopies: book.availableCopies !== undefined ? book.availableCopies : (book.copies || 1),
-    location: book.location || "Библиотека",
-    coverUrl: book.coverUrl || "",
-    
-    // Допълнителни полета
-    language: book.language || 'Български',
-    edition: book.edition || 'Първо издание',
-    coverType: book.coverType || 'soft',
-    shelfNumber: book.shelfNumber || '',
-    callNumber: book.callNumber || '',
-    condition: book.condition || 'good',
-    ageRecommendation: book.ageRecommendation || '',
-    featured: book.featured || false,
-    pages: book.pages || 0,
-    
-    // Заемане
-    borrowPeriod: book.borrowPeriod || 14,
-    maxRenewals: book.maxRenewals || 2,
-    
-    // Статус и системни полета
-    status: book.status || 'available',
-    rating: book.rating || 0,
-    ratingsCount: book.ratingsCount || 0,
-    views: book.views || 0,
-    isActive: book.isActive !== false,
-    underMaintenance: book.underMaintenance || false
-  });
-  setShowBookModal(true);
-};
-  const closeEventModal = () => {
-    setShowEventModal(false);
-    setModalEventData({});
+  // ── QR Scanner ─────────────────────────────────────────────────────────────
+  const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
+    if (!detectedCodes?.length) return;
+    const raw = detectedCodes[0].rawValue;
+    if (!raw) return;
+    let ticketId = raw;
+    try { const p = JSON.parse(raw); if (p.TICKETID) ticketId = p.TICKETID; } catch { /* raw value */ }
+    const match = ticketId.match(/TICKET-([A-Z0-9]+)/i);
+    const final = match ? `TICKET-${match[1].toUpperCase()}` : ticketId;
+    setTicketSearchTerm(final);
+    await searchTicket(final);
   };
 
-  const closeBookModal = () => {
-    setShowBookModal(false);
-    setModalBookData({});
+  const handleQrError = (error: unknown) => {
+    console.error("QR Scanner error:", error);
+    setCameraError("Неуспешно зареждане на камерата. Проверете разрешенията.");
   };
 
-  const handleModalInputChange = (field: keyof Event, value: any) => {
-    setModalEventData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const openQrScanner = () => { setShowQrScanner(true); setShowCheckTicketModal(false); setShowTodayStats(false); setCameraError(""); setTicketStatusMessage(""); setCheckTicketModalData(null); };
+  const closeQrScanner = () => { setShowQrScanner(false); setCameraError(""); if (!showCheckTicketModal) setShowCheckTicketModal(true); };
+  const openCheckTicketModal = () => { setShowCheckTicketModal(true); setShowQrScanner(false); setShowTodayStats(false); setTicketSearchTerm(""); setCheckTicketModalData(null); setTicketStatusMessage(""); };
+  const openTodayStats = () => { setShowTodayStats(true); setShowCheckTicketModal(false); loadTodayStats(); };
+
+  // ── searchTicket ───────────────────────────────────────────────────────────
+  const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
+    const raw = ticketIdParam || ticketSearchTerm;
+    if (!raw.trim()) { setTicketStatusMessage("Моля, въведете номер на билет!"); setTicketStatusType("error"); return false; }
+
+    try {
+      setIsCheckingTicket(true);
+      setTicketStatusMessage("Търсене..."); setTicketStatusType("info");
+
+      let ticketId = raw.trim().toUpperCase();
+      const m = ticketId.match(/TICKET-[A-Z0-9]+/);
+      ticketId = m ? m[0] : `TICKET-${ticketId}`;
+
+      let foundEvent: AppEvent | null = null;
+      let foundUserId = "";
+      let foundTicket: Ticket | null = null;
+
+      for (const event of events) {
+        if (!event.tickets) continue;
+        for (const [userId, ticket] of Object.entries(event.tickets)) {
+          if (ticket.ticketId.toUpperCase() === ticketId) {
+            foundEvent = event; foundUserId = userId; foundTicket = ticket; break;
+          }
+        }
+        if (foundEvent) break;
+      }
+
+      if (!foundEvent || !foundTicket) {
+        setTicketStatusMessage("❌ Билетът не е намерен!"); setTicketStatusType("error");
+        return false;
+      }
+
+      const user = users.find(u => u.id === foundUserId);
+      setCheckTicketModalData({
+        eventId: foundEvent.id,
+        eventTitle: foundEvent.title,
+        eventDate: foundEvent.date,
+        eventTime: foundEvent.time,
+        ticketId: foundTicket.ticketId,
+        userName: user?.displayName || user?.firstName || "Неизвестен",
+        userEmail: user?.email || "Няма имейл",
+        registrationDate: formatFSDate(foundTicket.registrationDate),
+        checkedIn: foundTicket.checkedIn || false,
+        checkedInTime: formatFSDate(foundTicket.checkedInTime) || undefined,
+      });
+      setShowCheckTicketModal(true);
+      setTicketStatusMessage("✅ Билетът е намерен!"); setTicketStatusType("success");
+      return true;
+    } catch (e) {
+      console.error(e);
+      setTicketStatusMessage("Грешка при търсене!"); setTicketStatusType("error");
+      return false;
+    } finally { setIsCheckingTicket(false); }
   };
+
+  const checkInTicket = async (): Promise<boolean> => {
+    if (!checkTicketModalData) return false;
+    try {
+      setIsCheckingTicket(true);
+      setTicketStatusMessage("Регистриране...");
+      const eventRef = doc(db, "events", checkTicketModalData.eventId);
+      const eventDoc = await getDoc(eventRef);
+      if (!eventDoc.exists()) throw new Error("Събитието не е намерено");
+      const tickets = (eventDoc.data()?.tickets || {}) as Record<string, Ticket>;
+      const userIdToUpdate = Object.entries(tickets).find(
+        ([, ticket]) => ticket.ticketId === checkTicketModalData.ticketId
+      )?.[0];
+      if (!userIdToUpdate) throw new Error("Билетът не е намерен");
+      const now = Timestamp.fromDate(new Date());
+      await updateDoc(eventRef, {
+        [`tickets.${userIdToUpdate}.checkedIn`]: true,
+        [`tickets.${userIdToUpdate}.checkedInTime`]: now,
+      });
+      await fetchEvents();
+      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: true, checkedInTime: now.toDate().toLocaleString("bg-BG") } : null);
+      return true;
+    } catch (e) {
+      console.error(e);
+      setTicketStatusMessage(`❌ ${e instanceof Error ? e.message : "Грешка"}`);
+      setTicketStatusType("error");
+      return false;
+    } finally { setIsCheckingTicket(false); }
+  };
+
+  const uncheckTicket = async () => {
+    if (!checkTicketModalData) return;
+    try {
+      setIsCheckingTicket(true);
+      const eventRef = doc(db, "events", checkTicketModalData.eventId);
+      const event = events.find(e => e.id === checkTicketModalData.eventId);
+      let userIdToUpdate = "";
+      if (event?.tickets) {
+        for (const [uid, ticket] of Object.entries(event.tickets)) {
+          if (ticket.ticketId === checkTicketModalData.ticketId) { userIdToUpdate = uid; break; }
+        }
+      }
+      if (!userIdToUpdate) throw new Error("Не е намерен потребител");
+      await updateDoc(eventRef, {
+        [`tickets.${userIdToUpdate}.checkedIn`]: false,
+        [`tickets.${userIdToUpdate}.checkedInTime`]: null,
+      });
+      setEvents(prev => prev.map(e => {
+        if (e.id !== checkTicketModalData.eventId || !e.tickets) return e;
+        const t = { ...e.tickets };
+        if (t[userIdToUpdate]) t[userIdToUpdate] = { ...t[userIdToUpdate], checkedIn: false, checkedInTime: undefined };
+        return { ...e, tickets: t };
+      }));
+      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: false, checkedInTime: undefined } : null);
+      setTicketStatusMessage("Регистрацията е отменена!"); setTicketStatusType("success");
+      loadTodayStats();
+      setTimeout(() => setTicketStatusMessage(""), 3000);
+    } catch (e) {
+      console.error(e);
+      setTicketStatusMessage("Грешка при отмяна!"); setTicketStatusType("error");
+    } finally { setIsCheckingTicket(false); }
+  };
+
+  // ── Reservation actions ────────────────────────────────────────────────────
+  const markReservationFulfilled = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "reservations", id), { status: "fulfilled", lastUpdated: Timestamp.now() });
+      fetchReservations();
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  const cancelReservation = async (id: string) => {
+    if (!window.confirm("Сигурни ли сте?")) return;
+    try {
+      await cancelReservationService(id);
+      const res = reservations.find(r => r.id === id);
+      if (res?.bookId) {
+        const book = books.find(b => b.id === res.bookId);
+        if (book) await bookService.updateBook(book.id, { availableCopies: book.availableCopies + 1 });
+      }
+      fetchReservations(); fetchBooks();
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  // ── User / Event / Book actions ────────────────────────────────────────────
+  const changeUserRole = async (uid: string, role: string) => {
+    await updateDoc(doc(db, "users", uid), { role, updatedAt: new Date() });
+    fetchUsers();
+  };
+  const deleteUser  = async (uid: string) => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db, "users", uid)); fetchUsers(); };
+  const deleteEvent = async (id:  string) => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db, "events", id)); fetchEvents(); };
+  const deleteBook  = async (id:  string) => {
+    if (!window.confirm("Изтрий?")) return;
+    try { await bookService.deleteBook(id); await fetchBooks(); }
+    catch (e) { console.error(e); alert("Грешка!"); }
+  };
+  const deleteNews  = async (id:  string) => {
+    if (!window.confirm("Изтрий?")) return;
+    try { await deleteDoc(doc(db, "news", id)); await fetchNews(); }
+    catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  // ── Event modal helpers ────────────────────────────────────────────────────
+  const handleModalInputChange = (field: keyof AppEvent, value: string | number | string[] | boolean) => {
+    setModalEventData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const openCreateEventModal = () => { setModalMode("create"); setModalEventData(EMPTY_EVENT); setShowEventModal(true); };
+  const openEditEventModal   = (e: AppEvent) => { setModalMode("edit"); setModalEventData({ id:e.id, title:e.title, description:e.description, date:e.date, time:e.time, endTime:e.endTime, location:e.location, maxParticipants:e.maxParticipants, organizer:e.organizer, allowedRoles:e.allowedRoles, currentParticipants:e.currentParticipants, imageUrl:e.imageUrl||"" }); setShowEventModal(true); };
+  const closeEventModal      = () => { setShowEventModal(false); setModalEventData({}); };
 
   const handleCreateEvent = async () => {
-    if (!modalEventData.title?.trim() || !modalEventData.date || 
-        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
-      alert("Моля, попълнете всички задължителни полета!");
-      return;
-    }
-    
-    if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
-
-    if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-    
-    if (hasBookingConflict(
-      modalEventData.location, 
-      modalEventData.date, 
-      modalEventData.time, 
-      modalEventData.endTime
-    )) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-    
+    if (!modalEventData.title?.trim()||!modalEventData.date||!modalEventData.time||!modalEventData.endTime||!modalEventData.location) { alert("Попълнете задължителните полета!"); return; }
+    if (!validateTime(modalEventData.time)||!validateTime(modalEventData.endTime)) { alert("Невалиден час!"); return; }
+    if (!validateTimeRange(modalEventData.time,modalEventData.endTime)) { alert("Крайният час трябва да е след началния!"); return; }
+    if (hasBookingConflict(modalEventData.location,modalEventData.date,modalEventData.time,modalEventData.endTime)) { alert("Стаята е заета!"); return; }
     try {
-      const eventData = {
-        title: modalEventData.title,
-        description: modalEventData.description || "",
-        date: modalEventData.date,
-        time: modalEventData.time,
-        endTime: modalEventData.endTime,
-        location: modalEventData.location,
-        maxParticipants: modalEventData.maxParticipants || 20,
-        currentParticipants: 0,
-        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
-        organizer: modalEventData.organizer || "",
-        imageUrl: modalEventData.imageUrl || "",
-        createdAt: new Date(),
-        registrations: []
-      };
-
-      await addDoc(collection(db, "events"), eventData);
-      
-      closeEventModal();
-      fetchEvents();
-      alert("Събитието е създадено успешно!");
-      
-    } catch (error) {
-      console.error("Грешка при създаване на събитие:", error);
-      alert("Грешка при създаване на събитие!");
-    }
+      await addDoc(collection(db,"events"), { title:modalEventData.title, description:modalEventData.description||"", date:modalEventData.date, time:modalEventData.time, endTime:modalEventData.endTime, location:modalEventData.location, maxParticipants:modalEventData.maxParticipants||20, currentParticipants:0, allowedRoles:modalEventData.allowedRoles||["reader","librarian"], organizer:modalEventData.organizer||"", imageUrl:modalEventData.imageUrl||"", createdAt:new Date(), registrations:[] });
+      closeEventModal(); fetchEvents(); alert("Събитието е създадено!");
+    } catch (e) { console.error(e); alert("Грешка!"); }
   };
 
   const handleUpdateEvent = async () => {
     if (!modalEventData.id) return;
-    
-    if (!modalEventData.title?.trim() || !modalEventData.date || 
-        !modalEventData.time || !modalEventData.endTime || !modalEventData.location) {
-      alert("Моля, попълнете всички задължителни полета!");
-      return;
-    }
-    
-    if (!validateTime(modalEventData.time) || !validateTime(modalEventData.endTime)) {
-      alert("Моля, въведете валиден час във формат HH:MM (например 14:30)");
-      return;
-    }
-
-    if (!validateTimeRange(modalEventData.time, modalEventData.endTime)) {
-      alert("Крайният час трябва да е след началния час!");
-      return;
-    }
-
-    if (modalEventData.maxParticipants && modalEventData.currentParticipants && 
-        modalEventData.maxParticipants < modalEventData.currentParticipants) {
-      alert("Не можете да зададете по-малко места от текущо записаните участници!");
-      return;
-    }
-
-    if (hasBookingConflict(
-      modalEventData.location, 
-      modalEventData.date, 
-      modalEventData.time, 
-      modalEventData.endTime, 
-      modalEventData.id
-    )) {
-      alert("Стаята е вече резервирана за избрания времеви интервал! Моля, изберете друго време или място.");
-      return;
-    }
-
+    if (!modalEventData.title?.trim()||!modalEventData.date||!modalEventData.time||!modalEventData.endTime||!modalEventData.location) { alert("Попълнете задължителните полета!"); return; }
+    if (!validateTime(modalEventData.time)||!validateTime(modalEventData.endTime)) { alert("Невалиден час!"); return; }
+    if (!validateTimeRange(modalEventData.time,modalEventData.endTime)) { alert("Крайният час трябва да е след началния!"); return; }
+    if (hasBookingConflict(modalEventData.location,modalEventData.date,modalEventData.time,modalEventData.endTime,modalEventData.id)) { alert("Стаята е заета!"); return; }
     try {
-      await updateDoc(doc(db, "events", modalEventData.id), {
-        title: modalEventData.title,
-        description: modalEventData.description || "",
-        date: modalEventData.date,
-        time: modalEventData.time,
-        endTime: modalEventData.endTime,
-        location: modalEventData.location,
-        maxParticipants: modalEventData.maxParticipants || 20,
-        organizer: modalEventData.organizer || "",
-        allowedRoles: modalEventData.allowedRoles || ["reader", "librarian"],
-        imageUrl: modalEventData.imageUrl || "",
-        updatedAt: new Date()
-      });
-      
-      closeEventModal();
-      fetchEvents();
-      alert("Събитието е обновено успешно!");
-      
-    } catch (error) {
-      console.error("Грешка при обновяване на събитие:", error);
-      alert("Грешка при обновяване на събитие!");
+      await updateDoc(doc(db,"events",modalEventData.id), { title:modalEventData.title, description:modalEventData.description||"", date:modalEventData.date, time:modalEventData.time, endTime:modalEventData.endTime, location:modalEventData.location, maxParticipants:modalEventData.maxParticipants||20, organizer:modalEventData.organizer||"", allowedRoles:modalEventData.allowedRoles||["reader","librarian"], imageUrl:modalEventData.imageUrl||"", updatedAt:new Date() });
+      closeEventModal(); fetchEvents(); alert("Обновено!");
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  // ── News modal helpers ─────────────────────────────────────────────────────
+  const openCreateNewsModal = () => { setModalNewsData({ title:"", excerpt:"", content:"", category:"Общи", image:"", author:"Администратор", tags:[], featured:false }); setShowNewsModal(true); };
+  const openEditNewsModal   = (item: NewsArticle) => { setModalNewsData({ id:item.id, title:item.title, excerpt:item.excerpt, content:item.content, category:item.category, image:item.image, author:item.author, tags:item.tags||[], featured:item.featured||false }); setShowNewsModal(true); };
+  const closeNewsModal      = () => { setShowNewsModal(false); setModalNewsData({}); };
+
+  const handleCreateNews = async () => {
+    if (!modalNewsData.title?.trim()||!modalNewsData.excerpt?.trim()||!modalNewsData.content?.trim()||!modalNewsData.category?.trim()||!modalNewsData.image?.trim()) { alert("Попълнете задължителните полета!"); return; }
+    try {
+      const allImages = [modalNewsData.image, ...(modalNewsData.images||[]).filter(i=>i.trim())].filter((v,i,a)=>a.indexOf(v)===i);
+      await addDoc(collection(db,"news"), { title:modalNewsData.title, excerpt:modalNewsData.excerpt, content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image, images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор", date:Timestamp.now(), views:0, likes:0, tags:modalNewsData.tags||[], featured:modalNewsData.featured||false, createdAt:Timestamp.now(), updatedAt:Timestamp.now() });
+      closeNewsModal(); await fetchNews(); alert("Новината е създадена!");
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  const handleUpdateNews = async () => {
+    if (!modalNewsData.id) return;
+    if (!modalNewsData.title?.trim()||!modalNewsData.excerpt?.trim()||!modalNewsData.content?.trim()||!modalNewsData.category?.trim()||!modalNewsData.image?.trim()) { alert("Попълнете задължителните полета!"); return; }
+    try {
+      const allImages = [modalNewsData.image, ...(modalNewsData.images||[]).filter(i=>i.trim())].filter((v,i,a)=>a.indexOf(v)===i);
+      await updateDoc(doc(db,"news",modalNewsData.id), { title:modalNewsData.title, excerpt:modalNewsData.excerpt, content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image, images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор", tags:modalNewsData.tags||[], featured:modalNewsData.featured||false, updatedAt:Timestamp.now() });
+      closeNewsModal(); await fetchNews(); alert("Обновено!");
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  // ── Schedule import ────────────────────────────────────────────────────────
+  const parseScheduleText = (text: string) => {
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    const dayMap: Record<string,number> = { Понеделник:1, Вторник:2, Сряда:3, Четвъртък:4, Петък:5 };
+    const slots: { dayOfWeek:number; period:number; startTime:string; endTime:string; classSchedules:ClassSchedule[] }[] = [];
+    let currentDay = 0, period = 1;
+
+    for (const line of lines) {
+      if (dayMap[line] !== undefined) { currentDay = dayMap[line]; period = 1; continue; }
+      if (currentDay > 0 && line.includes("–")) {
+        const parts = line.split(/\s+/);
+        if (parts.length >= 2) {
+          const [st, et] = parts[0].split("–").map(t => `${t.trim()}:00`);
+          const schedText = parts.slice(1).join(" ");
+          const classSchedules: ClassSchedule[] = [];
+          if (schedText !== "—" && schedText.trim()) {
+            schedText.split(",").map(p => p.trim()).filter(Boolean).forEach(part => {
+              // Fixed: removed unnecessary escape of dot inside character class
+              const cm = part.match(/(\d+[а-яд.]+)$/);
+              let cn = "", st2 = part;
+              if (cm) { cn = cm[1]; st2 = part.slice(0, -cn.length).trim(); }
+              let subject = st2, teacher = "";
+              const tm = st2.match(/\((.+?)\)/);
+              if (tm) { teacher = tm[1]; subject = st2.replace(`(${teacher})`,"").trim(); }
+              else {
+                const np = st2.split(" ");
+                const lw = np[np.length-1];
+                if (lw?.match(/^[А-Я][а-я]+$/)) { teacher = lw; subject = np.slice(0,-1).join(" "); }
+              }
+              classSchedules.push({ subject: subject||"Неизвестен предмет", teacher, className: cn||"Неизвестен клас" });
+            });
+          }
+          if (classSchedules.length > 0) slots.push({ dayOfWeek:currentDay, period, startTime:st, endTime:et, classSchedules });
+          period++;
+        }
+      }
+    }
+    return slots;
+  };
+
+  const importScheduleToFirebase = async () => {
+    if (!importData.trim()||!selectedRoomForImport) { alert("Попълнете данните!"); return; }
+    try {
+      const slots = parseScheduleText(importData);
+      if (!slots.length) { alert("Не можахме да разчетем графика!"); return; }
+      const existing = await getDocs(collection(db,"scheduleBookings"));
+      await Promise.all(existing.docs.filter(d=>d.data().room===selectedRoomForImport).map(d=>deleteDoc(d.ref)));
+      await Promise.all(slots.map(s => addDoc(collection(db,"scheduleBookings"), { room:selectedRoomForImport, ...s, semester, academicYear, type:"schedule" })));
+      alert(`Импортиран график за ${selectedRoomForImport} — ${slots.length} часа.`);
+      setIsImportingSchedule(false); setImportData(""); fetchScheduleBookings();
+    } catch (e) { console.error(e); alert("Грешка при импортиране!"); }
+  };
+
+  // ── Cell events ────────────────────────────────────────────────────────────
+  const startAddingEventFromCell = (room: string, timeSlot: string) => {
+    const [h] = timeSlot.split("-");
+    setCellEventStartTime(`${h}:00`);
+    setCellEventEndTime(`${(parseInt(h)+1).toString().padStart(2,"0")}:00`);
+    setAddingEventFromCell({ room, timeSlot });
+  };
+
+  const createEventFromCell = async () => {
+    if (!addingEventFromCell||!cellEventTitle.trim()||!selectedDate||!cellEventStartTime||!cellEventEndTime) return;
+    if (!validateTime(cellEventStartTime)||!validateTime(cellEventEndTime)) { alert("Невалиден час!"); return; }
+    if (!validateTimeRange(cellEventStartTime,cellEventEndTime)) { alert("Крайният час трябва да е след началния!"); return; }
+    if (hasBookingConflict(addingEventFromCell.room,selectedDate,cellEventStartTime,cellEventEndTime)) { alert("Стаята е заета!"); return; }
+    await addDoc(collection(db,"events"), { title:cellEventTitle, description:cellEventDesc, date:selectedDate, time:cellEventStartTime, endTime:cellEventEndTime, location:addingEventFromCell.room, maxParticipants:cellEventMaxParticipants, currentParticipants:0, allowedRoles:["reader","librarian"], organizer:cellEventOrganizer, imageUrl:cellEventImageUrl, createdAt:new Date(), registrations:[] });
+    setCellEventTitle(""); setCellEventDesc(""); setCellEventStartTime(""); setCellEventEndTime(""); setCellEventMaxParticipants(20); setCellEventOrganizer(""); setCellEventImageUrl(""); setAddingEventFromCell(null);
+    fetchEvents();
+  };
+
+  const deleteBookingFromCell = async (booking: BookingInfo) => {
+    if (!window.confirm("Изтрий резервацията?")) return;
+    try {
+      if (booking.type==="event") { await deleteDoc(doc(db,"events",booking.eventId)); fetchEvents(); }
+      else { await deleteDoc(doc(db,"scheduleBookings",booking.id)); fetchScheduleBookings(); }
+      setEditingCell(null);
+    } catch (e) { console.error(e); alert("Грешка!"); }
+  };
+
+  const startEditingCell = (room: string, timeSlot: string) => {
+    const [h] = timeSlot.split("-");
+    const info = getBookingInfo(room, selectedDate, h);
+    if (info) setEditingCell({ room, timeSlot, booking: info });
+    else startAddingEventFromCell(room, timeSlot);
+  };
+
+  // ── Filters ────────────────────────────────────────────────────────────────
+  const getUserDisplayName = (u: AppUser) =>
+    u.displayName || (u.firstName&&u.lastName ? `${u.firstName} ${u.lastName}` : u.email.split("@")[0]);
+
+  const filteredUsers  = users.filter(u => u.email.toLowerCase().includes(searchTerm.toLowerCase())||u.role.includes(searchTerm)||(u.firstName?.toLowerCase()||"").includes(searchTerm.toLowerCase())||(u.lastName?.toLowerCase()||"").includes(searchTerm.toLowerCase()));
+  const filteredEvents = events.filter(e => e.title.toLowerCase().includes(searchTerm.toLowerCase())||e.description.toLowerCase().includes(searchTerm.toLowerCase())||e.location.toLowerCase().includes(searchTerm.toLowerCase())||e.organizer.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredBooks  = books.filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase())||b.author.toLowerCase().includes(searchTerm.toLowerCase())||b.isbn.toLowerCase().includes(searchTerm.toLowerCase())||b.category.toLowerCase().includes(searchTerm.toLowerCase())||(b.genres?.some(g=>g.toLowerCase().includes(searchTerm.toLowerCase())))||( b.tags?.some(t=>t.toLowerCase().includes(searchTerm.toLowerCase()))));
+
+  const isEventFull      = (e: AppEvent) => e.currentParticipants >= e.maxParticipants;
+
+  // ── Image preview helper ───────────────────────────────────────────────────
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const p = img.parentElement;
+    if (p) {
+      const err = document.createElement("p");
+      err.className = "image-error";
+      err.textContent = "Невалиден линк";
+      p.appendChild(err);
     }
   };
 
-  const handleCreateBook = async () => {
-  if (!modalBookData.title?.trim() || !modalBookData.author?.trim() || 
-      !modalBookData.isbn?.trim() || !modalBookData.category?.trim()) {
-    alert("Моля, попълнете всички задължителни полета!");
-    return;
-  }
-  
-  try {
-    const bookInput = {
-      title: modalBookData.title || "",
-      author: modalBookData.author || "",
-      isbn: modalBookData.isbn || "",
-      category: modalBookData.category || "",
-      copies: modalBookData.copies || 1,
-      availableCopies: modalBookData.availableCopies || modalBookData.copies || 1,
-      publisher: modalBookData.publisher || "",
-      year: modalBookData.year || new Date().getFullYear(),
-      description: modalBookData.description || "",
-      location: modalBookData.location || "Библиотека",
-      coverUrl: modalBookData.coverUrl || "",
-      
-      // ДОБАВИ ТЕЗИ ПОЛЕТА:
-      shelfNumber: modalBookData.shelfNumber || "",
-      callNumber: modalBookData.callNumber || "",
-      genres: modalBookData.genres || [],
-      tags: modalBookData.tags || [],
-      pages: modalBookData.pages || 0,
-      language: modalBookData.language || "Български",
-      edition: modalBookData.edition || "Първо издание",
-      coverType: modalBookData.coverType || "soft",
-      condition: modalBookData.condition || "good",
-      ageRecommendation: modalBookData.ageRecommendation || "",
-      featured: modalBookData.featured || false,
-      isActive: modalBookData.isActive !== false,
-      underMaintenance: modalBookData.underMaintenance || false,
-      borrowPeriod: modalBookData.borrowPeriod || 14,
-      maxRenewals: modalBookData.maxRenewals || 2,
-      summary: modalBookData.summary || "",
-      tableOfContents: modalBookData.tableOfContents || [],
-      relatedBooks: modalBookData.relatedBooks || [],
-      awards: modalBookData.awards || [],
-      digitalVersion: modalBookData.digitalVersion || {
-        available: false,
-        format: "",
-        url: ""
-      }
-    };
-
-    await bookService.createBook(bookInput);
-    
-    closeBookModal();
-    await fetchBooks();
-    alert("Книгата е добавена успешно!");
-    
-  } catch (error) {
-    console.error("Грешка при добавяне на книга:", error);
-    alert("Грешка при добавяне на книга!");
-  }
-};
-  const handleUpdateBook = async () => {
-  if (!modalBookData.id) return;
-  
-  if (!modalBookData.title?.trim() || !modalBookData.author?.trim() || 
-      !modalBookData.isbn?.trim() || !modalBookData.category?.trim()) {
-    alert("Моля, попълнете всички задължителни полета!");
-    return;
-  }
-
-  try {
-    // Подготовка на данните за обновяване
-    const bookUpdateInput = {
-      title: modalBookData.title,
-      author: modalBookData.author,
-      isbn: modalBookData.isbn,
-      category: modalBookData.category,
-      copies: modalBookData.copies,
-      publisher: modalBookData.publisher,
-      year: modalBookData.year,
-      description: modalBookData.description,
-      location: modalBookData.location,
-      coverUrl: modalBookData.coverUrl,
-      genres: modalBookData.genres,
-      tags: modalBookData.tags,
-      pages: modalBookData.pages,
-      language: modalBookData.language,
-      edition: modalBookData.edition,
-      coverType: modalBookData.coverType,
-      condition: modalBookData.condition,
-      ageRecommendation: modalBookData.ageRecommendation,
-      featured: modalBookData.featured,
-      isActive: modalBookData.isActive,
-      underMaintenance: modalBookData.underMaintenance,
-      borrowPeriod: modalBookData.borrowPeriod,
-      maxRenewals: modalBookData.maxRenewals,
-      summary: modalBookData.summary,
-      tableOfContents: modalBookData.tableOfContents,
-      relatedBooks: modalBookData.relatedBooks,
-      awards: modalBookData.awards,
-      digitalVersion: modalBookData.digitalVersion
-    };
-
-    await bookService.updateBook(modalBookData.id, bookUpdateInput);
-    
-    closeBookModal();
-    await fetchBooks(); // Презареди книгите след обновяване
-    alert("Книгата е обновена успешно!");
-    
-  } catch (error) {
-    console.error("Грешка при обновяване на книга:", error);
-    alert("Грешка при обновяване на книга!");
-  }
-};
-
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.firstName && user.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.lastName && user.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.organizer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredBooks = books.filter(book =>
-  book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  book.isbn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  book.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  (book.genres && book.genres.some(genre => 
-    genre.toLowerCase().includes(searchTerm.toLowerCase())
-  )) ||
-  (book.tags && book.tags.some(tag => 
-    tag.toLowerCase().includes(searchTerm.toLowerCase())
-  ))
-);
-
-  const getAvailableSpots = (event: Event) => {
-    return event.maxParticipants - event.currentParticipants;
-  };
-
-  const isEventFull = (event: Event) => {
-    return event.currentParticipants >= event.maxParticipants;
-  };
-
-  const getUserDisplayName = (user: User) => {
-    if (user.displayName) return user.displayName;
-    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
-    return user.email.split('@')[0];
-  };
-
+  // ══════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="admin-dashboard">
       <div className="dashboard-container">
-        <div className="events-header"> 
+
+        {/* Header */}
+        <div className="events-header">
           <div className="events-title-section">
-            <div className="title-icon-wrapper">
-              <Shield className="events-title-icon" />
-            </div>
+            <div className="title-icon-wrapper"><Shield className="events-title-icon" /></div>
             <div className="title-content">
-              <h1 className="handwritten-title">Административен Панел</h1> 
-              <p className="events-subtitle">
-                Управление на потребители, събития, книги и проверка на билети
-              </p>
+              <h1 className="handwritten-title">Административен Панел</h1>
+              <p className="events-subtitle">Управление на потребители, събития, книги и проверка на билети</p>
             </div>
           </div>
         </div>
 
+        {/* Search */}
         <div className="search-section">
           <div className="search-box">
             <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Търсене по имейл, роля, заглавие, автор..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
+            <input type="text" placeholder="Търсене..." value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)} className="search-input" />
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="tabs-section">
-  <button
-    className={`tab-button ${activeTab === "users" ? "active" : ""}`}
-    onClick={() => setActiveTab("users")}
-  >
-    <Users size={18} />
-    Потребители ({users.length})
-  </button>
-
-  <button
-    className={`tab-button ${activeTab === "events" ? "active" : ""}`}
-    onClick={() => setActiveTab("events")}
-  >
-    <Calendar size={18} />
-    Събития ({events.length})
-  </button>
-
-  <button
-    className={`tab-button ${activeTab === "books" ? "active" : ""}`}
-    onClick={() => setActiveTab("books")}
-  >
-    <BookOpen size={18} />
-    Книги ({books.length})
-  </button>
-
-  <button
-  className={`tab-button ${activeTab === "reservations" ? "active" : ""}`}
-  onClick={() => setActiveTab("reservations")}
->
-  <Bookmark size={18} />
-  Резервирани книги ({reservations.length})
-</button>
-
-  <button
-  className={`tab-button ${activeTab === "news" ? "active" : ""}`}
-  onClick={() => setActiveTab("news")}
->
-  <Newspaper size={18} />
-  Новини ({news.length})
-</button>
-  <button
-    className={`tab-button ${activeTab === "rooms" ? "active" : ""}`}
-    onClick={() => setActiveTab("rooms")}
-  >
-    <Building size={18} />
-    Стаи ({locationOptions.length})
-  </button>
-          <button 
-            className={`tab-button ${activeTab === "tickets" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("tickets");
-              setShowQrScanner(false);
-              setShowCheckTicketModal(false);
-              setShowTodayStats(false);
-            }}
-          >
-            <QrCode size={18} />
-            Проверка на билети
-          </button>
+          {([
+            { id:"users",        label:`Потребители (${users.length})`,          icon:<Users size={18}/> },
+            { id:"events",       label:`Събития (${events.length})`,             icon:<Calendar size={18}/> },
+            { id:"books",        label:`Книги (${books.length})`,                icon:<BookOpen size={18}/> },
+            { id:"reservations", label:`Резервирани книги (${reservations.length})`, icon:<Bookmark size={18}/> },
+            { id:"news",         label:`Новини (${news.length})`,                icon:<Newspaper size={18}/> },
+            { id:"rooms",        label:`Стаи (${locationOptions.length})`,       icon:<Building size={18}/> },
+            { id:"tickets",      label:"Проверка на билети",                     icon:<QrCode size={18}/> },
+          ] as const).map(t => (
+            <button key={t.id}
+              className={`tab-button ${activeTab===t.id?"active":""}`}
+              onClick={() => {
+                setActiveTab(t.id);
+                if (t.id==="tickets") { setShowQrScanner(false); setShowCheckTicketModal(false); setShowTodayStats(false); }
+              }}>
+              {t.icon}{t.label}
+            </button>
+          ))}
         </div>
 
+        {/* ── QR Scanner Modal ─────────────────────────────────────────────── */}
         {showQrScanner && (
           <div className="modal-overlay">
             <div className="modal-content qr-scanner-modal">
               <div className="modal-header">
                 <h3>Сканирайте QR кода на билета</h3>
-                <button 
-                  onClick={closeQrScanner}
-                  className="close-btn"
-                >
-                  <X size={20} />
-                </button>
+                <button onClick={closeQrScanner} className="close-btn"><X size={20}/></button>
               </div>
-              
               <div className="modal-body">
                 {cameraError ? (
                   <div className="camera-error">
-                    <CameraOff size={48} />
-                    <p>{cameraError}</p>
-                    <p className="camera-help">
-                      Моля, разрешете достъп до камерата в настройките на браузъра
-                    </p>
-                    <button 
-                      onClick={openQrScanner}
-                      className="secondary-btn retry-btn"
-                    >
-                      Опитай отново
-                    </button>
+                    <CameraOff size={48}/><p>{cameraError}</p>
+                    <button onClick={openQrScanner} className="secondary-btn retry-btn">Опитай отново</button>
                   </div>
                 ) : (
                   <>
                     <div className="qr-scanner-container">
-                      <Scanner
-                        onScan={handleQrScan}
-                        onError={handleQrError}
-                        scanDelay={300}
-                        constraints={{ facingMode: "environment" }}
-                        styles={{ container: { width: '100%' } }}
-                      />
+                      <Scanner onScan={handleQrScan} onError={handleQrError} scanDelay={300}
+                        constraints={{ facingMode:"environment" }} styles={{ container:{ width:"100%" } }} />
                       <div className="qr-overlay">
                         <div className="qr-frame"></div>
-                        <div className="qr-instructions">
-                          Насочете камерата към QR кода на билета
-                        </div>
+                        <div className="qr-instructions">Насочете камерата към QR кода</div>
                       </div>
                     </div>
-                    
-                    <div className="qr-scanner-info">
-                      <div className="info-tip">
-                        <strong>Съвети:</strong>
-                        <ul>
-                          <li>Уверете се, че QR кода е добре осветен</li>
-                          <li>Дръжте телефона неподвижно</li>
-                          <li>Билетът ще се сканира автоматично</li>
-                        </ul>
-                      </div>
-                      
-                      <div className="manual-entry-option">
-                        <p>Или въведете номера ръчно:</p>
-                        <div className="manual-input-group">
-                          <input
-                            type="text"
-                            value={ticketSearchTerm}
-                            onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                            placeholder="TICKET-XXXX"
-                            className="search-input small-input"
-                          />
-                          <button
-                            onClick={async () => {
-                              const found = await searchTicket();
-                              if (found) {
-                                setShowQrScanner(false);
-                                setTimeout(() => setTicketStatusMessage(""), 3000);
-                              }
-                            }}
-                            disabled={!ticketSearchTerm.trim()}
-                            className="primary-btn small-btn"
-                          >
-                            Търси
-                          </button>
-                        </div>
+                    <div className="manual-entry-option">
+                      <div className="manual-input-group">
+                        <input type="text" value={ticketSearchTerm}
+                          onChange={e=>setTicketSearchTerm(e.target.value.toUpperCase())}
+                          placeholder="TICKET-XXXX" className="search-input small-input" />
+                        <button onClick={async()=>{ const ok=await searchTicket(); if(ok){setShowQrScanner(false);} }}
+                          disabled={!ticketSearchTerm.trim()} className="primary-btn small-btn">Търси</button>
                       </div>
                     </div>
                   </>
@@ -2079,514 +947,308 @@ const deleteNews = async (newsId: string) => {
           </div>
         )}
 
-       {showNewsModal && (
-  <div className="modal-overlay">
-    <div className="modal-content large-modal">
-      <div className="modal-header">
-        <h3>
-          {modalNewsData.id ? 'Редактиране на новина' : 'Създаване на статия'}
-        </h3>
-        <button onClick={closeNewsModal} className="close-btn">
-          <X size={20} />
-        </button>
-      </div>
-      
-      <div className="modal-body event-modal-body">
-        <div className="event-modal-grid">
-          {/* ЗАГЛАВИЕ (задължително) */}
-          <div className="modal-form-group full-width">
-            <label className="required">Заглавие *</label>
-            <input
-              type="text"
-              placeholder="Заглавие на новината"
-              value={modalNewsData.title || ""}
-              onChange={(e) => setModalNewsData({...modalNewsData, title: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          {/* КРАТКА ИЗВАДКА (задължителна) */}
-          <div className="modal-form-group full-width">
-            <label className="required">Кратко описание *</label>
-            <textarea
-              placeholder="Кратко описание/извадка, която ще се показва в списъка с новини"
-              value={modalNewsData.excerpt || ""}
-              onChange={(e) => setModalNewsData({...modalNewsData, excerpt: e.target.value})}
-              className="modal-form-input"
-              rows={3}
-            />
-            <small className="help-text">
-              Кратък текст, който се показва в списъка с новини (макс. 200 символа)
-            </small>
-          </div>
-          
-          {/* ПЪЛНО СЪДЪРЖАНИЕ (задължително) */}
-          <div className="modal-form-group full-width">
-            <label className="required">Съдържание *</label>
-            <textarea
-              placeholder="Пълното съдържание на новината..."
-              value={modalNewsData.content || ""}
-              onChange={(e) => setModalNewsData({...modalNewsData, content: e.target.value})}
-              className="modal-form-input"
-              rows={8}
-            />
-            <small className="help-text">
-              Поддържа HTML форматиране. Можете да добавяте <strong>&lt;strong&gt;</strong>, <em>&lt;em&gt;</em>, <br/>&lt;br/&gt; и др.
-            </small>
-          </div>
-          
-          {/* КАТЕГОРИЯ (задължителна) */}
-          <div className="modal-form-group">
-            <label className="required">Категория *</label>
-            <select
-              value={modalNewsData.category || "Общи"}
-              onChange={(e) => setModalNewsData({...modalNewsData, category: e.target.value})}
-              className="modal-form-input"
-            >
-              <option value="Общи">Общи</option>
-              <option value="Събития">Събития</option>
-              <option value="Актуално">Актуално</option>
-              <option value="Образование">Образование</option>
-              <option value="Библиотека">Библиотека</option>
-              <option value="Други">Други</option>
-            </select>
-          </div>
-          
-          {/* ТАГОВЕ */}
-          <div className="modal-form-group">
-            <label>Тагове (разделени със запетая)</label>
-            <input
-              type="text"
-              placeholder="новина, събитие, библиотека, актуално"
-              value={modalNewsData.tags ? modalNewsData.tags.join(', ') : ""}
-              onChange={(e) => {
-                const tagsArray = e.target.value
-                  .split(',')
-                  .map(tag => tag.trim())
-                  .filter(tag => tag.length > 0);
-                setModalNewsData({
-                  ...modalNewsData, 
-                  tags: tagsArray
-                });
-              }}
-              className="modal-form-input"
-            />
-            <small className="help-text">
-              Таговете помагат за по-доброто търсене и категоризиране
-            </small>
-          </div>
-          
-          {/* АВТОР */}
-          <div className="modal-form-group">
-            <label>Автор</label>
-            <input
-              type="text"
-              placeholder="Име на автора"
-              value={modalNewsData.author || "Администратор"}
-              onChange={(e) => setModalNewsData({...modalNewsData, author: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          {/* ФИЧЪРД/ПРЕПОРЪЧАНО - ПОПРАВЕНО */}
-          <div className="modal-form-group">
-            <div className="checkbox-group">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={modalNewsData.featured || false}
-                onChange={(e) => setModalNewsData({...modalNewsData, featured: e.target.checked})}
-                className="checkbox-input"
-              />
-              <label htmlFor="featured" className="checkbox-label">
-                Препоръчана новина
-              </label>
-            </div>
-            <small className="help-text">
-              Препоръчаните новини се показват най-отгоре в списъка
-            </small>
-          </div>
-          
-          {/* ОСНОВНА СНИМКА (задължителна) */}
-          <div className="modal-form-group full-width">
-            <label className="required">Основна снимка (за списъка) *</label>
-            <input
-              type="url"
-              placeholder="https://example.com/main-image.jpg"
-              value={modalNewsData.image || ""}
-              onChange={(e) => setModalNewsData({...modalNewsData, image: e.target.value})}
-              className="modal-form-input"
-            />
-            <small className="help-text">
-              Тази снимка ще се показва в списъка с новини и в началото на новината
-            </small>
-            {modalNewsData.image && (
-              <div className="image-preview">
-                <p>Преглед на основната снимка:</p>
-                <img 
-                  src={modalNewsData.image} 
-                  alt="Основна снимка" 
-                  className="preview-image"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    const parent = (e.target as HTMLImageElement).parentElement;
-                    if (parent) {
-                      const errorMsg = document.createElement('p');
-                      errorMsg.className = 'image-error';
-                      errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
-                      parent.appendChild(errorMsg);
-                    }
-                  }}
-                />
+        {/* ── News Modal ───────────────────────────────────────────────────── */}
+        {showNewsModal && (
+          <div className="modal-overlay">
+            <div className="modal-content large-modal">
+              <div className="modal-header">
+                <h3>{modalNewsData.id ? "Редактиране на новина" : "Създаване на статия"}</h3>
+                <button onClick={closeNewsModal} className="close-btn"><X size={20}/></button>
               </div>
-            )}
-          </div>
-          
-          {/* ДОПЪЛНИТЕЛНИ СНИМКИ (по избор) - ПОПРАВЕНО */}
-          <div className="modal-form-group full-width">
-            <label>Допълнителни снимки за галерия</label>
-            <div className="images-container">
-              {(modalNewsData.images && modalNewsData.images.length > 0 ? modalNewsData.images : []).map((imageUrl, index) => (
-                <div key={index} className="image-input-row">
-                  <input
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                    value={imageUrl || ""}
-                    onChange={(e) => {
-                      const newImages = [...(modalNewsData.images || [])];
-                      newImages[index] = e.target.value;
-                      setModalNewsData({...modalNewsData, images: newImages});
-                    }}
-                    className="modal-form-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newImages = [...(modalNewsData.images || [])];
-                      newImages.splice(index, 1);
-                      setModalNewsData({...modalNewsData, images: newImages});
-                    }}
-                    className="remove-image-btn"
-                  >
-                    <X size={16} />
-                  </button>
+              <div className="modal-body event-modal-body">
+                <div className="event-modal-grid">
+                  <div className="modal-form-group full-width">
+                    <label className="required">Заглавие *</label>
+                    <input type="text" value={modalNewsData.title||""} onChange={e=>setModalNewsData({...modalNewsData,title:e.target.value})} className="modal-form-input" placeholder="Заглавие на новината" />
+                  </div>
+                  <div className="modal-form-group full-width">
+                    <label className="required">Кратко описание *</label>
+                    <textarea value={modalNewsData.excerpt||""} onChange={e=>setModalNewsData({...modalNewsData,excerpt:e.target.value})} className="modal-form-input" rows={3} />
+                  </div>
+                  <div className="modal-form-group full-width">
+                    <label className="required">Съдържание *</label>
+                    <textarea value={modalNewsData.content||""} onChange={e=>setModalNewsData({...modalNewsData,content:e.target.value})} className="modal-form-input" rows={8} />
+                  </div>
+                  <div className="modal-form-group">
+                    <label className="required">Категория *</label>
+                    <select value={modalNewsData.category||"Общи"} onChange={e=>setModalNewsData({...modalNewsData,category:e.target.value})} className="modal-form-input">
+                      {["Общи","Събития","Актуално","Образование","Библиотека","Други"].map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Тагове (запетая)</label>
+                    <input type="text" value={modalNewsData.tags?.join(", ")||""} onChange={e=>setModalNewsData({...modalNewsData,tags:e.target.value.split(",").map(t=>t.trim()).filter(Boolean)})} className="modal-form-input" />
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Автор</label>
+                    <input type="text" value={modalNewsData.author||"Администратор"} onChange={e=>setModalNewsData({...modalNewsData,author:e.target.value})} className="modal-form-input" />
+                  </div>
+                  <div className="modal-form-group">
+                    <div className="checkbox-group">
+                      <input type="checkbox" id="featured" checked={modalNewsData.featured||false} onChange={e=>setModalNewsData({...modalNewsData,featured:e.target.checked})} className="checkbox-input" />
+                      <label htmlFor="featured" className="checkbox-label">Препоръчана новина</label>
+                    </div>
+                  </div>
+                  <div className="modal-form-group full-width">
+                    <label className="required">Основна снимка *</label>
+                    <input type="url" value={modalNewsData.image||""} onChange={e=>setModalNewsData({...modalNewsData,image:e.target.value})} className="modal-form-input" />
+                    {modalNewsData.image && <div className="image-preview"><img src={modalNewsData.image} alt="Preview" className="preview-image" onError={handleImgError} /></div>}
+                  </div>
                 </div>
-              ))}
-              
-              <button
-                type="button"
-                onClick={() => {
-                  setModalNewsData({
-                    ...modalNewsData,
-                    images: [...(modalNewsData.images || []), ""]
-                  });
-                }}
-                className="add-image-btn"
-              >
-                <Plus size={16} />
-                <span>Добави още снимка</span>
-              </button>
+                <div className="modal-actions">
+                  <button onClick={modalNewsData.id?handleUpdateNews:handleCreateNews}
+                    disabled={!modalNewsData.title?.trim()||!modalNewsData.excerpt?.trim()||!modalNewsData.content?.trim()||!modalNewsData.category?.trim()||!modalNewsData.image?.trim()}
+                    className="primary-btn modal-save-btn">
+                    <Save size={16}/>{modalNewsData.id?"Запази":"Създай"}
+                  </button>
+                  <button onClick={closeNewsModal} className="secondary-btn">Отказ</button>
+                </div>
+              </div>
             </div>
-            <small className="help-text">
-              Можете да добавите допълнителни снимки, които ще се показват в галерията на новината.
-              Основната снимка автоматично се добавя и в галерията.
-            </small>
           </div>
-        </div>
-        
-        {/* БУТОНИ ЗА ДЕЙСТВИЕ */}
-        <div className="modal-actions">
-          <button 
-            onClick={modalNewsData.id ? handleUpdateNews : handleCreateNews}
-            disabled={!modalNewsData.title?.trim() || !modalNewsData.excerpt?.trim() || 
-                     !modalNewsData.content?.trim() || !modalNewsData.category?.trim() || 
-                     !modalNewsData.image?.trim()}
-            className="primary-btn modal-save-btn"
-          >
-            <Save size={16} />
-            {modalNewsData.id ? 'Запази Промените' : 'Създай Новина'}
-          </button>
-          
-          <button 
-            onClick={closeNewsModal}
-            className="secondary-btn"
-          >
-            Отказ
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
+        {/* ── Check Ticket Modal ───────────────────────────────────────────── */}
         {showCheckTicketModal && !showQrScanner && !showTodayStats && (
           <div className="modal-overlay">
             <div className="modal-content ticket-check-modal">
               <div className="modal-header">
                 <h3>Проверка на билети</h3>
                 <div className="modal-header-actions">
-                  <button
-                    onClick={openTodayStats}
-                    className="stats-btn primary-btn"
-                  >
-                    <BarChart3 size={18} />
-                    Статистика за днес
-                  </button>
-                  <button 
-                    onClick={() => setShowCheckTicketModal(false)}
-                    className="close-btn"
-                  >
-                    <X size={20} />
-                  </button>
+                  <button onClick={openTodayStats} className="stats-btn primary-btn"><BarChart3 size={18}/>Статистика</button>
+                  <button onClick={()=>setShowCheckTicketModal(false)} className="close-btn"><X size={20}/></button>
                 </div>
               </div>
-              
               <div className="modal-body">
                 <div className="ticket-search-section">
                   <div className="search-box">
-                    <Search className="search-icon" />
-                    <input
-                      type="text"
-                      placeholder="Въведете номер на билет (TICKET-XXXX) или сканирайте QR код..."
-                      value={ticketSearchTerm}
-                      onChange={(e) => setTicketSearchTerm(e.target.value.toUpperCase())}
-                      onKeyPress={(e) => e.key === 'Enter' && searchTicket()}
-                      className="search-input"
-                      disabled={isCheckingTicket}
-                    />
+                    <Search className="search-icon"/>
+                    <input type="text" placeholder="TICKET-XXXX..." value={ticketSearchTerm}
+                      onChange={e=>setTicketSearchTerm(e.target.value.toUpperCase())}
+                      onKeyPress={e=>e.key==="Enter"&&searchTicket()} className="search-input" disabled={isCheckingTicket} />
                   </div>
-                  
                   <div className="ticket-search-buttons">
-                    <button
-                      onClick={() => searchTicket()}
-                      disabled={isCheckingTicket || !ticketSearchTerm.trim()}
-                      className="primary-btn search-ticket-btn"
-                    >
-                      {isCheckingTicket ? 'Търсене...' : 'Търси билет'}
-                    </button>
-                    
-                    <button
-                      onClick={openQrScanner}
-                      className="primary-btn qr-scanner-btn"
-                      title="Сканирай QR код"
-                    >
-                      <QrCode size={18} />
-                      Сканирай QR
-                    </button>
+                    <button onClick={()=>searchTicket()} disabled={isCheckingTicket||!ticketSearchTerm.trim()} className="primary-btn">{isCheckingTicket?"Търсене...":"Търси билет"}</button>
+                    <button onClick={openQrScanner} className="primary-btn qr-scanner-btn"><QrCode size={18}/>Сканирай QR</button>
                   </div>
                 </div>
-
                 {ticketStatusMessage && (
                   <div className={`ticket-status-message ${ticketStatusType}`}>
-                    {ticketStatusType === 'success' && <Check size={16} />}
-                    {ticketStatusType === 'error' && <XCircle size={16} />}
+                    {ticketStatusType==="success"&&<Check size={16}/>}
+                    {ticketStatusType==="error"&&<XCircle size={16}/>}
                     {ticketStatusMessage}
                   </div>
                 )}
-
                 {checkTicketModalData && (
                   <div className="ticket-details">
                     <div className="ticket-details-header">
                       <h4>Детайли за билета</h4>
-                      <div className={`ticket-status-badge ${checkTicketModalData.checkedIn ? 'checked' : 'pending'}`}>
-                        {checkTicketModalData.checkedIn ? 'Регистриран' : 'Чака регистрация'}
+                      <div className={`ticket-status-badge ${checkTicketModalData.checkedIn?"checked":"pending"}`}>
+                        {checkTicketModalData.checkedIn?"Регистриран":"Чака регистрация"}
                       </div>
                     </div>
-                    
                     <div className="ticket-info-grid">
-                      <div className="ticket-info-item">
-                        <strong>Номер на билет:</strong>
-                        <span className="ticket-id">{checkTicketModalData.ticketId}</span>
-                      </div>
-                      
-                      <div className="ticket-info-item">
-                        <strong>Събитие:</strong>
-                        <span>{checkTicketModalData.eventTitle}</span>
-                      </div>
-                      
-                      <div className="ticket-info-item">
-                        <strong>Дата и час:</strong>
-                        <span>{checkTicketModalData.eventDate} | {checkTicketModalData.eventTime}</span>
-                      </div>
-                      
-                      <div className="ticket-info-item">
-                        <strong>Потребител:</strong>
-                        <span>{checkTicketModalData.userName}</span>
-                      </div>
-                      
-                      <div className="ticket-info-item">
-                        <strong>Имейл:</strong>
-                        <span>{checkTicketModalData.userEmail}</span>
-                      </div>
-                      
-                      <div className="ticket-info-item">
-                        <strong>Дата на регистрация:</strong>
-                        <span>{checkTicketModalData.registrationDate}</span>
-                      </div>
-                      
-                      {checkTicketModalData.checkedInTime && (
-                        <div className="ticket-info-item">
-                          <strong>Регистриран на:</strong>
-                          <span>{checkTicketModalData.checkedInTime}</span>
-                        </div>
-                      )}
-                      
-                      <div className="ticket-info-item">
-                        <strong>Статус:</strong>
-                        <span className={`status-text ${checkTicketModalData.checkedIn ? 'checked' : 'pending'}`}>
-                          {checkTicketModalData.checkedIn ? '✅ Вече регистриран' : '⏳ Чака регистрация'}
-                        </span>
-                      </div>
+                      <div className="ticket-info-item"><strong>Номер:</strong><span className="ticket-id">{checkTicketModalData.ticketId}</span></div>
+                      <div className="ticket-info-item"><strong>Събитие:</strong><span>{checkTicketModalData.eventTitle}</span></div>
+                      <div className="ticket-info-item"><strong>Дата:</strong><span>{checkTicketModalData.eventDate} | {checkTicketModalData.eventTime}</span></div>
+                      <div className="ticket-info-item"><strong>Потребител:</strong><span>{checkTicketModalData.userName}</span></div>
+                      <div className="ticket-info-item"><strong>Имейл:</strong><span>{checkTicketModalData.userEmail}</span></div>
+                      {checkTicketModalData.checkedInTime && <div className="ticket-info-item"><strong>Регистриран на:</strong><span>{checkTicketModalData.checkedInTime}</span></div>}
                     </div>
-                    
                     <div className="ticket-actions">
-                      {!checkTicketModalData.checkedIn ? (
-                        <button
-                          onClick={checkInTicket}
-                          disabled={isCheckingTicket}
-                          className="primary-btn check-in-btn"
-                        >
-                          <Check size={16} />
-                          Регистрирай посетител
-                        </button>
-                      ) : (
-                        <button
-                          onClick={uncheckTicket}
-                          disabled={isCheckingTicket}
-                          className="secondary-btn uncheck-btn"
-                        >
-                          <XCircle size={16} />
-                          Отмени регистрация
-                        </button>
-                      )}
+                      {!checkTicketModalData.checkedIn
+                        ? <button onClick={checkInTicket} disabled={isCheckingTicket} className="primary-btn check-in-btn"><Check size={16}/>Регистрирай</button>
+                        : <button onClick={uncheckTicket} disabled={isCheckingTicket} className="secondary-btn uncheck-btn"><XCircle size={16}/>Отмени регистрация</button>
+                      }
                     </div>
                   </div>
                 )}
-
-                <div className="ticket-help-section">
-                  <div className="help-item">
-                    <strong>Инструкции:</strong>
-                    <ul>
-                      <li>Въведете номера на билета в полето по-горе (напр. TICKET-123ABC)</li>
-                      <li>Или сканирайте QR кода от билета на посетителя</li>
-                      <li>След като намерите билета, може да го регистрирате като натиснете бутона "Регистрирай посетител"</li>
-                      <li>При необходимост можете да отмените регистрацията</li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* ── Today Stats Modal ────────────────────────────────────────────── */}
         {showTodayStats && !showQrScanner && (
           <div className="modal-overlay">
             <div className="modal-content ticket-check-modal">
               <div className="modal-header">
-                <h3>Статистика за днес ({new Date().toLocaleDateString('bg-BG')})</h3>
-                <div className="modal-header-actions">
-                  <button 
-                    onClick={() => {
-                      setShowTodayStats(false);
-                      setShowCheckTicketModal(true);
-                    }}
-                    className="primary-btn option-btn"
-                  >
-                    Назад към проверка
-                  </button>
-                  <button 
-                    onClick={() => setShowTodayStats(false)}
-                    className="close-btn"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
+                <h3>Статистика за днес ({new Date().toLocaleDateString("bg-BG")})</h3>
               </div>
-              
               <div className="modal-body">
-                <div className="today-stats-overview">
-                  <h4>Преглед на билетите</h4>
-                  <div className="stats-cards">
-                    <div className="stat-card">
-                      <div className="stat-icon">
-                        <BarChart3 size={24} />
-                      </div>
-                      <div className="stat-info">
-                        <div className="stat-value">{todayStats.totalTickets}</div>
-                        <div className="stat-label">Общо билети</div>
-                      </div>
-                    </div>
-                    <div className="stat-card success">
-                      <div className="stat-icon">
-                        <Check size={24} />
-                      </div>
-                      <div className="stat-info">
-                        <div className="stat-value">{todayStats.checkedInTickets}</div>
-                        <div className="stat-label">Регистрирани</div>
-                      </div>
-                    </div>
-                    <div className="stat-card warning">
-                      <div className="stat-icon">
-                        <Clock size={24} />
-                      </div>
-                      <div className="stat-info">
-                        <div className="stat-value">{todayStats.pendingTickets}</div>
-                        <div className="stat-label">Чакащи</div>
-                      </div>
+                <div className="stats-cards">
+                  <div className="stat-card"><div className="stat-icon"><BarChart3 size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.totalTickets}</div><div className="stat-label">Общо</div></div></div>
+                  <div className="stat-card success"><div className="stat-icon"><Check size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.checkedInTickets}</div><div className="stat-label">Регистрирани</div></div></div>
+                  <div className="stat-card warning"><div className="stat-icon"><Clock size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.pendingTickets}</div><div className="stat-label">Чакащи</div></div></div>
+                </div>
+                {todayStats.todayScannedTickets.length > 0 ? (
+                  <div className="table-container" style={{marginTop:20}}>
+                    <table className="data-table">
+                      <thead><tr><th>Билет №</th><th>Събитие</th><th>Потребител</th><th>Статус</th><th>Час</th></tr></thead>
+                      <tbody>
+                        {todayStats.todayScannedTickets.map((t,i)=>(
+                          <tr key={i}>
+                            <td><span className="ticket-id-small">{t.ticketId}</span></td>
+                            <td><div className="event-title">{t.eventTitle}</div><div className="event-time">{t.eventDate}</div></td>
+                            <td>{t.userName}</td>
+                            <td><span className={`status-badge ${t.status}`}>{t.status==="checked"?"Регистриран":"Очаква"}</span></td>
+                            <td>{t.scanTime}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty-state"><QrCode size={48}/><p>Няма билети</p></div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Event Modal ──────────────────────────────────────────────────── */}
+        {showEventModal && (
+          <div className="modal-overlay">
+            <div className="modal-content large-modal">
+              <div className="modal-header">
+                <h3>{modalMode==="create"?"Ново събитие":"Редактирай събитие"}</h3>
+                <button onClick={closeEventModal} className="close-btn"><X size={20}/></button>
+              </div>
+              <div className="modal-body event-modal-body">
+                <div className="event-modal-grid">
+                  <div className="modal-form-group">
+                    <label className="required">Заглавие</label>
+                    <input type="text" value={modalEventData.title||""} onChange={e=>handleModalInputChange("title",e.target.value)} className="modal-form-input" />
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Описание</label>
+                    <div className="editor-container">
+                      <EditorToolbar editor={editor} />
+                      <div className="editor-content"><EditorContent editor={editor}/></div>
+                      <div className="formatting-tips"><Type size={14}/><span>Форматиране: <strong>удебеляване</strong>, <em>курсив</em></span></div>
                     </div>
                   </div>
+                  <div className="modal-form-group">
+                    <label className="required">Дата</label>
+                    <input type="date" value={modalEventData.date||""} onChange={e=>handleModalInputChange("date",e.target.value)} className="modal-form-input" min={new Date().toISOString().split("T")[0]} />
+                  </div>
+                  <div className="time-range-group">
+                    <div className="modal-form-group">
+                      <label className="required">Начален час</label>
+                      <select value={modalEventData.time||""} onChange={e=>handleModalInputChange("time",e.target.value)} className="modal-form-input">
+                        <option value="">Изберете</option>
+                        {timeOptionsWithMinutes.map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="modal-form-group">
+                      <label className="required">Краен час</label>
+                      <select value={modalEventData.endTime||""} onChange={e=>handleModalInputChange("endTime",e.target.value)} className="modal-form-input">
+                        <option value="">Изберете</option>
+                        {timeOptionsWithMinutes.map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="modal-form-group">
+                    <label className="required">Място</label>
+                    <select value={modalEventData.location||""} onChange={e=>handleModalInputChange("location",e.target.value)} className="modal-form-input">
+                      <option value="">Изберете</option>
+                      {locationOptions.map(l=>{
+                        const conflict=!!(modalEventData.date&&modalEventData.time&&modalEventData.endTime&&hasBookingConflict(l,modalEventData.date,modalEventData.time,modalEventData.endTime,modalEventData.id));
+                        return <option key={l} value={l} disabled={conflict}>{l}{conflict?" (Заето)":""}</option>;
+                      })}
+                    </select>
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Брой места</label>
+                    <input type="number" min="1" max="1000" value={modalEventData.maxParticipants||20} onChange={e=>handleModalInputChange("maxParticipants",parseInt(e.target.value)||20)} className="modal-form-input" />
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Организатор</label>
+                    <input type="text" value={modalEventData.organizer||""} onChange={e=>handleModalInputChange("organizer",e.target.value)} className="modal-form-input" />
+                  </div>
+                  <div className="modal-form-group">
+                    <label>Линк към картинка</label>
+                    <input type="url" value={modalEventData.imageUrl||""} onChange={e=>handleModalInputChange("imageUrl",e.target.value)} className="modal-form-input" />
+                    {modalEventData.imageUrl && <div className="image-preview"><img src={modalEventData.imageUrl} alt="Preview" className="preview-image" onError={handleImgError}/></div>}
+                  </div>
                 </div>
+                <div className="modal-actions">
+                  <button onClick={modalMode==="create"?handleCreateEvent:handleUpdateEvent}
+                    disabled={!modalEventData.title?.trim()||!modalEventData.date||!modalEventData.time||!modalEventData.endTime||!modalEventData.location||!validateTimeRange(modalEventData.time,modalEventData.endTime)||hasBookingConflict(modalEventData.location||"",modalEventData.date||"",modalEventData.time||"",modalEventData.endTime||"",modalEventData.id)}
+                    className="primary-btn modal-save-btn">
+                    <Save size={16}/>{modalMode==="create"?"Създай":"Запази"}
+                  </button>
+                  <button onClick={closeEventModal} className="secondary-btn">Отказ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {todayStats.todayScannedTickets.length > 0 ? (
-                  <div className="scanned-tickets-section">
-                    <h4>Всички билети ({todayStats.todayScannedTickets.length})</h4>
-                    <div className="scanned-tickets-list">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Билет №</th>
-                            <th>Събитие</th>
-                            <th>Потребител</th>
-                            <th>Имейл</th>
-                            <th>Статус</th>
-                            <th>Информация</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {todayStats.todayScannedTickets.map((ticket, index) => (
-                            <tr key={index}>
-                              <td className="ticket-id-cell">
-                                <span className="ticket-id-small">{ticket.ticketId}</span>
-                              </td>
-                              <td>
-                                <div className="event-info">
-                                  <div className="event-title">{ticket.eventTitle}</div>
-                                  <div className="event-time">{ticket.eventDate} {ticket.eventTime}</div>
-                                </div>
-                              </td>
-                              <td>{ticket.userName}</td>
-                              <td>{ticket.userEmail}</td>
-                              <td>
-                                <span className={`status-badge ${ticket.status}`}>
-                                  {ticket.status === 'checked' ? 'Регистриран' : 'Очаква сканиране'}
-                                </span>
-                              </td>
-                              <td>
-                                {ticket.scanTime}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+        {/* ── Room Import / Cell modals (unchanged logic) ──────────────────── */}
+        {isImportingSchedule && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header"><h3>Импортиране на седмичен график</h3><button onClick={()=>setIsImportingSchedule(false)} className="close-btn"><X size={20}/></button></div>
+              <div className="modal-body">
+                <div className="form-group"><label>Стая</label><select value={selectedRoomForImport} onChange={e=>setSelectedRoomForImport(e.target.value)} className="form-input">{locationOptions.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
+                <div className="form-group"><label>Учебна година</label><input type="text" value={academicYear} onChange={e=>setAcademicYear(e.target.value)} placeholder="2024-2025" className="form-input"/></div>
+                <div className="form-group"><label>Семестър</label><select value={semester} onChange={e=>setSemester(e.target.value as "winter"|"summer")} className="form-input"><option value="winter">Зимен</option><option value="summer">Летен</option></select></div>
+                <div className="form-group"><label>Данни за график</label><textarea value={importData} onChange={e=>setImportData(e.target.value)} className="form-input textarea" rows={15} placeholder="Понеделник&#10;07:30–08:10 Предмет 8а&#10;..."/></div>
+                <div className="modal-actions">
+                  <button onClick={importScheduleToFirebase} disabled={!importData.trim()} className="primary-btn">Импортирай</button>
+                  <button onClick={()=>setIsImportingSchedule(false)} className="secondary-btn">Отказ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {addingEventFromCell && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header"><h3>Добавяне на събитие</h3><button onClick={()=>setAddingEventFromCell(null)} className="close-btn"><X size={20}/></button></div>
+              <div className="modal-body">
+                <p><strong>Стая:</strong> {addingEventFromCell.room} | <strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString("bg-BG")}</p>
+                <div className="event-form-grid">
+                  <div className="form-group"><label>Заглавие *</label><input type="text" value={cellEventTitle} onChange={e=>setCellEventTitle(e.target.value)} className="form-input"/></div>
+                  <div className="form-group"><label>Описание</label><textarea value={cellEventDesc} onChange={e=>setCellEventDesc(e.target.value)} className="form-input textarea" rows={3}/></div>
+                  <div className="form-group"><label>Начален час *</label><select value={cellEventStartTime} onChange={e=>setCellEventStartTime(e.target.value)} className="form-input"><option value="">Изберете</option>{timeOptionsWithMinutes.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                  <div className="form-group"><label>Краен час *</label><select value={cellEventEndTime} onChange={e=>setCellEventEndTime(e.target.value)} className="form-input"><option value="">Изберете</option>{timeOptionsWithMinutes.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                  <div className="form-group"><label>Брой места</label><input type="number" min="1" max="1000" value={cellEventMaxParticipants} onChange={e=>setCellEventMaxParticipants(parseInt(e.target.value)||1)} className="form-input"/></div>
+                  <div className="form-group"><label>Организатор</label><input type="text" value={cellEventOrganizer} onChange={e=>setCellEventOrganizer(e.target.value)} className="form-input"/></div>
+                  <div className="form-group"><label>Линк към картинка</label><input type="url" value={cellEventImageUrl} onChange={e=>setCellEventImageUrl(e.target.value)} className="form-input"/></div>
+                  <div className="modal-actions">
+                    <button onClick={createEventFromCell} disabled={!cellEventTitle.trim()||!cellEventStartTime||!cellEventEndTime||!validateTimeRange(cellEventStartTime,cellEventEndTime)||hasBookingConflict(addingEventFromCell.room,selectedDate,cellEventStartTime,cellEventEndTime)} className="primary-btn"><Plus size={16}/>Създай</button>
+                    <button onClick={()=>{setAddingEventFromCell(null);setCellEventImageUrl("");}} className="secondary-btn">Отказ</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editingCell && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header"><h3>Резервация</h3><button onClick={()=>setEditingCell(null)} className="close-btn"><X size={20}/></button></div>
+              <div className="modal-body">
+                <p><strong>Стая:</strong> {editingCell.room} | <strong>Час:</strong> {editingCell.timeSlot}</p>
+                {editingCell.booking ? (
+                  <div className="booking-details">
+                    {editingCell.booking.type==="event"
+                      ? <p><strong>Събитие:</strong> {editingCell.booking.eventTitle} | {editingCell.booking.time}–{editingCell.booking.endTime}</p>
+                      : editingCell.booking.classSchedules.map((s,i)=><div key={i}><p><strong>{s.subject}</strong> — {s.className}{s.teacher&&` (${s.teacher})`}</p></div>)
+                    }
+                    <div className="modal-actions">
+                      <button onClick={()=>deleteBookingFromCell(editingCell.booking!)} className="delete-btn"><Trash2 size={16}/>Изтрий</button>
+                      <button onClick={()=>setEditingCell(null)} className="secondary-btn">Затвори</button>
                     </div>
                   </div>
                 ) : (
-                  <div className="no-scanned-tickets">
-                    <div className="empty-state">
-                      <QrCode size={48} />
-                      <p>Няма налични билети</p>
-                      <p className="help-text">Все още няма билети за сканиране</p>
-                    </div>
+                  <div className="modal-actions">
+                    <button onClick={()=>startAddingEventFromCell(editingCell.room,editingCell.timeSlot)} className="primary-btn"><Plus size={16}/>Добави събитие</button>
+                    <button onClick={()=>setEditingCell(null)} className="secondary-btn">Затвори</button>
                   </div>
                 )}
               </div>
@@ -2594,1448 +1256,271 @@ const deleteNews = async (newsId: string) => {
           </div>
         )}
 
-        {showEventModal && (
-          <div className="modal-overlay">
-            <div className="modal-content large-modal">
-              <div className="modal-header">
-                <h3>
-                  {modalMode === 'create' ? 'Създаване на ново събитие' : 'Редактиране на събитие'}
-                </h3>
-                <button 
-                  onClick={closeEventModal}
-                  className="close-btn"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="modal-body event-modal-body">
-                <div className="event-modal-grid">
-                  <div className="modal-form-group">
-                    <label className="required">Заглавие на събитието</label>
-                    <input
-                      type="text"
-                      placeholder="Напр. Среща с писател"
-                      value={modalEventData.title || ""}
-                      onChange={(e) => handleModalInputChange('title', e.target.value)}
-                      className="modal-form-input"
-                    />
-                  </div>
-                  
-                  <div className="modal-form-group">
-                    <label>Описание (поддържа форматиране)</label>
-                    <div className="editor-container">
-                      <EditorToolbar editor={editor} />
-                      <div className="editor-content">
-                        <EditorContent editor={editor} />
-                      </div>
-                      <div className="formatting-tips">
-                        <Type size={14} />
-                        <span>Можете да форматирате текста: <strong>удебеляване</strong>, <em>курсив</em>, заглавия и списъци.</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="modal-form-group">
-                    <label className="required">Дата</label>
-                    <input
-                      type="date"
-                      value={modalEventData.date || ""}
-                      onChange={(e) => handleModalInputChange('date', e.target.value)}
-                      className="modal-form-input"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  
-                  <div className="time-range-group">
-                    <div className="modal-form-group">
-                      <label className="required">Начален час</label>
-                      <select
-                        value={modalEventData.time || ""}
-                        onChange={(e) => handleModalInputChange('time', e.target.value)}
-                        className="modal-form-input"
-                      >
-                        <option value="">Изберете начален час</option>
-                        {timeOptionsWithMinutes.map(time => (
-                          <option key={time} value={time}>{time}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="modal-form-group">
-                      <label className="required">Краен час</label>
-                      <select
-                        value={modalEventData.endTime || ""}
-                        onChange={(e) => handleModalInputChange('endTime', e.target.value)}
-                        className="modal-form-input"
-                      >
-                        <option value="">Изберете краен час</option>
-                        {timeOptionsWithMinutes.map(time => (
-                          <option key={time} value={time}>{time}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {modalEventData.time && modalEventData.endTime && 
-                   !validateTimeRange(modalEventData.time, modalEventData.endTime) && (
-                    <div className="validation-error">
-                      Крайният час трябва да е след началния час!
-                    </div>
-                  )}
-                  
-                  <div className="modal-form-group">
-                    <label className="required">Място</label>
-                    <select
-                      value={modalEventData.location || ""}
-                      onChange={(e) => handleModalInputChange('location', e.target.value)}
-                      className={`modal-form-input ${
-                        modalEventData.location && modalEventData.date && 
-                        modalEventData.time && modalEventData.endTime && 
-                        hasBookingConflict(
-                          modalEventData.location, 
-                          modalEventData.date, 
-                          modalEventData.time, 
-                          modalEventData.endTime,
-                          modalEventData.id
-                        ) 
-                          ? 'booking-conflict' 
-                          : ''
-                      }`}
-                    >
-                      <option value="">Изберете място</option>
-                      {locationOptions.map(location => {
-                        const hasConflict = modalEventData.date && modalEventData.time && modalEventData.endTime && 
-                          hasBookingConflict(
-                            location, 
-                            modalEventData.date, 
-                            modalEventData.time, 
-                            modalEventData.endTime,
-                            modalEventData.id
-                          );
-                        
-                        return (
-                          <option 
-                            key={location} 
-                            value={location}
-                            disabled={hasConflict || false}
-                            className={hasConflict ? 'conflict-option' : ''}
-                          >
-                            {location} {hasConflict ? '(Заето)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    
-                    {modalEventData.location && modalEventData.date && 
-                     modalEventData.time && modalEventData.endTime && 
-                     hasBookingConflict(
-                       modalEventData.location, 
-                       modalEventData.date, 
-                       modalEventData.time, 
-                       modalEventData.endTime,
-                       modalEventData.id
-                     ) && (
-                      <div className="validation-error">
-                        Стаята е вече резервирана за избрания интервал!
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="modal-form-group">
-                    <label>Брой места</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="1000"
-                      value={modalEventData.maxParticipants || 20}
-                      onChange={(e) => handleModalInputChange('maxParticipants', parseInt(e.target.value) || 20)}
-                      className="modal-form-input"
-                    />
-                    {modalMode === 'edit' && modalEventData.currentParticipants && (
-                      <small className="help-text">
-                        Текущо записани: {modalEventData.currentParticipants} участника
-                      </small>
-                    )}
-                  </div>
-                  
-                  <div className="modal-form-group">
-                    <label>Организатор</label>
-                    <input
-                      type="text"
-                      placeholder="Име на организатора"
-                      value={modalEventData.organizer || ""}
-                      onChange={(e) => handleModalInputChange('organizer', e.target.value)}
-                      className="modal-form-input"
-                    />
-                  </div>
-                  
-                  <div className="modal-form-group">
-                    <label>Линк към картинка</label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com/image.jpg"
-                      value={modalEventData.imageUrl || ""}
-                      onChange={(e) => handleModalInputChange('imageUrl', e.target.value)}
-                      className="modal-form-input"
-                    />
-                    <small className="help-text">
-                      Картинката ще се показва на генерираните билети за събитието
-                    </small>
-                    {modalEventData.imageUrl && (
-                      <div className="image-preview">
-                        <p>Преглед на картинката:</p>
-                        <img 
-                          src={modalEventData.imageUrl} 
-                          alt="Preview" 
-                          className="preview-image"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            const parent = (e.target as HTMLImageElement).parentElement;
-                            if (parent) {
-                              const errorMsg = document.createElement('p');
-                              errorMsg.className = 'image-error';
-                              errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
-                              parent.appendChild(errorMsg);
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="modal-actions">
-                  <button 
-                    onClick={modalMode === 'create' ? handleCreateEvent : handleUpdateEvent}
-                    disabled={
-                      !modalEventData.title?.trim() || 
-                      !modalEventData.date || 
-                      !modalEventData.time || 
-                      !modalEventData.endTime || 
-                      !modalEventData.location || 
-                      !validateTimeRange(modalEventData.time, modalEventData.endTime) ||
-                      hasBookingConflict(
-                        modalEventData.location, 
-                        modalEventData.date, 
-                        modalEventData.time, 
-                        modalEventData.endTime,
-                        modalEventData.id
-                      )
-                    }
-                    className="primary-btn modal-save-btn"
-                  >
-                    <Save size={16} />
-                    {modalMode === 'create' ? 'Създай Събитие' : 'Запази Промените'}
-                  </button>
-                  
-                  <button 
-                    onClick={closeEventModal}
-                    className="secondary-btn"
-                  >
-                    Отказ
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* TAB CONTENT */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
 
-        {showBookModal && (
-  <div className="modal-overlay">
-    <div className="modal-content large-modal">
-      <div className="modal-header">
-        <h3>
-          {modalBookData.id ? 'Редактиране на книга' : 'Добавяне на нова книга'}
-        </h3>
-        <button onClick={closeBookModal} className="close-btn">
-          <X size={20} />
-        </button>
-      </div>
-      
-      <div className="modal-body event-modal-body">
-        <div className="event-modal-grid">
-          {/* Основни полета (задължителни) */}
-          <div className="modal-form-group">
-            <label className="required">Заглавие *</label>
-            <input
-              type="text"
-              placeholder="Заглавие на книгата"
-              value={modalBookData.title || ""}
-              onChange={(e) => setModalBookData({...modalBookData, title: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label className="required">Автор *</label>
-            <input
-              type="text"
-              placeholder="Автор на книгата"
-              value={modalBookData.author || ""}
-              onChange={(e) => setModalBookData({...modalBookData, author: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label className="required">ISBN *</label>
-            <input
-              type="text"
-              placeholder="ISBN номер"
-              value={modalBookData.isbn || ""}
-              onChange={(e) => setModalBookData({...modalBookData, isbn: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label className="required">Категория *</label>
-            <select
-  value={modalBookData.category || ""}
-  onChange={(e) => setModalBookData({...modalBookData, category: e.target.value})}
-  className="modal-form-input"
->
-  <option value="">Изберете категория</option>
-  {bookService.BOOK_CATEGORIES.map(category => (
-    <option key={category} value={category}>{category}</option>
-  ))}
-</select>
-          </div>
-          
-          <div className="modal-form-group">
-            <label className="required">Брой копия *</label>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={modalBookData.copies || 1}
-              onChange={(e) => setModalBookData({...modalBookData, copies: parseInt(e.target.value) || 1})}
-              className="modal-form-input"
-            />
-          </div>
-          <div className="modal-form-group">
-  <label className="required">Жанрове *</label>
-  <select
-    multiple
-    value={modalBookData.genres || []}
-    onChange={(e) => {
-      const selectedGenres = Array.from(e.target.selectedOptions, option => option.value);
-      setModalBookData({...modalBookData, genres: selectedGenres});
-    }}
-    className="modal-form-input"
-    size={4}
-  >
-    <option value="">Изберете един или повече жанрове</option>
-    {bookService.BOOK_GENRES.map(genre => (
-  <option key={genre} value={genre}>{genre}</option>
-))}
-  </select>
-  <small className="help-text">
-    Задръжте Ctrl (Windows) или Command (Mac) за да изберете повече от един жанр.
-    Избрани: {modalBookData.genres?.length || 0}
-  </small>
-  {modalBookData.genres && modalBookData.genres.length > 0 && (
-    <div className="selected-genres">
-      Избрани жанрове: {modalBookData.genres.join(', ')}
-    </div>
-  )}
-</div>
-
-          <div className="modal-form-group">
-            <label>Период на заемане (дни)</label>
-            <input
-              type="number"
-              min="1"
-              max="90"
-              value={modalBookData.borrowPeriod || 14}
-              onChange={(e) => setModalBookData({...modalBookData, borrowPeriod: parseInt(e.target.value) || 14})}
-              className="modal-form-input"
-            />
-          </div>
-
-          <div className="modal-form-group">
-            <label>Максимум удължавания</label>
-            <input
-              type="number"
-              min="0"
-              max="10"
-              value={modalBookData.maxRenewals || 2}
-              onChange={(e) => setModalBookData({...modalBookData, maxRenewals: parseInt(e.target.value) || 2})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label className="required">Местоположение *</label>
-            <input
-              type="text"
-              placeholder="Напр. Основен отдел"
-              value={modalBookData.location || ""}
-              onChange={(e) => setModalBookData({...modalBookData, location: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          {/* Допълнителни полета */}
-          <div className="modal-form-group">
-            <label>Издател</label>
-            <input
-              type="text"
-              placeholder="Издателство"
-              value={modalBookData.publisher || ""}
-              onChange={(e) => setModalBookData({...modalBookData, publisher: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Година на издаване</label>
-            <input
-              type="number"
-              min="1900"
-              max={new Date().getFullYear()}
-              value={modalBookData.year || new Date().getFullYear()}
-              onChange={(e) => setModalBookData({...modalBookData, year: parseInt(e.target.value)})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Брой страници</label>
-            <input
-              type="number"
-              min="1"
-              placeholder="Напр. 250"
-              value={modalBookData.pages || ""}
-              onChange={(e) => setModalBookData({...modalBookData, pages: parseInt(e.target.value) || undefined})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Език</label>
-            <input
-              type="text"
-              placeholder="Напр. Български"
-              value={modalBookData.language || "Български"}
-              onChange={(e) => setModalBookData({...modalBookData, language: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Издание</label>
-            <input
-              type="text"
-              placeholder="Напр. Първо издание"
-              value={modalBookData.edition || "Първо издание"}
-              onChange={(e) => setModalBookData({...modalBookData, edition: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Тип корица</label>
-            <select
-              value={modalBookData.coverType || "soft"}
-              onChange={(e) => setModalBookData({...modalBookData, coverType: e.target.value as 'hard' | 'soft'})}
-              className="modal-form-input"
-            >
-              <option value="soft">Меки корици</option>
-              <option value="hard">Твърди корици</option>
-            </select>
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Състояние</label>
-            <select
-              value={modalBookData.condition || "good"}
-              onChange={(e) => setModalBookData({...modalBookData, condition: e.target.value as 'new' | 'good' | 'fair' | 'poor'})}
-              className="modal-form-input"
-            >
-              <option value="new">Нова</option>
-              <option value="good">Добра</option>
-              <option value="fair">Задоволителна</option>
-              <option value="poor">Лоша</option>
-            </select>
-          </div>
-         <div className="modal-form-group">
-  <div className="modal-form-group">
-  <label>Текущ статус</label>
-  <div className="status-display">
-    {(() => {
-      const copies = modalBookData.copies || 1;
-      const available = modalBookData.availableCopies || copies;
-        return (
-          <div className="status-badge status-available">
-            <span>✅ Налична ({available}/{copies} копия)</span>
-          </div>
-        );
-      }
-    )()}
-  </div>
-</div>
-</div>
-          <div className="modal-form-group">
-            <label>Рафт</label>
-            <input
-              type="text"
-              placeholder="Напр. БГ ЛИТ A3"
-              value={modalBookData.shelfNumber || ""}
-              onChange={(e) => setModalBookData({...modalBookData, shelfNumber: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Сигнатура</label>
-            <input
-              type="text"
-              placeholder="Напр. 891.811 V39"
-              value={modalBookData.callNumber || ""}
-              onChange={(e) => setModalBookData({...modalBookData, callNumber: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          {/* ДОПЪЛНИТЕЛНО - по избор */}
-          <div className="modal-form-group full-width">
-            <label>Описание</label>
-            <textarea
-              placeholder="Кратко описание на книгата"
-              value={modalBookData.description || ""}
-              onChange={(e) => setModalBookData({...modalBookData, description: e.target.value})}
-              className="modal-form-input"
-              rows={3}
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Тагове (разделени със запетая)</label>
-            <input
-              type="text"
-              placeholder="Напр. бредбъри, фантастика, времеви пътувания"
-              value={modalBookData.tags ? modalBookData.tags.join(', ') : ""}
-              onChange={(e) => setModalBookData({
-                ...modalBookData, 
-                tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
-              })}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group">
-            <label>Възрастова препоръка</label>
-            <input
-              type="text"
-              placeholder="Напр. 14+"
-              value={modalBookData.ageRecommendation || ""}
-              onChange={(e) => setModalBookData({...modalBookData, ageRecommendation: e.target.value})}
-              className="modal-form-input"
-            />
-          </div>
-          
-          <div className="modal-form-group full-width">
-            <label>Линк към корица</label>
-            <input
-              type="url"
-              placeholder="https://example.com/cover.jpg"
-              value={modalBookData.coverUrl || ""}
-              onChange={(e) => setModalBookData({...modalBookData, coverUrl: e.target.value})}
-              className="modal-form-input"
-            />
-            {modalBookData.coverUrl && (
-              <div className="image-preview">
-                <p>Преглед на корицата:</p>
-                <img 
-                  src={modalBookData.coverUrl} 
-                  alt="Preview" 
-                  className="preview-image"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    const parent = (e.target as HTMLImageElement).parentElement;
-                    if (parent) {
-                      const errorMsg = document.createElement('p');
-                      errorMsg.className = 'image-error';
-                      errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
-                      parent.appendChild(errorMsg);
-                    }
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="modal-actions">
-          <button 
-            onClick={modalBookData.id ? handleUpdateBook : handleCreateBook}
-            disabled={!modalBookData.title?.trim() || !modalBookData.author?.trim() || 
-                     !modalBookData.isbn?.trim() || !modalBookData.category?.trim()}
-            className="primary-btn modal-save-btn"
-          >
-            <Save size={16} />
-            {modalBookData.id ? 'Запази Промените' : 'Създай Книга'}
-          </button>
-          <button 
-            onClick={closeBookModal}
-            className="secondary-btn"
-          >
-            Отказ
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-        {activeTab === "users" && (
+        {/* USERS TAB */}
+        {activeTab==="users" && (
           <div className="content-section">
-            <div className="rooms-header">
-  <h2>Управление на потребители</h2>
-</div>
-
-<div className="user-stats-cards">
-  <div className="stat-card total-users">
-    <div className="stat-content">
-      <div className="stat-label">{users.length}</div>
-      <div className="stat-label">Общо потребители</div>
-    </div>
-  </div>
-  
-  <div className="stat-card readers">
-    <div className="stat-content">
-      <div className="stat-label">{users.filter(u => u.role === 'reader').length}</div>
-      <div className="stat-label">Читатели</div>
-    </div>
-  </div>
-  
-  <div className="stat-card librarians">
-    <div className="stat-content">
-      <div className="stat-label">{users.filter(u => u.role === 'librarian').length}</div>
-      <div className="stat-label">Библиотекари</div>
-    </div>
-  </div>
-  
-  <div className="stat-card admins">
-    <div className="stat-content">
-      <div className="stat-label">{users.filter(u => u.role === 'admin').length}</div>
-      <div className="stat-label">Администратори</div>
-    </div>
-  </div>
-</div>
-            
+            <div className="rooms-header"><h2>Управление на потребители</h2></div>
+            <div className="user-stats-cards">
+              {[
+                { count:users.length,                              label:"Общо потребители",  cls:"total-users"  },
+                { count:users.filter(u=>u.role==="reader").length, label:"Читатели",          cls:"readers"      },
+                { count:users.filter(u=>u.role==="librarian").length,label:"Библиотекари",    cls:"librarians"   },
+                { count:users.filter(u=>u.role==="admin").length,  label:"Администратори",    cls:"admins"       },
+              ].map(s=>(
+                <div key={s.cls} className={`stat-card ${s.cls}`}>
+                  <div className="stat-content"><div className="stat-label">{s.count}</div><div className="stat-label">{s.label}</div></div>
+                </div>
+              ))}
+            </div>
             <div className="table-container">
               <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Потребител</th>
-                    <th>Имейл</th>
-                    <th>Роля</th>
-                    <th>Събития</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Потребител</th><th>Имейл</th><th>Роля</th><th>Събития</th><th>Действия</th></tr></thead>
                 <tbody>
-                  {filteredUsers.map(user => (
-                    <tr key={user.id}>
+                  {filteredUsers.map(u=>(
+                    <tr key={u.id}>
                       <td className="user-info-cell">
-                        <div className="user-avatar-small">
-                          {getUserDisplayName(user).charAt(0).toUpperCase()}
-                        </div>
+                        <div className="user-avatar-small">{getUserDisplayName(u).charAt(0).toUpperCase()}</div>
                         <div className="user-details">
-                          <div className="user-email">{getUserDisplayName(user)}</div>
-                          {user.profile?.grade && (
-                            <div className="user-grade">{user.profile.grade} клас</div>
-                          )}
+                          <div className="user-email">{getUserDisplayName(u)}</div>
+                          {u.profile?.grade && <div className="user-grade">{u.profile.grade} клас</div>}
                         </div>
                       </td>
-                      <td className="user-email">{user.email}</td>
+                      <td className="user-email">{u.email}</td>
                       <td>
-                        <select
-                          value={user.role}
-                          onChange={(e) => changeUserRole(user.id, e.target.value)}
-                          className={`role-select role-${user.role}`}
-                        >
+                        <select value={u.role} onChange={e=>changeUserRole(u.id,e.target.value)} className={`role-select role-${u.role}`}>
                           <option value="reader">Читател</option>
                           <option value="librarian">Библиотекар</option>
                           <option value="admin">Администратор</option>
                         </select>
                       </td>
-                     <td className="user-events-cell">
-  <div className="user-events-compact">
-    {(() => {
-      const userEvents = events.filter(e => 
-        e.participants?.includes(user.id)
-      );
-
-      if (userEvents.length === 0) {
-        return <span className="no-events-badge">0</span>;
-      }
-
-      return (
-        <div className="events-summary">
-          <div className="events-count-badge" title={`Записан за ${userEvents.length} събития`}>
-            {userEvents.length}
-            <div className="events-tooltip">
-              <div className="tooltip-content">
-                {userEvents.slice(0, 5).map((eventObj, index) => (
-                  <div key={index} className="tooltip-event">
-                    <div className="tooltip-event-title">{eventObj.title}</div>
-                    <div className="tooltip-event-date">
-                      {new Date(eventObj.date).toLocaleDateString('bg-BG')}
-                    </div>
-                  </div>
-                ))}
-                {userEvents.length > 5 && (
-                  <div className="tooltip-more">+ още {userEvents.length - 5} събития</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="upcoming-events">
-            {(() => {
-              const upcomingEvents = userEvents.filter(event => 
-                new Date(event.date) >= new Date()
-              ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-              
-              if (upcomingEvents.length > 0) {
-                const nextEvent = upcomingEvents[0];
-                return (
-                  <div className="next-event-info" title={`Следващо: ${nextEvent.title} (${new Date(nextEvent.date).toLocaleDateString('bg-BG')})`}>
-                    <span className="next-event-date">
-                      {new Date(nextEvent.date).toLocaleDateString('bg-BG', { 
-                        day: '2-digit', 
-                        month: 'short' 
-                      })}
-                    </span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-          </div>
-        </div>
-      );
-    })()}
-  </div>
-</td>
                       <td>
-                        <button
-                          onClick={() => deleteUser(user.id)}
-                          className="delete-btn"
-                          title="Изтрий потребител"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <span className="events-count-badge">
+                          {events.filter(e=>e.participants?.includes(u.id)).length}
+                        </span>
+                      </td>
+                      <td>
+                        <button onClick={()=>deleteUser(u.id)} className="delete-btn"><Trash2 size={16}/></button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredUsers.length === 0 && (
-                <div className="empty-state">
-                  <Users size={32} />
-                  <p>Няма намерени потребители</p>
-                </div>
-              )}
+              {filteredUsers.length===0 && <div className="empty-state"><Users size={32}/><p>Няма потребители</p></div>}
             </div>
           </div>
         )}
 
-        {activeTab === "events" && (
+        {/* EVENTS TAB */}
+        {activeTab==="events" && (
           <div className="content-section">
             <div className="rooms-header">
               <h2>Управление на събития</h2>
-              <button 
-                onClick={openCreateEventModal}
-                className="primary-btn"
-              >
-                <Plus size={16} />
-                Създай Ново Събитие
-              </button>
+              <button onClick={openCreateEventModal} className="primary-btn"><Plus size={16}/>Ново събитие</button>
             </div>
-            
             <div className="table-container">
               <table className="data-table events-table">
-                <thead>
-                  <tr>
-                    <th>Заглавие</th>
-                    <th>Дата и час</th>
-                    <th>Място</th>
-                    <th>Участници</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Заглавие</th><th>Дата и час</th><th>Място</th><th>Участници</th><th>Действия</th></tr></thead>
                 <tbody>
-                  {filteredEvents.map(event => (
-                    <tr key={event.id} className={isEventFull(event) ? 'event-full' : ''}>
+                  {filteredEvents.map(e=>(
+                    <tr key={e.id} className={isEventFull(e)?"event-full":""}>
                       <td className="event-info-cell">
-                        <div className="event-title-section">
-                          <div className="event-title">
-                            {event.title}
-                            {event.imageUrl && (
-                              <span className="event-has-image" title="Има прикачена картинка">
-                                <ImageIcon size={14} />
-                              </span>
+                        <div className="event-title">{e.title}{e.imageUrl&&<span title="Има картинка"><ImageIcon size={14}/></span>}</div>
+                        {e.description&&<div className="event-desc-html" dangerouslySetInnerHTML={{__html:e.description}}/>}
+                      </td>
+                      <td><div className="event-date"><Calendar size={14}/>{new Date(e.date).toLocaleDateString("bg-BG")}</div><div className="event-time-range"><Clock size={14}/>{e.time} - {e.endTime}</div></td>
+                      <td><div className="event-location"><MapPin size={14}/>{e.location}</div></td>
+                      <td><div className="participants-count"><User size={14}/>{e.currentParticipants}/{e.maxParticipants}</div>{isEventFull(e)&&<div className="full-badge">Пълно</div>}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button onClick={()=>openEditEventModal(e)} className="edit-btn"><Edit size={16}/></button>
+                          <button onClick={()=>deleteEvent(e.id)} className="delete-btn"><Trash2 size={16}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredEvents.length===0&&<div className="empty-state"><Calendar size={32}/><p>Няма събития</p></div>}
+            </div>
+          </div>
+        )}
+
+        {/* BOOKS TAB */}
+        {activeTab==="books" && (
+          <div className="content-section">
+            <div className="rooms-header">
+              <h2>Управление на библиотека</h2>
+            </div>
+            <div className="books-grid-admin">
+              {filteredBooks.map(book=>(
+                <div key={book.id} className="book-card-admin">
+                  <div className="book-header-admin">
+                    <div className="book-thumbnail-admin">
+                      {book.coverUrl ? <img src={book.coverUrl} alt={book.title} className="book-cover-admin"/> : <div className="book-image-fallback-admin"><BookOpen className="fallback-icon-admin"/></div>}
+                    </div>
+                    <div className="book-main-info-admin">
+                      <h3 className="book-title-admin">{book.title}</h3>
+                      <p className="book-author-admin">{book.author}</p>
+                      <div className="book-meta-admin">
+                        <div className="book-category-admin"><Tag size={14}/><span>{book.category}</span></div>
+                        <div className="book-availability-admin"><Copy size={14}/><span>{book.availableCopies}/{book.copies} копия</span></div>
+                        <div className="book-location-admin"><MapPin size={14}/><span>{book.location}</span></div>
+                        <div className="book-isbn-admin">ISBN: {book.isbn}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {book.description && <div className="book-description-admin"><p>{book.description.substring(0,150)}...</p></div>}
+                  <div className="book-actions-admin">
+                    <div className="admin-action-buttons">
+                      <button onClick={()=>deleteBook(book.id)} className="delete-book-btn"><Trash2 size={16}/><span>Изтрий</span></button>
+                    </div>
+                    <div className="book-stats-admin">
+                      <div className="stat-group-admin"><Calendar size={14}/><span>Добавена: {formatFSDate(book.createdAt)}</span></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* RESERVATIONS TAB */}
+        {activeTab==="reservations" && (
+          <div className="content-section">
+            <div className="rooms-header">
+              <h2>Управление на Резервации</h2>
+              <button onClick={fetchReservations} className="secondary-btn"><RefreshCw size={16}/>Обнови</button>
+            </div>
+            <div className="stats-grid">
+              {[
+                { status:"active",    label:"Активни",   count:reservations.filter(r=>r.status==="active").length },
+                { status:"fulfilled", label:"Изпълнени", count:reservations.filter(r=>r.status==="fulfilled").length },
+                { status:"cancelled", label:"Отменени",  count:reservations.filter(r=>r.status==="cancelled").length },
+                { status:"total",     label:"Общо",       count:reservations.length },
+              ].map(s=>(
+                <div key={s.status} className="stat-card">
+                  <div className="stat-icon"><Bookmark size={24}/></div>
+                  <div className="stat-info"><div className="stat-number">{s.count}</div><div className="stat-label">{s.label}</div></div>
+                </div>
+              ))}
+            </div>
+            {reservations.length > 0 ? (
+              <div className="table-container">
+                <table className="data-table">
+                  <thead><tr><th>Книга</th><th>Потребител</th><th>Дата</th><th>Краен срок</th><th>Статус</th><th>Действия</th></tr></thead>
+                  <tbody>
+                    {reservations.map(r=>{
+                      const book = books.find(b=>b.id===r.bookId);
+                      const user = users.find(u=>u.id===r.userId);
+                      return (
+                        <tr key={r.id}>
+                          <td><div className="book-info-cell"><strong>{book?.title||"Неизвестна книга"}</strong><small>{book?.author}</small></div></td>
+                          <td><div className="user-info-cell"><span>{user?.displayName||r.userName||"Неизвестен"}</span><small>{r.userEmail}</small></div></td>
+                          <td>{formatFSDate(r.reservedAt)}</td>
+                          <td>{formatFSDate(r.expiresAt)}</td>
+                          <td>
+                            <span className={`status-badge ${r.status||"active"}`}>
+                              {r.status==="active"?"Активна":r.status==="fulfilled"?"Изпълнена":r.status==="cancelled"?"Отменена":"Изтекла"}
+                            </span>
+                          </td>
+                          <td>
+                            {r.status==="active" && (
+                              <div className="action-buttons">
+                                <button onClick={()=>cancelReservation(r.id)} className="secondary-btn small-btn">Отмени</button>
+                                <button onClick={()=>markReservationFulfilled(r.id)} className="primary-btn small-btn">Изпълнена</button>
+                              </div>
                             )}
-                          </div>
-                          {event.description && (
-                            <div 
-                              className="event-desc-html"
-                              dangerouslySetInnerHTML={{ __html: event.description }}
-                            />
-                          )}
-                        </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state"><Bookmark size={48}/><p>Няма резервации</p></div>
+            )}
+          </div>
+        )}
+
+        {/* NEWS TAB */}
+        {activeTab==="news" && (
+          <div className="content-section">
+            <div className="rooms-header">
+              <h2>Управление на новини</h2>
+              <button onClick={openCreateNewsModal} className="primary-btn"><Plus size={16}/>Добави новина</button>
+            </div>
+            <div className="table-container">
+              <table className="data-table">
+                <thead><tr><th>Заглавие</th><th>Категория</th><th>Автор</th><th>Дата</th><th>Статистика</th><th>Действия</th></tr></thead>
+                <tbody>
+                  {news.map(item=>(
+                    <tr key={item.id} className={item.featured?"featured-news":""}>
+                      <td className="news-info-cell">
+                        <div className="news-title">{item.title}{item.featured&&<span className="featured-badge">★</span>}</div>
+                        <div className="news-excerpt">{item.excerpt}</div>
+                        {item.tags?.length>0 && <div className="news-tags-preview">{item.tags.slice(0,3).map((t,i)=><span key={i} className="news-tag-small">#{t}</span>)}</div>}
                       </td>
-                      <td className="event-time-cell">
-                        <div className="event-time-display">
-                          <div className="event-date">
-                            <Calendar size={14} />
-                            {new Date(event.date).toLocaleDateString('bg-BG')}
-                          </div>
-                          <div className="event-time-range">
-                            <Clock size={14} />
-                            {event.time} - {event.endTime}
-                          </div>
-                        </div>
-                      </td>
+                      <td><span className={`news-category-badge ${item.category.toLowerCase().replace(/\s+/g,"-")}`}>{item.category}</span></td>
+                      <td>{item.author}</td>
+                      <td>{formatFSDate(item.date)}</td>
                       <td>
-                        <div className="event-location">
-                          <MapPin size={14} />
-                          {event.location}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="participants-info">
-                          <div className="participants-count">
-                            <User size={14} />
-                            {event.currentParticipants} / {event.maxParticipants}
-                          </div>
-                          <div className="available-spots">
-                            Свободни: {getAvailableSpots(event)}
-                          </div>
-                          {isEventFull(event) && (
-                            <div className="full-badge">Пълно</div>
-                          )}
+                        <div className="news-stats">
+                          <div className="stat-item"><Eye size={14}/><span>{item.views||0}</span></div>
+                          <div className="stat-item"><Heart size={14}/><span>{item.likes||0}</span></div>
                         </div>
                       </td>
                       <td>
                         <div className="action-buttons">
-                          <button
-                            onClick={() => openEditEventModal(event)}
-                            className="edit-btn"
-                            title="Редактирай събитие"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => deleteEvent(event.id)}
-                            className="delete-btn"
-                            title="Изтрий събитие"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <button onClick={()=>openEditNewsModal(item)} className="edit-btn"><Edit size={16}/></button>
+                          <button onClick={()=>deleteNews(item.id)} className="delete-btn"><Trash2 size={16}/></button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredEvents.length === 0 && (
-                <div className="empty-state">
-                  <Calendar size={32} />
-                  <p>Няма намерени събития</p>
-                </div>
-              )}
+              {news.length===0&&<div className="empty-state"><Newspaper size={32}/><p>Няма новини</p></div>}
             </div>
           </div>
         )}
 
-        {activeTab === "books" && (
-  <div className="content-section">
-    <div className="rooms-header">
-      <h2>Управление на библиотека</h2>
-      <button 
-        onClick={openCreateBookModal}
-        className="primary-btn"
-      >
-        <Plus size={16} />
-        Добави Нова Книга
-      </button>
-    </div>
-    
-    <div className="books-grid-admin">
-      {filteredBooks.map((book) => (
-        <div key={book.id} className="book-card-admin">
-          {/* Book Header */}
-          <div className="book-header-admin">
-            <div className="book-thumbnail-admin">
-              {book.coverUrl ? (
-                <img src={book.coverUrl} alt={book.title} className="book-cover-admin" />
-              ) : (
-                <div className="book-image-fallback-admin">
-                  <BookOpen className="fallback-icon-admin" />
-                </div>
-              )}
-            </div>
-
-            <div className="book-main-info-admin">
-              <div className="book-title-section-admin">
-                <h3 className="book-title-admin">
-                  {book.title}
-                </h3>
-                <p className="book-author-admin">{book.author}</p>
-              </div>
-
-              <div className="book-meta-admin">
-                <div className="book-category-admin">
-                  <Tag size={14} />
-                  <span>{book.category}</span>
-                </div>
-                
-                <div className="book-availability-admin">
-                  <Copy size={14} />
-                  <span>{book.availableCopies}/{book.copies} копия</span>
-                </div>
-
-                <div className="book-location-admin">
-                  <MapPin size={14} />
-                  <span>{book.location}</span>
-                </div>
-
-                <div className="book-isbn-admin">
-                  <span>ISBN: {book.isbn}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Book Description */}
-          {book.description && (
-            <div className="book-description-admin">
-              <p>{book.description.substring(0, 150)}...</p>
-            </div>
-          )}
-
-          {/* Book Details */}
-          <div className="book-details-admin">
-            <div className="details-grid-admin">
-              <div className="book-detail-admin">
-                <span className="detail-label-admin">Издател:</span>
-                <span className="detail-value-admin">{book.publisher || "Няма информация"}</span>
-              </div>
-              <div className="book-detail-admin">
-                <span className="detail-label-admin">Година:</span>
-                <span className="detail-value-admin">{book.year}</span>
-              </div>
-              {book.pages && (
-                <div className="book-detail-admin">
-                  <span className="detail-label-admin">Страници:</span>
-                  <span className="detail-value-admin">{book.pages}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Book Actions */}
-          <div className="book-actions-admin">
-            <div className="admin-action-buttons">
-              <button
-                onClick={() => openEditBookModal(book)}
-                className="edit-book-btn"
-                title="Редактирай книга"
-              >
-                <Edit size={16} />
-                <span>Редактирай</span>
-              </button>
-              
-              <button
-                onClick={() => deleteBook(book.id)}
-                className="delete-book-btn"
-                title="Изтрий книга"
-              >
-                <Trash2 size={16} />
-                <span>Изтрий</span>
-              </button>
-            </div>
-            <div className="book-stats-admin">
-              <div className="stat-group-admin">
-                <BookOpen size={14} />
-                <span>ID: {book.id.substring(0, 8)}...</span>
-              </div>
-              <div className="stat-group-admin">
-                <Calendar size={14} />
-                <span>Добавена: {
-                  book.createdAt
-                    ? typeof book.createdAt === 'string'
-                      ? new Date(book.createdAt).toLocaleDateString('bg-BG')
-                      : (book.createdAt instanceof Date 
-                          ? book.createdAt.toLocaleDateString('bg-BG')
-                          : book.createdAt.toDate?.().toLocaleDateString('bg-BG') || "Няма дата")
-                    : "Няма дата"
-                }</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {filteredBooks.length === 0 && (
-        <div className="empty-state">
-          <BookOpen size={48} />
-          <p>Няма намерени книги</p>
-          <button 
-            onClick={openCreateBookModal}
-            className="primary-btn"
-          >
-            <Plus size={16} />
-            Добави първата книга
-          </button>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-
-        {activeTab === "rooms" && (
+        {/* ROOMS TAB */}
+        {activeTab==="rooms" && (
           <div className="content-section">
             <div className="rooms-header">
               <h2>Заетост на стаи</h2>
-              <button 
-                onClick={() => setIsImportingSchedule(true)}
-                className="import-btn primary-btn"
-              >
-                <Upload size={16} />
-                Импортирай седмичен график
-              </button>
+              <button onClick={()=>setIsImportingSchedule(true)} className="primary-btn"><Upload size={16}/>Импортирай график</button>
             </div>
-            
-            {isImportingSchedule && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h3>Импортиране на седмичен график</h3>
-                    <button 
-                      onClick={() => setIsImportingSchedule(false)}
-                      className="close-btn"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="modal-body">
-                    <div className="form-group">
-                      <label>Стая</label>
-                      <select
-                        value={selectedRoomForImport}
-                        onChange={(e) => setSelectedRoomForImport(e.target.value)}
-                        className="form-input"
-                      >
-                        {locationOptions.map(room => (
-                          <option key={room} value={room}>{room}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Учебна година</label>
-                      <input
-                        type="text"
-                        value={academicYear}
-                        onChange={(e) => setAcademicYear(e.target.value)}
-                        placeholder="2024-2025"
-                        className="form-input"
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Семестър</label>
-                      <select
-                        value={semester}
-                        onChange={(e) => setSemester(e.target.value as "winter" | "summer")}
-                        className="form-input"
-                      >
-                        <option value="winter">Зимен</option>
-                        <option value="summer">Летен</option>
-                      </select>
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Данни за график (по денове)</label>
-                      <textarea
-                        value={importData}
-                        onChange={(e) => setImportData(e.target.value)}
-                        placeholder="Понеделник&#10;07:30–08:10 Пре 8д&#10;08:20–09:00 ГА 8д&#10;...&#10;Вторник&#10;07:30–08:10 Мат 8д&#10;..."
-                        className="form-input textarea"
-                        rows={15}
-                      />
-                      <small className="help-text">
-                        Формат: Име на ден, след това всеки ред: времеви интервал предмет клас (може да има повече от един предмет разделени със запетая)
-                      </small>
-                    </div>
-                    
-                    <div className="modal-actions">
-                      <button 
-                        onClick={importScheduleToFirebase}
-                        disabled={!importData.trim()}
-                        className="primary-btn"
-                      >
-                        Импортирай
-                      </button>
-                      <button 
-                        onClick={() => setIsImportingSchedule(false)}
-                        className="secondary-btn"
-                      >
-                        Отказ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {addingEventFromCell && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h3>Добавяне на събитие</h3>
-                    <button 
-                      onClick={() => setAddingEventFromCell(null)}
-                      className="close-btn"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="modal-body">
-                    <div className="cell-info">
-                      <p><strong>Стая:</strong> {addingEventFromCell.room}</p>
-                      <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
-                      <p><strong>Час:</strong> {addingEventFromCell.timeSlot}</p>
-                    </div>
-                    
-                    <div className="event-form-grid">
-                      <div className="form-group">
-                        <label>Заглавие на събитието *</label>
-                        <input
-                          type="text"
-                          placeholder="Напр. Среща с писател"
-                          value={cellEventTitle}
-                          onChange={(e) => setCellEventTitle(e.target.value)}
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Описание</label>
-                        <textarea
-                          placeholder="Кратко описание на събитието"
-                          value={cellEventDesc}
-                          onChange={(e) => setCellEventDesc(e.target.value)}
-                          className="form-input textarea"
-                          rows={5}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Начален час *</label>
-                        <select
-                          value={cellEventStartTime}
-                          onChange={(e) => setCellEventStartTime(e.target.value)}
-                          className="form-input"
-                        >
-                          <option value="">Изберете начален час</option>
-                          {timeOptionsWithMinutes.map(time => (
-                            <option key={time} value={time}>{time}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Краен час *</label>
-                        <select
-                          value={cellEventEndTime}
-                          onChange={(e) => setCellEventEndTime(e.target.value)}
-                          className="form-input"
-                        >
-                          <option value="">Изберете краен час</option>
-                          {timeOptionsWithMinutes.map(time => (
-                            <option key={time} value={time}>{time}</option>
-                          ))}
-                        </select>
-                        {cellEventStartTime && cellEventEndTime && !validateTimeRange(cellEventStartTime, cellEventEndTime) && (
-                          <div className="validation-error">
-                            Крайният час трябва да е след началния!
-                          </div>
-                        )}
-                      </div>
-                      <div className="form-group">
-                        <label>Брой места</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          value={cellEventMaxParticipants}
-                          onChange={(e) => setCellEventMaxParticipants(parseInt(e.target.value) || 1)}
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Организатор</label>
-                        <input
-                          type="text"
-                          placeholder="Име на организатора"
-                          value={cellEventOrganizer}
-                          onChange={(e) => setCellEventOrganizer(e.target.value)}
-                          className="form-input"
-                        />
-                      </div>
-                      
-                      <div className="form-group">
-                        <label>Линк към картинка</label>
-                        <input
-                          type="url"
-                          placeholder="https://example.com/image.jpg"
-                          value={cellEventImageUrl}
-                          onChange={(e) => setCellEventImageUrl(e.target.value)}
-                          className="form-input"
-                        />
-                        <small className="help-text">
-                          Картинката ще се показва на генерираните билети
-                        </small>
-                        {cellEventImageUrl && (
-                          <div className="image-preview">
-                            <p>Преглед:</p>
-                            <img 
-                              src={cellEventImageUrl} 
-                              alt="Preview" 
-                              className="preview-image"
-                              style={{ maxWidth: '100%', maxHeight: '150px' }}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                const parent = (e.target as HTMLImageElement).parentElement;
-                                if (parent) {
-                                  const errorMsg = document.createElement('p');
-                                  errorMsg.className = 'image-error';
-                                  errorMsg.textContent = 'Невалиден линк или картинката не може да се зареди';
-                                  parent.appendChild(errorMsg);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="modal-actions">
-                        <button 
-                          onClick={createEventFromCell}
-                          disabled={
-                            !cellEventTitle.trim() || 
-                            !cellEventStartTime || 
-                            !cellEventEndTime || 
-                            !validateTimeRange(cellEventStartTime, cellEventEndTime) ||
-                            hasBookingConflict(addingEventFromCell.room, selectedDate, cellEventStartTime, cellEventEndTime)
-                          }
-                          className="primary-btn"
-                        >
-                          <Plus size={16} />
-                          Създай Събитие
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setAddingEventFromCell(null);
-                            setCellEventImageUrl("");
-                          }}
-                          className="secondary-btn"
-                        >
-                          Отказ
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {editingCell && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h3>Резервация</h3>
-                    <button 
-                      onClick={() => setEditingCell(null)}
-                      className="close-btn"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="modal-body">
-                    <div className="cell-info">
-                      <p><strong>Стая:</strong> {editingCell.room}</p>
-                      <p><strong>Дата:</strong> {new Date(selectedDate).toLocaleDateString('bg-BG')}</p>
-                      <p><strong>Час:</strong> {editingCell.timeSlot}</p>
-                      
-                      {editingCell.booking ? (
-                        <div className="booking-details">
-                          <h4>Резервация:</h4>
-                          {editingCell.booking.type === 'event' ? (
-                            <div className="event-booking">
-                              <p><strong>Събитие:</strong> {editingCell.booking.eventTitle}</p>
-                              <p><strong>Време:</strong> {editingCell.booking.time} - {editingCell.booking.endTime}</p>
-                              <p><strong>Тип:</strong> Събитие</p>
-                            </div>
-                          ) : (
-                            <div className="schedule-booking">
-                              <p><strong>Учебни занятия:</strong></p>
-                              {editingCell.booking.classSchedules.map((schedule, index) => (
-                                <div key={index} className="class-item">
-                                  <p><strong>Предмет:</strong> {schedule.subject}</p>
-                                  <p><strong>Клас:</strong> {schedule.className}</p>
-                                  {schedule.teacher && <p><strong>Учител:</strong> {schedule.teacher}</p>}
-                                </div>
-                              ))}
-                              <p><strong>Тип:</strong> Учебно занятие</p>
-                            </div>
-                          )}
-                          
-                          <div className="modal-actions">
-                            <button 
-                              onClick={() => deleteBookingFromCell(editingCell.booking!)}
-                              className="delete-btn"
-                            >
-                              <Trash2 size={16} />
-                              Изтрий резервация
-                            </button>
-                            <button 
-                              onClick={() => setEditingCell(null)}
-                              className="secondary-btn"
-                            >
-                              Затвори
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="no-booking">
-                          <p>Няма резервация за този час и стая.</p>
-                          <div className="modal-actions">
-                            <button 
-                              onClick={() => startAddingEventFromCell(editingCell.room, editingCell.timeSlot)}
-                              className="primary-btn"
-                            >
-                              <Plus size={16} />
-                              Добави събитие
-                            </button>
-                            <button 
-                              onClick={() => setEditingCell(null)}
-                              className="secondary-btn"
-                            >
-                              Затвори
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             <div className="date-picker-section">
-              <label htmlFor="room-date" className="date-picker-label">
-                Изберете дата:
-              </label>
-              <input
-                id="room-date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="date-picker-input"
-                min={new Date().toISOString().split('T')[0]}
-              />
+              <label htmlFor="room-date" className="date-picker-label">Изберете дата:</label>
+              <input id="room-date" type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} className="date-picker-input" min={new Date().toISOString().split("T")[0]} />
             </div>
-
             <div className="rooms-grid-container">
               <div className="rooms-timetable">
                 <div className="table-header-row">
                   <div className="corner-cell">Стая/Час</div>
-                  {timeSlots.map(time => (
-                    <div key={time} className="time-header-cell">
-                      {time.split('-')[0]}
-                    </div>
-                  ))}
+                  {timeSlots.map(t=><div key={t} className="time-header-cell">{t.split("-")[0]}</div>)}
                 </div>
-
-                {locationOptions.map(room => (
+                {locationOptions.map(room=>(
                   <div key={room} className="table-row">
-                    <div className="room-name-cell">
-                      <Building size={16} />
-                      <span>{room}</span>
-                    </div>
-                    {timeSlots.map(timeSlot => {
-                      const [slotStart] = timeSlot.split('-');
-                      const isEventBooked = isRoomBookedByEvent(room, selectedDate, slotStart);
-                      const isScheduleBooked = isRoomBookedInSchedule(room, selectedDate, slotStart);
-                      const bookingInfo = getBookingInfo(room, selectedDate, slotStart);
-                      
+                    <div className="room-name-cell"><Building size={16}/><span>{room}</span></div>
+                    {timeSlots.map(slot=>{
+                      const [h] = slot.split("-");
+                      const isEvent    = isRoomBookedByEvent(room,selectedDate,h);
+                      const isSched    = isRoomBookedInSchedule(room,selectedDate,h);
+                      const info       = getBookingInfo(room,selectedDate,h);
                       return (
-                        <div
-                          key={`${room}-${timeSlot}`}
-                          className={`time-slot-cell ${
-                            isScheduleBooked ? 'scheduled' : 
-                            isEventBooked ? 'booked' : 'available'
-                          } ${editingCell?.room === room && editingCell?.timeSlot === timeSlot ? 'editing' : ''}`}
-                          onClick={() => startEditingCell(room, timeSlot)}
-                          title={
-                            isScheduleBooked ? 
-                            `Учебни занятия: ${bookingInfo && bookingInfo.type === 'schedule' ? 
-                              bookingInfo.classSchedules.map(s => `${s.subject} (${s.className})${s.teacher ? ` - ${s.teacher}` : ''}`).join(', ') : 
-                              ''}` : 
-                            isEventBooked ? 
-                            `Събитие: ${bookingInfo && bookingInfo.type === 'event' ? 
-                              `${bookingInfo.eventTitle} (${bookingInfo.time} - ${bookingInfo.endTime})` : 
-                              ''}` : 
-                            `Свободно: ${timeSlot} - кликнете за добавяне на събитие`
-                          }
-                        >
-                          {isScheduleBooked && (
-                            <div className="schedule-indicator">
-                              <div className="schedule-dot"></div>
-                              <div className="event-tooltip">
-                                {bookingInfo && bookingInfo.type === 'schedule' && (
-                                  <>
-                                    <strong>Учебни занятия:</strong>
-                                    {bookingInfo.classSchedules.map((schedule, index) => (
-                                      <div key={index}>
-                                        {schedule.subject} {schedule.className}
-                                        {schedule.teacher && ` (${schedule.teacher})`}
-                                      </div>
-                                    ))}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {isEventBooked && !isScheduleBooked && (
-                            <div className="booking-indicator">
-                              <div className="event-dot"></div>
-                              <div className="event-tooltip">
-                                {bookingInfo && bookingInfo.type === 'event' && (
-                                  <>
-                                    <strong>{bookingInfo.eventTitle}</strong>
-                                    <br />
-                                    {bookingInfo.time} - {bookingInfo.endTime}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {isScheduleBooked && bookingInfo && bookingInfo.type === 'schedule' && (
-                            <div className="class-count">
-                              {bookingInfo.classSchedules.length}
-                            </div>
-                          )}
-                          {!isScheduleBooked && !isEventBooked && (
-                            <div className="available-text">+</div>
-                          )}
+                        <div key={`${room}-${slot}`}
+                          className={`time-slot-cell ${isSched?"scheduled":isEvent?"booked":"available"} ${editingCell?.room===room&&editingCell?.timeSlot===slot?"editing":""}`}
+                          onClick={()=>startEditingCell(room,slot)}>
+                          {isSched&&<div className="schedule-indicator"><div className="schedule-dot"/>{info?.type==="schedule"&&<div className="event-tooltip">{info.classSchedules.map((s,i)=><div key={i}>{s.subject} {s.className}</div>)}</div>}</div>}
+                          {isEvent&&!isSched&&<div className="booking-indicator"><div className="event-dot"/>{info?.type==="event"&&<div className="event-tooltip"><strong>{info.eventTitle}</strong><br/>{info.time}-{info.endTime}</div>}</div>}
+                          {!isEvent&&!isSched&&<div className="available-text">+</div>}
                         </div>
                       );
                     })}
@@ -4043,429 +1528,56 @@ const deleteNews = async (newsId: string) => {
                 ))}
               </div>
             </div>
-
             <div className="rooms-legend">
-              <div className="legend-item">
-                <div className="legend-color available"></div>
-                <span>Свободна стая (кликнете за добавяне)</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color scheduled"></div>
-                <span>Учебно занятие</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color booked"></div>
-                <span>Резервация за събитие</span>
-              </div>
-            </div>
-
-            <div className="bookings-list">
-              <h3>Резервации за {new Date(selectedDate).toLocaleDateString('bg-BG')}</h3>
-              
-              {(() => {
-                const dayOfWeek = new Date(selectedDate).getDay();
-                const dayBookings = roomBookings.filter(booking => booking.date === selectedDate);
-                const daySchedules = scheduleBookings.filter(schedule => 
-                  schedule.dayOfWeek === dayOfWeek && schedule.classSchedules.length > 0
-                );
-                
-                const totalBookings = dayBookings.length + daySchedules.length;
-                
-                if (totalBookings > 0) {
-                  return (
-                    <div className="bookings-grid">
-                      {dayBookings.map(booking => (
-                        <div key={booking.id} className="booking-card">
-                          <div className="booking-room">
-                            <Building size={16} />
-                            {booking.room}
-                          </div>
-                          <div className="booking-time">
-                            <Clock size={16} />
-                            {booking.time} - {booking.endTime}
-                          </div>
-                          <div className="booking-event">{booking.eventTitle}</div>
-                          <div className="booking-type">Събитие</div>
-                        </div>
-                      ))}
-                      {daySchedules.map(schedule => (
-                        <div key={schedule.id} className="booking-card scheduled">
-                          <div className="booking-room">
-                            <Building size={16} />
-                            {schedule.room}
-                          </div>
-                          <div className="booking-time">
-                            <Clock size={16} />
-                            {schedule.startTime} - {schedule.endTime}
-                          </div>
-                          <div className="booking-classes">
-                            {schedule.classSchedules.map((classSchedule, index) => (
-                              <div key={index} className="class-item">
-                                <div className="class-subject">{classSchedule.subject}</div>
-                                <div className="class-details">
-                                  {classSchedule.className}
-                                  {classSchedule.teacher && ` | ${classSchedule.teacher}`}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="booking-type">Учебно занятие</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="no-bookings">
-                      <Calendar size={32} />
-                      <p>Няма резервации за избраната дата</p>
-                    </div>
-                  );
-                }
-              })()}
+              <div className="legend-item"><div className="legend-color available"></div><span>Свободна</span></div>
+              <div className="legend-item"><div className="legend-color scheduled"></div><span>Учебно занятие</span></div>
+              <div className="legend-item"><div className="legend-color booked"></div><span>Събитие</span></div>
             </div>
           </div>
         )}
 
-        {activeTab === "tickets" && (
+        {/* TICKETS TAB */}
+        {activeTab==="tickets" && (
           <div className="content-section">
-            <div className="tickets-header">
-              <h2>Проверка на билети</h2>
-            </div>
+            <div className="tickets-header"><h2>Проверка на билети</h2></div>
             <div className="ticket-options-grid">
               <div className="ticket-option-card" onClick={openCheckTicketModal}>
-                <div className="option-icon">
-                  <Search size={32} />
-                </div>
+                <div className="option-icon"><Search size={32}/></div>
                 <h3>Ръчно търсене</h3>
-                <p>Въведете номер на билет или сканирайте QR код</p>
-                <button className="primary-btn option-btn">
-                  Проверка
-                </button>
+                <p>Въведете номер или сканирайте QR</p>
+                <button className="primary-btn option-btn">Проверка</button>
               </div>
-              
               <div className="ticket-option-card" onClick={openQrScanner}>
-                <div className="option-icon">
-                  <QrCode size={32} />
-                </div>
+                <div className="option-icon"><QrCode size={32}/></div>
                 <h3>Директно сканиране</h3>
-                <p>Директно сканиране на QR код от билет</p>
-                <button className="primary-btn option-btn">
-                  Сканирай QR код
-                </button>
+                <p>Сканиране на QR код от билет</p>
+                <button className="primary-btn option-btn">Сканирай QR</button>
               </div>
-              
               <div className="ticket-option-card" onClick={openTodayStats}>
-                <div className="option-icon">
-                  <BarChart3 size={32} />
-                </div>
+                <div className="option-icon"><BarChart3 size={32}/></div>
                 <h3>Статистика</h3>
-                <p>Преглед на регистрираните посетители за днес</p>
-                <button className="primary-btn option-btn">
-                  Виж статистика
-                </button>
+                <p>Преглед на регистрираните за днес</p>
+                <button className="primary-btn option-btn">Виж статистика</button>
               </div>
             </div>
-            
             <div className="tickets-stats">
-              <h3>Статистика</h3>
+              <h3>Обща статистика</h3>
               <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-label">Общо билети</div>
-                  <div className="stat-value">
-                    {events.reduce((total, event) => 
-                      total + (event.tickets ? Object.keys(event.tickets).length : 0), 0
-                    )}
+                {[
+                  { label:"Общо билети", value:events.reduce((t,e)=>t+(e.tickets?Object.keys(e.tickets).length:0),0) },
+                  { label:"Регистрирани", value:events.reduce((t,e)=>e.tickets?t+Object.values(e.tickets).filter(tk=>tk.checkedIn).length:t,0) },
+                  { label:"Очакващи",    value:events.reduce((t,e)=>e.tickets?t+Object.values(e.tickets).filter(tk=>!tk.checkedIn).length:t,0) },
+                ].map(s=>(
+                  <div key={s.label} className="stat-card">
+                    <div className="stat-label">{s.label}</div>
+                    <div className="stat-value">{s.value}</div>
                   </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Регистрирани</div>
-                  <div className="stat-value">
-                    {events.reduce((total, event) => {
-                      if (!event.tickets) return total;
-                      return total + Object.values(event.tickets).filter(ticket => 
-                        ticket.checkedIn
-                      ).length;
-                    }, 0)}
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Очакващи</div>
-                  <div className="stat-value">
-                    {events.reduce((total, event) => {
-                      if (!event.tickets) return total;
-                      return total + Object.values(event.tickets).filter(ticket => 
-                        !ticket.checkedIn
-                      ).length;
-                    }, 0)}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
- {/* Reservations Tab */}
-        {activeTab === "reservations" && (
-  <div className="content-section">
-    <div className="rooms-header">
-      <h2>Управление на Резервации</h2>
-      <button 
-        onClick={fetchReservations}
-        className="secondary-btn"
-        title="Обнови списъка с резервации"
-      >
-        <RefreshCw size={16} />
-        Обнови
-      </button>
-    </div>
-    
-    <div className="stats-grid">
-      <div className="stat-card">
-        <div className="stat-icon active-reservations">
-          <Bookmark size={24} />
-        </div>
-        <div className="stat-info">
-          <div className="stat-number">
-            {reservations.filter(r => r.status === 'active').length}
-          </div>
-          <div className="stat-label">Активни резервации</div>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon completed-reservations">
-          <Bookmark size={24} />
-        </div>
-        <div className="stat-info">
-          <div className="stat-number">
-            {reservations.filter(r => r.status === 'fulfilled').length}
-          </div>
-          <div className="stat-label">Изпълнени</div>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon cancelled-reservations">
-          <Bookmark size={24} />
-        </div>
-        <div className="stat-info">
-          <div className="stat-number">
-            {reservations.filter(r => r.status === 'cancelled').length}
-          </div>
-          <div className="stat-label">Отменени</div>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon total-reservations">
-          <Bookmark size={24} />
-        </div>
-        <div className="stat-info">
-          <div className="stat-number">{reservations.length}</div>
-          <div className="stat-label">Общо резервации</div>
-        </div>
-      </div>
-    </div>
-
-    {reservations.length > 0 ? (
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Книга</th>
-              <th>Потребител</th>
-              <th>Дата на резервация</th>
-              <th>Краен срок</th>
-              <th>Статус</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reservations.map(reservation => {
-              const book = books.find(b => b.id === reservation.bookId);
-              const user = users.find(u => u.id === reservation.userId);
-              
-              return (
-                <tr key={reservation.id}>
-                  <td>
-                    <div className="book-info-cell">
-                      <strong>{book?.title || 'Неизвестна книга'}</strong>
-                      <small>{book?.author}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="user-info-cell">
-                      <span>{user?.displayName || reservation.userName || 'Неизвестен потребител'}</span>
-                      <small>{reservation.userEmail}</small>
-                    </div>
-                  </td>
-                  <td>
-                    {reservation.reservedAt?.toDate?.().toLocaleDateString('bg-BG') || 
-                     new Date(reservation.reservedAt).toLocaleDateString('bg-BG') || 
-                     'Няма дата'}
-                  </td>
-                  <td>
-                    {reservation.expiresAt?.toDate?.().toLocaleDateString('bg-BG') || 
-                     new Date(reservation.expiresAt).toLocaleDateString('bg-BG') || 
-                     'Няма дата'}
-                  </td>
-                  <td>
-                    <span className={`status-badge ${reservation.status || 'active'}`}>
-                      {reservation.status === 'active' ? 'Активна' : 
-                       reservation.status === 'fulfilled' ? 'Изпълнена' : 
-                       reservation.status === 'cancelled' ? 'Отменена' : 
-                       reservation.status === 'expired' ? 'Изтекла' : 'Неизвестен'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      {reservation.status === 'active' && (
-                        <>
-                          <button
-                            onClick={() => cancelReservation(reservation.id)}
-                            className="secondary-btn small-btn"
-                            title="Отмени резервация"
-                          >
-                            Отмени
-                          </button>
-                          <button
-                            onClick={() => markReservationFulfilled(reservation.id)}
-                            className="primary-btn small-btn"
-                            title="Маркирай като изпълнена"
-                          >
-                            Изпълнена
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    ) : (
-      <div className="empty-state">
-        <Bookmark size={48} />
-        <p>Няма намерени резервации</p>
-        <p className="help-text">Все още няма създадени резервации в системата.</p>
-      </div>
-    )}
-  </div>
-)}
-
-          {activeTab === "news" && (
-  <div className="content-section">
-    <div className="rooms-header">
-      <h2>Управление на новини</h2>
-      <button 
-        onClick={openCreateNewsModal}
-        className="primary-btn"
-      >
-        <Plus size={16} />
-        Добави Нова Новина
-      </button>
-    </div>
-    
-    <div className="table-container">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Заглавие</th>
-            <th>Категория</th>
-            <th>Автор</th>
-            <th>Дата</th>
-            <th>Прегледи</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {news.map(newsItem => (
-            <tr key={newsItem.id} className={newsItem.featured ? 'featured-news' : ''}>
-              <td className="news-info-cell">
-                <div className="news-title-section">
-                  <div className="news-title">
-                    {newsItem.title}
-                    {newsItem.featured && (
-                      <span className="featured-badge" title="Препоръчана новина">
-                        ★
-                      </span>
-                    )}
-                  </div>
-                  <div className="news-excerpt">{newsItem.excerpt}</div>
-                  {newsItem.tags && newsItem.tags.length > 0 && (
-                    <div className="news-tags-preview">
-                      {newsItem.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="news-tag-small">#{tag}</span>
-                      ))}
-                      {newsItem.tags.length > 3 && (
-                        <span className="more-tags">+{newsItem.tags.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </td>
-              <td>
-                <span className={`news-category-badge ${newsItem.category.toLowerCase().replace(/\s+/g, '-')}`}>
-                  {newsItem.category}
-                </span>
-              </td>
-              <td>{newsItem.author}</td>
-              <td>
-                {newsItem.date?.toDate 
-                  ? newsItem.date.toDate().toLocaleDateString('bg-BG')
-                  : "Няма дата"
-                }
-              </td>
-              <td>
-                <div className="news-stats">
-                  <div className="stat-item" title="Прегледи">
-                    <Eye size={14} />
-                    <span>{newsItem.views || 0}</span>
-                  </div>
-                  <div className="stat-item" title="Харесвания">
-                    <Heart size={14} />
-                    <span>{newsItem.likes || 0}</span>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div className="action-buttons">
-                  <button
-                    onClick={() => openEditNewsModal(newsItem)}
-                    className="edit-btn"
-                    title="Редактирай новина"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => deleteNews(newsItem.id)}
-                    className="delete-btn"
-                    title="Изтрий новина"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {news.length === 0 && (
-        <div className="empty-state">
-          <Newspaper size={32} />
-          <p>Няма намерени новини</p>
-          <button 
-            onClick={openCreateNewsModal}
-            className="primary-btn"
-          >
-            <Plus size={16} />
-            Добави първата новина
-          </button>
-        </div>
-      )}
-    </div>
-  </div>
-)}
       </div>
     </div>
   );

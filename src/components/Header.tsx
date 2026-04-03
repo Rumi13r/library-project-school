@@ -12,13 +12,13 @@ import {
   Moon,
   LayoutDashboard,
   Shield,
-  Settings,
   ChevronRight,
   BookUser
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import styles from './Header.module.css';
 
@@ -32,41 +32,38 @@ interface UserData {
 interface NavigationItem {
   name: string;
   href: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  // FIX: typed as FirebaseUser instead of any
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    () => (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
+  );
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Тема
+  // Sync DOM whenever theme changes — includes the initial value from lazy useState
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
   }, [theme]);
 
-  // Скрол
+  // Scroll
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -90,37 +87,38 @@ const Header: React.FC = () => {
       }
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Затваряне на падащите менюта при клик извън тях
+  // Close dropdowns on outside click
+  // FIX: removed `styles` from dependency array — object ref is stable, no need to list it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest(`.${styles.userProfileContainer}`) && !target.closest(`.${styles.mobileMenu}`)) {
+      if (
+        !target.closest(`.${styles.userProfileContainer}`) &&
+        !target.closest(`.${styles.mobileMenu}`)
+      ) {
         setIsUserDropdownOpen(false);
       }
     };
-
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [styles]);
+  }, []); // styles is a stable CSS module object — no need to list as dep
 
   const navigation: NavigationItem[] = [
-    { name: 'Начало', href: '/', icon: Home },
+    { name: 'Начало',  href: '/',        icon: Home },
     { name: 'Каталог', href: '/catalog', icon: BookOpen },
-    { name: 'Събития', href: '/events', icon: Calendar }, 
+    { name: 'Събития', href: '/events',  icon: Calendar }, 
   ];
 
   const quickLinks = [
-    { name: 'Електронни книги', href: '/onlineBooks' },
-    { name: 'Учебни помагала', href: '/studyMaterials' },
-    { name: 'ИИ ресурси за учители', href: '/ai-resources' },
-    { name: 'Читателски клуб', href: '/readersClub' },
-    { name: 'Архив събития', href: '/archivedEvents' },
-    { name: 'Работно време', href: '#' },
-    { name: 'За нас', href: '#за-нас' },
+    { name: 'Електронни книги',       href: '/onlineBooks' },
+    { name: 'Учебни помагала',         href: '/studyMaterials' },
+    { name: 'ИИ ресурси за учители',   href: '/ai-resources' },
+    { name: 'Читателски клуб',         href: '/readersClub' },
+    { name: 'Архив събития',           href: '/archivedEvents' },
+    { name: 'За нас',                  href: '/about' },
   ];
 
   const handleLoginClick = useCallback(() => {
@@ -146,13 +144,10 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleLogoClick = useCallback(() => {
-    navigate('/');
-  }, [navigate]);
+  const handleLogoClick = useCallback(() => navigate('/'), [navigate]);
 
   const handleNavClick = useCallback((href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    
     if (href.startsWith('/')) {
       navigate(href);
       setIsMenuOpen(false);
@@ -162,9 +157,7 @@ const Header: React.FC = () => {
     }
   }, [navigate]);
 
-  // ВСИЧКИ потребители отиват на същия потребителски дашборд
   const handleUserDashboardClick = useCallback(() => {
-    // Всички отиват на същия потребителски дашборд
     navigate('/dashboard');
     setIsMenuOpen(false);
     setIsUserDropdownOpen(false);
@@ -183,90 +176,57 @@ const Header: React.FC = () => {
   }, [navigate]);
 
   const getUserDisplayName = useCallback((): string => {
-    if (userData?.profile?.displayName) {
-      return userData.profile.displayName;
-    }
+    if (userData?.profile?.displayName) return userData.profile.displayName;
     return currentUser?.email?.split('@')[0] || 'Потребител';
   }, [currentUser, userData]);
 
   const getUserRoleText = useCallback((): string => {
     switch (userData?.role) {
-      case 'admin':
-        return 'Администратор';
-      case 'librarian':
-        return 'Библиотекар';
-      case 'reader':
-        return 'Читател';
-      default:
-        return 'Потребител';
+      case 'admin':     return 'Администратор';
+      case 'librarian': return 'Библиотекар';
+      case 'reader':    return 'Читател';
+      default:          return 'Потребител';
     }
   }, [userData]);
 
-  const isActiveLink = useCallback((href: string): boolean => {
-    return location.pathname === href || location.hash === href;
-  }, [location]);
+  const isActiveLink = useCallback((href: string): boolean =>
+    location.pathname === href || location.hash === href,
+  [location]);
 
   const toggleUserDropdown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsUserDropdownOpen(prev => !prev);
   }, []);
 
-  // Функция за рендериране на подходящите дашборди според ролята
   const renderDashboardLinks = () => {
     if (!userData?.role) return null;
-
     switch (userData.role) {
       case 'admin':
         return (
           <>
-            <button 
-              className={styles.dropdownItem}
-              onClick={handleAdminDashboardClick}
-            >
-              <Shield size={16} />
-              <span>Админ панел</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.dropdownItem} onClick={handleAdminDashboardClick}>
+              <Shield size={16} /><span>Админ панел</span><ChevronRight className={styles.itemChevron} />
             </button>
-            <button 
-              className={styles.dropdownItem}
-              onClick={handleUserDashboardClick}
-            >
-              <LayoutDashboard size={16} />
-              <span>Моят дашборд</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.dropdownItem} onClick={handleUserDashboardClick}>
+              <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
             </button>
           </>
         );
       case 'librarian':
         return (
           <>
-            <button 
-              className={styles.dropdownItem}
-              onClick={handleLibrarianDashboardClick}
-            >
-              <BookUser size={16} />
-              <span>Библиотекарски панел</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.dropdownItem} onClick={handleLibrarianDashboardClick}>
+              <BookUser size={16} /><span>Библиотекарски панел</span><ChevronRight className={styles.itemChevron} />
             </button>
-            <button 
-              className={styles.dropdownItem}
-              onClick={handleUserDashboardClick}
-            >
-              <LayoutDashboard size={16} />
-              <span>Моят дашборд</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.dropdownItem} onClick={handleUserDashboardClick}>
+              <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
             </button>
           </>
         );
       case 'reader':
         return (
-          <button 
-            className={styles.dropdownItem}
-            onClick={handleUserDashboardClick}
-          >
-            <LayoutDashboard size={16} />
-            <span>Моят дашборд</span>
-            <ChevronRight className={styles.itemChevron} />
+          <button className={styles.dropdownItem} onClick={handleUserDashboardClick}>
+            <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
           </button>
         );
       default:
@@ -274,62 +234,35 @@ const Header: React.FC = () => {
     }
   };
 
-  // Функция за рендериране на мобилните дашборд линкове
   const renderMobileDashboardLinks = () => {
     if (!userData?.role) return null;
-
     switch (userData.role) {
       case 'admin':
         return (
           <>
-            <button 
-              className={styles.mobileDropdownItem}
-              onClick={handleAdminDashboardClick}
-            >
-              <Shield size={16} />
-              <span>Админ панел</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.mobileDropdownItem} onClick={handleAdminDashboardClick}>
+              <Shield size={16} /><span>Админ панел</span><ChevronRight className={styles.itemChevron} />
             </button>
-            <button 
-              className={styles.mobileDropdownItem}
-              onClick={handleUserDashboardClick}
-            >
-              <LayoutDashboard size={16} />
-              <span>Моят дашборд</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.mobileDropdownItem} onClick={handleUserDashboardClick}>
+              <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
             </button>
           </>
         );
       case 'librarian':
         return (
           <>
-            <button 
-              className={styles.mobileDropdownItem}
-              onClick={handleLibrarianDashboardClick}
-            >
-              <BookUser size={16} />
-              <span>Библиотекарски панел</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.mobileDropdownItem} onClick={handleLibrarianDashboardClick}>
+              <BookUser size={16} /><span>Библиотекарски панел</span><ChevronRight className={styles.itemChevron} />
             </button>
-            <button 
-              className={styles.mobileDropdownItem}
-              onClick={handleUserDashboardClick}
-            >
-              <LayoutDashboard size={16} />
-              <span>Моят дашборд</span>
-              <ChevronRight className={styles.itemChevron} />
+            <button className={styles.mobileDropdownItem} onClick={handleUserDashboardClick}>
+              <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
             </button>
           </>
         );
       case 'reader':
         return (
-          <button 
-            className={styles.mobileDropdownItem}
-            onClick={handleUserDashboardClick}
-          >
-            <LayoutDashboard size={16} />
-            <span>Моят дашборд</span>
-            <ChevronRight className={styles.itemChevron} />
+          <button className={styles.mobileDropdownItem} onClick={handleUserDashboardClick}>
+            <LayoutDashboard size={16} /><span>Моят дашборд</span><ChevronRight className={styles.itemChevron} />
           </button>
         );
       default:
@@ -337,25 +270,20 @@ const Header: React.FC = () => {
     }
   };
 
-  // Добавяне на класове според ролята за аватара
   const getAvatarClass = () => {
     if (!userData?.role) return '';
     switch (userData.role) {
-      case 'admin':
-        return styles.admin;
-      case 'librarian':
-        return styles.librarian;
-      case 'reader':
-        return styles.reader;
-      default:
-        return '';
+      case 'admin':     return styles.admin;
+      case 'librarian': return styles.librarian;
+      case 'reader':    return styles.reader;
+      default:          return '';
     }
   };
 
   return (
     <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''}`}>
       <div className={styles.headerContainer}>
-        {/* Logo Section */}
+        {/* Logo */}
         <div className={styles.logoSection}>
           <div 
             className={styles.logoWrapper} 
@@ -374,13 +302,12 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Nav */}
         <nav className={styles.desktopNav} aria-label="Основна навигация">
           <div className={styles.navLinks}>
             {navigation.map((item) => {
               const IconComponent = item.icon;
               const isActive = isActiveLink(item.href);
-              
               return (
                 <a
                   key={item.name}
@@ -394,25 +321,14 @@ const Header: React.FC = () => {
                 </a>
               );
             })}
-            
-            {/* Quick Links Dropdown */}
             <div className={styles.dropdown}>
-              <button 
-                className={styles.dropdownBtn}
-                aria-expanded="false"
-                aria-haspopup="true"
-              >
+              <button className={styles.dropdownBtn} aria-expanded="false" aria-haspopup="true">
                 <span>Бързи връзки</span>
                 <ChevronDown className={styles.dropdownIcon} />
               </button>
               <div className={styles.dropdownContent}>
                 {quickLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    className={styles.dropdownLink}
-                    onClick={(e) => handleNavClick(link.href, e)}
-                  >
+                  <a key={link.name} href={link.href} className={styles.dropdownLink} onClick={(e) => handleNavClick(link.href, e)}>
                     {link.name}
                   </a>
                 ))}
@@ -421,9 +337,8 @@ const Header: React.FC = () => {
           </div>
         </nav>
 
-        {/* Header Actions */}
+        {/* Actions */}
         <div className={styles.headerActions}>
-          {/* Theme Toggle */}
           <button
             className={styles.themeToggle}
             onClick={toggleTheme}
@@ -436,12 +351,7 @@ const Header: React.FC = () => {
             <div className={styles.authSection}>
               {currentUser ? (
                 <div className={styles.userProfileContainer} onClick={toggleUserDropdown}>
-                  {/* User Avatar Trigger */}
-                  <button 
-                    className={styles.userTrigger}
-                    aria-expanded={isUserDropdownOpen}
-                    aria-haspopup="true"
-                  >
+                  <button className={styles.userTrigger} aria-expanded={isUserDropdownOpen} aria-haspopup="true">
                     <div className={`${styles.userAvatarContainer} ${getAvatarClass()}`}>
                       <User className={`${styles.userAvatarIcon} ${getAvatarClass()}`} />
                     </div>
@@ -450,8 +360,6 @@ const Header: React.FC = () => {
                       <ChevronDown className={`${styles.dropdownArrow} ${isUserDropdownOpen ? styles.rotated : ''}`} />
                     </div>
                   </button>
-                  
-                  {/* Dropdown Menu */}
                   {isUserDropdownOpen && (
                     <div className={styles.userDropdownMenu} onClick={(e) => e.stopPropagation()}>
                       <div className={styles.dropdownHeader}>
@@ -465,54 +373,28 @@ const Header: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
                       <div className={styles.dropdownDivider}></div>
-                      
                       {renderDashboardLinks()}
-                      
-                      <button 
-                        className={styles.dropdownItem}
-                        onClick={() => navigate('/settings')}
-                      >
-                        <Settings size={16} />
-                        <span>Настройки</span>
-                        <ChevronRight className={styles.itemChevron} />
-                      </button>
-                      
                       <div className={styles.dropdownDivider}></div>
-                      
-                      <button 
-                        className={`${styles.dropdownItem} ${styles.logoutItem}`}
-                        onClick={handleLogoutClick}
-                      >
-                        <LogOut size={16} />
-                        <span>Изход</span>
+                      <button className={`${styles.dropdownItem} ${styles.logoutItem}`} onClick={handleLogoutClick}>
+                        <LogOut size={16} /><span>Изход</span>
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className={styles.guestActions}>
-                  <button 
-                    className={`${styles.authBtn} ${styles.loginBtn}`}
-                    onClick={handleLoginClick}
-                  >
-                    <User className={styles.userIcon} />
-                    <span className={styles.btnText}>Вход</span>
+                  <button className={`${styles.authBtn} ${styles.loginBtn}`} onClick={handleLoginClick}>
+                    <User className={styles.userIcon} /><span className={styles.btnText}>Вход</span>
                   </button>
-                  <button 
-                    className={`${styles.authBtn} ${styles.registerBtn}`}
-                    onClick={handleRegisterClick}
-                  >
-                    <BookOpen className={styles.userIcon} />
-                    <span className={styles.btnText}>Регистрация</span>
+                  <button className={`${styles.authBtn} ${styles.registerBtn}`} onClick={handleRegisterClick}>
+                    <BookOpen className={styles.userIcon} /><span className={styles.btnText}>Регистрация</span>
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* Mobile Menu Button */}
           <button
             className={styles.mobileMenuBtn}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -524,29 +406,23 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <div 
+      {/* Mobile Nav */}
+      <div
         className={`${styles.mobileMenu} ${isMenuOpen ? styles.mobileMenuOpen : ''}`}
         aria-hidden={!isMenuOpen}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.mobileNav}>
-          {/* Theme Toggle in Mobile */}
           <div className={styles.mobileThemeSection}>
-            <button
-              className={styles.mobileThemeToggle}
-              onClick={toggleTheme}
-            >
+            <button className={styles.mobileThemeToggle} onClick={toggleTheme}>
               {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               <span>{theme === 'light' ? 'Тъмна тема' : 'Светла тема'}</span>
             </button>
           </div>
 
-          {/* Navigation Links */}
           {navigation.map((item) => {
             const IconComponent = item.icon;
             const isActive = isActiveLink(item.href);
-            
             return (
               <a
                 key={item.name}
@@ -560,23 +436,16 @@ const Header: React.FC = () => {
               </a>
             );
           })}
-          
-          {/* Quick Links in Mobile */}
+
           <div className={styles.mobileQuickLinks}>
             <h4 className={styles.quickLinksTitle}>Бързи връзки</h4>
             {quickLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className={styles.mobileQuickLink}
-                onClick={(e) => handleNavClick(link.href, e)}
-              >
+              <a key={link.name} href={link.href} className={styles.mobileQuickLink} onClick={(e) => handleNavClick(link.href, e)}>
                 {link.name}
               </a>
             ))}
           </div>
 
-          {/* Auth Section in Mobile */}
           <div className={styles.mobileAuthSection}>
             {currentUser ? (
               <div className={styles.mobileUserInfo}>
@@ -591,42 +460,19 @@ const Header: React.FC = () => {
                 </div>
                 <div className={styles.mobileUserActions}>
                   {renderMobileDashboardLinks()}
-                  
-                  <button 
-                    className={styles.mobileDropdownItem}
-                    onClick={() => navigate('/settings')}
-                  >
-                    <Settings size={16} />
-                    <span>Настройки</span>
-                    <ChevronRight className={styles.itemChevron} />
-                  </button>
-                  
                   <div className={styles.mobileDivider}></div>
-                  
-                  <button 
-                    className={`${styles.mobileDropdownItem} ${styles.logoutItem}`}
-                    onClick={handleLogoutClick}
-                  >
-                    <LogOut size={16} />
-                    <span>Изход</span>
+                  <button className={`${styles.mobileDropdownItem} ${styles.logoutItem}`} onClick={handleLogoutClick}>
+                    <LogOut size={16} /><span>Изход</span>
                   </button>
                 </div>
               </div>
             ) : (
               <div className={styles.mobileAuthButtons}>
-                <button 
-                  className={`${styles.mobileAuthBtn} ${styles.loginBtn}`}
-                  onClick={handleLoginClick}
-                >
-                  <User className={styles.userIcon} />
-                  <span>Вход в профил</span>
+                <button className={`${styles.mobileAuthBtn} ${styles.loginBtn}`} onClick={handleLoginClick}>
+                  <User className={styles.userIcon} /><span>Вход в профил</span>
                 </button>
-                <button 
-                  className={`${styles.mobileAuthBtn} ${styles.registerBtn}`}
-                  onClick={handleRegisterClick}
-                >
-                  <BookOpen className={styles.userIcon} />
-                  <span>Регистрация</span>
+                <button className={`${styles.mobileAuthBtn} ${styles.registerBtn}`} onClick={handleRegisterClick}>
+                  <BookOpen className={styles.userIcon} /><span>Регистрация</span>
                 </button>
               </div>
             )}

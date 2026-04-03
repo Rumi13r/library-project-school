@@ -27,11 +27,5 @@ export default defineConfig({
       }
     }
   },
-  build: {
-    outDir: 'dist',
-    sourcemap: false
-  },
-  esbuild: {
-    drop: ['console', 'debugger'] // 🚀 Премахва всички console.* и debugger в production
-  }
+
 })

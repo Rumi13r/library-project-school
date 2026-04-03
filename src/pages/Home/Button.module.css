@@ -1,108 +1,74 @@
-/* Button.module.css */
+/* Button.module.css — green primary */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 32px;
-  border: none;
-  border-radius: 14px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: .5rem;
+  padding: .85rem 1.85rem;
+  border-radius: 10px;
+  font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
-  font-family: inherit;
+  transition: all .25s cubic-bezier(.4,0,.2,1);
   position: relative;
   overflow: hidden;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: .01em;
 }
 
 .btn::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: left 0.5s;
+  inset: 0;
+  background: linear-gradient(108deg, transparent 30%, rgba(255,255,255,.20) 50%, transparent 70%);
+  transform: translateX(-110%);
+  transition: transform .5s ease;
+  pointer-events: none;
 }
+.btn:hover:not(:disabled)::before { transform: translateX(110%); }
 
-.btn:hover::before {
-  left: 100%;
-}
-
+/* ── Primary — GREEN ── */
 .btnPrimary {
-  background: var(--primary-green);
-  color: white;
-  box-shadow: 
-    0 8px 25px rgba(22, 163, 74, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 2px solid var(--primary-green);
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(22,163,74,.38);
 }
-
-.btnPrimary:hover {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
-  transform: translateY(-3px);
-  box-shadow: 
-    0 15px 35px rgba(22, 163, 74, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+.btnPrimary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22,163,74,.50);
 }
+.btnPrimary:active { transform: translateY(0); }
 
+/* ── Secondary — glass/white ── */
 .btnSecondary {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(20px);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  color: white;
-  box-shadow: var(--shadow-soft);
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(8px);
+}
+.btnSecondary:hover:not(:disabled) {
+  background: rgba(255,255,255,.24);
+  border-color: rgba(255,255,255,.60);
+  transform: translateY(-2px);
 }
 
-.btnSecondary:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: var(--shadow-medium);
-}
-
+/* ── Outline — for sections with white background ── */
 .btnOutline {
   background: transparent;
-  border: 2px solid var(--primary-green);
-  color: var(--primary-green);
-  transition: all 0.3s ease;
+  color: var(--admin-primary, #3b82f6);
+  border: 2px solid var(--admin-primary, #3b82f6);
 }
-
-.btnOutline:hover {
-  background: var(--primary-green);
-  color: white;
+.btnOutline:hover:not(:disabled) {
+  background: var(--admin-primary, #3b82f6);
+  color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 6px 16px rgba(59,130,246,.30);
 }
 
-.btnIcon {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
-}
+/* ── Disabled ── */
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
 
-.btn:hover .btnIcon {
-  transform: translateX(3px);
-}
-/* Добави в края на файла */
-@media (max-width: 768px) {
-  .btn {
-    padding: 12px 20px;
-    font-size: 0.9rem;
-  }
-
-  .btnIcon {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .btn {
-    padding: 10px 16px;
-    font-size: 0.85rem;
-  }
-}
+.btnIcon { width: 18px; height: 18px; flex-shrink: 0; }

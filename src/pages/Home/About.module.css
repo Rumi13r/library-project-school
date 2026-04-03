@@ -1,607 +1,123 @@
-/* About.module.css - Поддръжка на светла и тъмна тема */
-
-/* Променливи по подразбиране (светла тема) */
+/* About.module.css */
 .aboutSection {
-  --about-bg-gradient-start: var(--light-bg);
-  --about-bg-gradient-end: var(--light-section);
-  --about-divider-color: #e2e8f0;
-  --about-text-color: var(--text-dark);
-  --about-subtitle-underline: var(--gradient-primary);
-  --about-description-color: var(--text-gray);
-  --about-description-marker: '📖';
-  --about-card-bg: white;
-  --about-card-border: #e2e8f0;
-  --about-card-shadow: rgba(0, 0, 0, 0.08);
-  --about-card-hover-shadow: rgba(0, 0, 0, 0.12);
-  --about-stat-number-color: var(--primary-green);
-  --about-stat-label-color: var(--text-gray);
-  --about-overlay-gradient: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  --about-overlay-text: white;
+  padding: 5rem 0;
+  background: var(--admin-bg-section, #f8fafc);
 }
 
-/* Тъмна тема */
-.darkTheme .aboutSection,
-.aboutSection.darkTheme {
-  --about-bg-gradient-start: #0f172a;
-  --about-bg-gradient-end: #1e293b;
-  --about-divider-color: #334155;
-  --about-text-color: #f8fafc;
-  --about-subtitle-underline: linear-gradient(90deg, #22c55e, #3b82f6);
-  --about-description-color: #cbd5e1;
-  --about-description-marker: '✨';
-  --about-card-bg: #1e293b;
-  --about-card-border: #334155;
-  --about-card-shadow: rgba(0, 0, 0, 0.25);
-  --about-card-hover-shadow: rgba(0, 0, 0, 0.35);
-  --about-stat-number-color: #22c55e;
-  --about-stat-label-color: #94a3b8;
-  --about-overlay-gradient: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-  --about-overlay-text: #f8fafc;
-}
-
-/* Основни стилове */
-.aboutSection {
-  padding: 120px 0;
-  background: linear-gradient(135deg, var(--about-bg-gradient-start) 0%, var(--about-bg-gradient-end) 100%);
-  position: relative;
-  transition: background 0.3s ease;
-}
-
-.aboutSection::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--about-divider-color), transparent);
-}
+.darkThemeCompatible {}
 
 .aboutContent {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5rem;
+  gap: 4rem;
   align-items: center;
 }
 
-.aboutText {
-  padding-right: 2rem;
-}
-
-.aboutHeader {
-  margin-bottom: 2.5rem;
-}
-
+.aboutText { display: flex; flex-direction: column; gap: 1.5rem; }
+.aboutHeader {}
 .aboutSubtitle {
-  font-size: 2.2rem;
+  font-family: var(--font-display, 'Lora', Georgia, serif);
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--about-text-color);
-  margin-bottom: 1.5rem;
-  text-align: left;
-  position: relative;
-  transition: color 0.3s ease;
+  color: var(--admin-text-primary, #1f2937);
+  margin: 0;
+  padding-left: 14px;
+  border-left: 4px solid var(--admin-primary, #3b82f6);
 }
 
-.aboutSubtitle::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 0;
-  width: 60px;
-  height: 4px;
-  background: var(--about-subtitle-underline);
-  border-radius: 2px;
-}
-
-.aboutDescription {
-  color: var(--about-description-color);
-  line-height: 1.7;
-  margin-bottom: 2.5rem;
-  font-size: 1.1rem;
-  transition: color 0.3s ease;
-}
-
+.aboutDescription { display: flex; flex-direction: column; gap: .875rem; }
 .aboutDescription p {
-  margin-bottom: 1.5rem;
-  position: relative;
-  padding-left: 1.5rem;
+  font-size: .95rem;
+  color: var(--admin-text-secondary, #6b7280);
+  line-height: 1.7;
+  margin: 0;
 }
 
-.aboutDescription p::before {
-  content: var(--about-description-marker);
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 0.9rem;
-}
+.aboutButtons { display: flex; gap: 1rem; flex-wrap: wrap; }
+.aboutBtn {}
 
-.aboutButtons {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.aboutBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 16px 28px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  font-family: inherit;
-  min-width: 200px;
-  justify-content: center;
-}
-
-.aboutBtn .btnIcon {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
-}
-
-.aboutBtn:hover .btnIcon {
-  transform: scale(1.1);
-}
-
-/* Стилове за бутони в тъмна тема */
-.darkTheme .aboutBtn.primary,
-.aboutSection.darkTheme .aboutBtn.primary {
-  background: linear-gradient(135deg, #22c55e, #3b82f6);
-  color: white;
-}
-
-.darkTheme .aboutBtn.secondary,
-.aboutSection.darkTheme .aboutBtn.secondary {
-  background: transparent;
-  color: #22c55e;
-  border: 2px solid #22c55e;
-}
-
-.darkTheme .aboutBtn.secondary:hover,
-.aboutSection.darkTheme .aboutBtn.secondary:hover {
-  background: rgba(34, 197, 94, 0.1);
-}
-
-.aboutVisual {
-  position: relative;
-}
+/* Visual */
+.aboutVisual { display: flex; flex-direction: column; gap: 2rem; }
 
 .imageContainer {
   position: relative;
-  border-radius: 24px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-  transition: all 0.4s ease;
-  background: var(--about-card-bg);
-  border: 1px solid var(--about-card-border);
+  box-shadow: 0 12px 32px rgba(0,0,0,.12);
 }
 
-.imageContainer:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.2);
-}
-
-.aboutImage {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
-}
-
-.imageContainer:hover .aboutImage {
-  transform: scale(1.05);
-}
+.aboutImage { width: 100%; height: 320px; object-fit: cover; display: block; }
 
 .imageOverlay {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--about-overlay-gradient);
-  padding: 2rem;
-  color: var(--about-overlay-text);
+  inset: 0;
+  background: linear-gradient(to top, rgba(15,23,42,.7) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  padding: 1.25rem;
 }
 
 .overlayContent {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.4s ease;
-}
-
-.imageContainer:hover .overlayContent {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.overlayIcon {
-  width: 24px;
-  height: 24px;
-  filter: brightness(0) invert(1);
-}
-
-/* Корекция за икони в тъмна тема */
-.darkTheme .overlayIcon,
-.aboutSection.darkTheme .overlayIcon {
-  filter: brightness(0) invert(1);
-}
-
-.overlayContent span {
+  gap: 8px;
+  color: #fff;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: .9rem;
 }
 
+.overlayIcon { width: 20px; height: 20px; }
+
 .visualStats {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .visualStat {
+  background: var(--admin-bg-card, #fff);
+  border-radius: 12px;
+  padding: 1.25rem;
   text-align: center;
-  padding: 1.5rem 1rem;
-  background: var(--about-card-bg);
-  border-radius: 16px;
-  border: 1px solid var(--about-card-border);
-  box-shadow: 0 8px 25px var(--about-card-shadow);
-  transition: all 0.3s ease;
-  flex: 1;
+  border: 1px solid var(--admin-border-light, #e5e7eb);
+  transition: transform .25s ease, box-shadow .25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  position: relative;
+  overflow: hidden;
 }
 
-.visualStat:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 35px var(--about-card-hover-shadow);
-  border-color: var(--about-stat-number-color);
+.visualStat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #16a34a 50%, #f59e0b);
+  opacity: .5;
 }
 
-.visualStat .statNumber {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--about-stat-number-color);
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--about-stat-number-color), #3b82f6);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  transition: all 0.3s ease;
+.visualStat:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+
+.statNumber {
+  font-family: var(--font-display, 'Lora', Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--admin-primary, #3b82f6);
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
-.visualStat .statLabel {
-  color: var(--about-stat-label-color);
-  font-size: 0.9rem;
+.statLabel {
+  font-size: .78rem;
+  color: var(--admin-text-secondary, #6b7280);
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: color 0.3s ease;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .aboutContent {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-  }
-  
-  .aboutText {
-    padding-right: 0;
-  }
-  
-  .aboutSubtitle {
-    font-size: 1.8rem;
-  }
-  
-  .visualStats {
-    flex-wrap: wrap;
-  }
-  
-  .visualStat {
-    flex: 0 0 calc(50% - 0.5rem);
-  }
+@media(max-width:1024px) {
+  .aboutContent { grid-template-columns: 1fr; gap: 2.5rem; }
 }
 
-@media (max-width: 768px) {
-  .aboutSection {
-    padding: 80px 0;
-  }
-  
-  .aboutSubtitle {
-    font-size: 1.6rem;
-  }
-  
-  .aboutDescription {
-    font-size: 1rem;
-  }
-  
-  .aboutButtons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .aboutBtn {
-    min-width: auto;
-  }
-  
-  .visualStat {
-    flex: 0 0 100%;
-  }
-  
-  .aboutImage {
-    height: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  .aboutSection {
-    padding: 60px 0;
-  }
-  
-  .aboutContent {
-    gap: 2rem;
-  }
-  
-  .aboutSubtitle {
-    font-size: 1.4rem;
-  }
-  
-  .visualStats {
-    margin-top: 1.5rem;
-  }
-  
-  .visualStat {
-    padding: 1rem;
-  }
-  
-  .visualStat .statNumber {
-    font-size: 1.5rem;
-  }
-  
-  .aboutImage {
-    height: 250px;
-  }
-}
-
-/* Анимации за плавен преход между теми */
-.aboutSection,
-.aboutSubtitle,
-.aboutDescription,
-.aboutBtn,
-.imageContainer,
-.visualStat,
-.visualStat .statNumber,
-.visualStat .statLabel {
-  transition: 
-    background 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-/* Допълнителни стилове за специфични бутони */
-.aboutBtn.primary {
-  background: linear-gradient(135deg, var(--primary-green), #3b82f6);
-  color: white;
-}
-
-.aboutBtn.secondary {
-  background: transparent;
-  color: var(--primary-green);
-  border: 2px solid var(--primary-green);
-}
-
-.aboutBtn.secondary:hover {
-  background: rgba(22, 163, 74, 0.1);
-}
-
-/* Корекция за тъмна тема - бутон ховер */
-.darkTheme .aboutBtn.primary:hover,
-.aboutSection.darkTheme .aboutBtn.primary:hover {
-  background: linear-gradient(135deg, #16a34a, #2563eb);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
-}
-
-/* About.module.css - Visual Stats секция */
-
-/* Променливи за темите */
-.visualStats {
-  --stat-bg: white;
-  --stat-border: #e2e8f0;
-  --stat-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-  --stat-hover-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-  --stat-hover-border: #16a34a;
-  --stat-number-color: #16a34a;
-  --stat-number-gradient: linear-gradient(135deg, #16a34a, #3b82f6);
-  --stat-label-color: #6b7280;
-  --stat-transition: all 0.3s ease;
-}
-
-/* Тъмна тема */
-.darkTheme .visualStats,
-.visualStats.darkTheme {
-  --stat-bg: #1e293b;
-  --stat-border: #334155;
-  --stat-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-  --stat-hover-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
-  --stat-hover-border: #22c55e;
-  --stat-number-color: #22c55e;
-  --stat-number-gradient: linear-gradient(135deg, #22c55e, #3b82f6);
-  --stat-label-color: #94a3b8;
-}
-
-/* Основни стилове */
-.visualStats {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 2rem;
-  width: 100%;
-}
-
-.visualStat {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  background: var(--stat-bg);
-  border-radius: 16px;
-  border: 1px solid var(--stat-border);
-  box-shadow: var(--stat-shadow);
-  transition: var(--stat-transition);
-  flex: 1;
-  min-width: 0; /* За да се свиват правилно */
-}
-
-.visualStat:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--stat-hover-shadow);
-  border-color: var(--stat-hover-border);
-}
-
-.visualStat .statNumber {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--stat-number-color);
-  margin-bottom: 0.5rem;
-  background: var(--stat-number-gradient);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  transition: var(--stat-transition);
-}
-
-.visualStat .statLabel {
-  color: var(--stat-label-color);
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: var(--stat-transition);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .visualStats {
-    flex-wrap: wrap;
-  }
-  
-  .visualStat {
-    flex: 0 0 calc(33.333% - 0.67rem);
-  }
-}
-
-@media (max-width: 640px) {
-  .visualStats {
-    gap: 0.75rem;
-  }
-  
-  .visualStat {
-    flex: 0 0 calc(50% - 0.5rem);
-    padding: 1rem 0.5rem;
-  }
-  
-  .visualStat .statNumber {
-    font-size: 1.5rem;
-  }
-  
-  .visualStat .statLabel {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .visualStats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .visualStat {
-    flex: 1;
-    padding: 1.25rem;
-  }
-}
-
-/* Анимация за появяване */
-@keyframes statAppear {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.visualStat {
-  animation: statAppear 0.5s ease forwards;
-  opacity: 0;
-}
-
-.visualStat:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.visualStat:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.visualStat:nth-child(3) {
-  animation-delay: 0.3s;
-}
-/* Добави в края на файла */
-@media (max-width: 768px) {
-  .aboutSection {
-    padding: 40px 0;
-  }
-
-  .aboutContent {
-    flex-direction: column;
-    gap: 30px;
-  }
-
-  .aboutText, .aboutVisual {
-    width: 100%;
-  }
-
-  .aboutButtons {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .aboutBtn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .visualStats {
-    justify-content: space-around;
-    margin-top: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .aboutDescription p {
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-  }
-
-  .visualStat {
-    padding: 10px;
-  }
-
-  .statNumber {
-    font-size: 1.5rem;
-  }
-
-  .statLabel {
-    font-size: 0.8rem;
-  }
+@media(max-width:768px) {
+  .visualStats { grid-template-columns: repeat(3, 1fr); }
+  .aboutImage { height: 220px; }
+  .aboutButtons { flex-direction: column; }
 }

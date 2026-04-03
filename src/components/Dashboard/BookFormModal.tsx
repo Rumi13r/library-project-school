@@ -4,7 +4,7 @@ import * as bookService from '../../lib/services/bookService';
 import type { BookLibrary } from '../../lib/services/bookTypes';
 import ISBNLookupBar from '../BookScanner/ISBNLookupBar';
 import type { ISBNFillData } from '../BookScanner/ISBNLookupBar';
-import styles from './BookFormmodal.module.css';
+import styles from './BookformModal.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

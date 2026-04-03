@@ -1,7 +1,7 @@
 // src/components/Dashboard/OnlineBookFormModal.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Award, Plus, X, ExternalLink } from 'lucide-react';
-import styles from './BookFormModal.module.css';
+import styles from './Bookformmodal.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface AdditionalLink { title: string; url: string; type: string; }

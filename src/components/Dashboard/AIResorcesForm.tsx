@@ -1,7 +1,7 @@
 // src/components/Dashboard/AIResourceFormModal.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Award, BookOpen, FileText, Video, GraduationCap, Globe, Cpu, BookMarked } from 'lucide-react';
-import styles from './BookFormModal.module.css';
+import styles from './Bookformmodal.module.css';
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type AIResourceType = 'book'|'article'|'video'|'course'|'tool'|'research'|'website';
 export type Difficulty     = 'beginner'|'intermediate'|'advanced';

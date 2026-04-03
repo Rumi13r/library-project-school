@@ -1,7 +1,7 @@
 // src/components/Dashboard/StudyMaterialFormModal.tsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Award, Lightbulb, CheckCircle, Plus, X, ExternalLink } from 'lucide-react';
-import styles from './BookFormModal.module.css';
+import styles from './Bookformmodal.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';

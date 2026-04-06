@@ -276,7 +276,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchUsers(); fetchEvents(); fetchBooks();
     fetchScheduleBookings(); fetchNews(); fetchReservations();
-  }, []);
+  }, [fetchUsers, fetchEvents, fetchBooks, fetchScheduleBookings, fetchNews, fetchReservations]);
 
   const loadTodayStats = useCallback(() => {
     const today = new Date().toISOString().split("T")[0];

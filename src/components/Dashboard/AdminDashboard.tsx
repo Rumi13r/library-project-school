@@ -24,7 +24,6 @@ import { cancelReservation as cancelReservationService } from "../../lib/service
 import { RefreshCw } from "lucide-react";
 import Image from "@tiptap/extension-image";
 
-// ── Shared Firestore timestamp type ──────────────────────────────────────────
 type FSTimestamp =
   | { toDate?: () => Date; seconds?: number }
   | Date
@@ -32,188 +31,93 @@ type FSTimestamp =
   | null
   | undefined;
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
-
-interface ClassSchedule {
-  subject: string;
-  teacher: string;
-  className: string;
-}
+interface ClassSchedule { subject: string; teacher: string; className: string; }
 
 interface RoomBooking {
-  id: string;
-  room: string;
-  date: string;
-  time: string;
-  endTime: string;
-  eventId: string;
-  eventTitle: string;
-  type: "event";
+  id: string; room: string; date: string; time: string; endTime: string;
+  eventId: string; eventTitle: string; type: "event";
 }
 
 interface ScheduleBooking {
-  id: string;
-  room: string;
-  dayOfWeek: number;
-  period: number;
-  startTime: string;
-  endTime: string;
-  classSchedules: ClassSchedule[];
-  semester: string;
-  academicYear: string;
-  type: "schedule";
+  id: string; room: string; dayOfWeek: number; period: number;
+  startTime: string; endTime: string; classSchedules: ClassSchedule[];
+  semester: string; academicYear: string; type: "schedule";
 }
 
 type BookingInfo = RoomBooking | ScheduleBooking;
 
-interface UserEvent {
-  eventId: string;
-  registrationDate: FSTimestamp;
-  status?: string;
-}
+interface UserEvent { eventId: string; registrationDate: FSTimestamp; status?: string; }
 
 interface Ticket {
-  ticketId: string;
-  registrationDate: FSTimestamp;
-  checkedIn: boolean;
-  checkedInTime?: FSTimestamp;
+  ticketId: string; registrationDate: FSTimestamp;
+  checkedIn: boolean; checkedInTime?: FSTimestamp;
 }
 
 interface AppUser {
-  uid: string;
-  id: string;
-  email: string;
-  role: string;
-  events?: UserEvent[];
-  books?: BookLibrary[];
-  createdAt?: FSTimestamp;
-  displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  profile?: {
-    displayName?: string;
-    firstName?: string;
-    grade?: string;
-    lastName?: string;
-    phone?: string;
-  };
+  uid: string; id: string; email: string; role: string;
+  events?: UserEvent[]; books?: BookLibrary[]; createdAt?: FSTimestamp;
+  displayName?: string; firstName?: string; lastName?: string;
+  profile?: { displayName?: string; firstName?: string; grade?: string; lastName?: string; phone?: string; };
 }
 
 interface AppEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  maxParticipants: number;
-  currentParticipants: number;
-  participants: string[];
-  allowedRoles: string[];
-  createdAt: FSTimestamp;
-  organizer: string;
-  imageUrl?: string;
+  id: string; title: string; description: string; date: string; time: string;
+  endTime: string; location: string; maxParticipants: number;
+  currentParticipants: number; participants: string[]; allowedRoles: string[];
+  createdAt: FSTimestamp; organizer: string; imageUrl?: string;
   tickets?: Record<string, Ticket>;
 }
 
 interface CheckTicketModalData {
-  eventId: string;
-  eventTitle: string;
-  eventDate: string;
-  eventTime: string;
-  ticketId: string;
-  userName: string;
-  userEmail: string;
-  registrationDate: string;
-  checkedIn: boolean;
-  checkedInTime?: string;
+  eventId: string; eventTitle: string; eventDate: string; eventTime: string;
+  ticketId: string; userName: string; userEmail: string;
+  registrationDate: string; checkedIn: boolean; checkedInTime?: string;
 }
 
 interface TodayStats {
-  totalTickets: number;
-  checkedInTickets: number;
-  pendingTickets: number;
+  totalTickets: number; checkedInTickets: number; pendingTickets: number;
   todayScannedTickets: TicketDetail[];
 }
 
 interface TicketDetail {
-  ticketId: string;
-  eventTitle: string;
-  eventDate: string;
-  eventTime: string;
-  userName: string;
-  userEmail: string;
-  scanTime: string;
-  status: "checked" | "pending";
+  ticketId: string; eventTitle: string; eventDate: string; eventTime: string;
+  userName: string; userEmail: string; scanTime: string; status: "checked" | "pending";
 }
 
 interface NewsArticle {
-  id: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  category: string;
-  image: string;
-  images?: string[];
-  author: string;
-  date: FSTimestamp;
-  views: number;
-  likes: number;
-  tags: string[];
-  featured: boolean;
-  createdAt: FSTimestamp;
-  updatedAt: FSTimestamp;
+  id: string; title: string; excerpt: string; content: string; category: string;
+  image: string; images?: string[]; author: string; date: FSTimestamp;
+  views: number; likes: number; tags: string[]; featured: boolean;
+  createdAt: FSTimestamp; updatedAt: FSTimestamp;
 }
 
 interface AdminReservation {
-  id: string;
-  status: "active" | "fulfilled" | "cancelled" | "expired";
-  bookId: string;
-  userId: string;
-  userName?: string;
-  userEmail?: string;
-  reservedAt: FSTimestamp;
-  expiresAt: FSTimestamp;
+  id: string; status: "active" | "fulfilled" | "cancelled" | "expired";
+  bookId: string; userId: string; userName?: string; userEmail?: string;
+  reservedAt: FSTimestamp; expiresAt: FSTimestamp;
 }
-
-// ── EditorToolbar ─────────────────────────────────────────────────────────────
 
 const EditorToolbar = ({ editor }: { editor: Editor | null }) => {
   if (!editor) return null;
-
   const addImage = () => {
     const url = window.prompt("Въведете URL на картинката:");
     if (url) editor.chain().focus().setImage({ src: url }).run();
   };
-
   return (
     <div className="editor-toolbar">
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`toolbar-btn ${editor.isActive("bold") ? "active" : ""}`} title="Удебелен текст">
-        <strong>B</strong>
-      </button>
+        className={`toolbar-btn ${editor.isActive("bold") ? "active" : ""}`}><strong>B</strong></button>
       <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`toolbar-btn ${editor.isActive("italic") ? "active" : ""}`} title="Курсив">
-        <em>I</em>
-      </button>
+        className={`toolbar-btn ${editor.isActive("italic") ? "active" : ""}`}><em>I</em></button>
       <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`toolbar-btn ${editor.isActive("bulletList") ? "active" : ""}`} title="Списък">
-        <List size={16} />
-      </button>
+        className={`toolbar-btn ${editor.isActive("bulletList") ? "active" : ""}`}><List size={16} /></button>
       <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`toolbar-btn ${editor.isActive("orderedList") ? "active" : ""}`} title="Номериран списък">
-        <Grid size={16} />
-      </button>
+        className={`toolbar-btn ${editor.isActive("orderedList") ? "active" : ""}`}><Grid size={16} /></button>
       <div className="toolbar-divider" />
-      <button type="button" onClick={addImage} className="toolbar-btn" title="Добави картинка">
-        <ImageIcon size={16} />
-      </button>
+      <button type="button" onClick={addImage} className="toolbar-btn"><ImageIcon size={16} /></button>
     </div>
   );
 };
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatFSDate = (d: FSTimestamp): string => {
   if (!d) return "Няма дата";
@@ -228,13 +132,7 @@ const formatFSDate = (d: FSTimestamp): string => {
   return "Няма дата";
 };
 
-// ═════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═════════════════════════════════════════════════════════════════════════════
-
 const AdminDashboard: React.FC = () => {
-
-  // ── State ──────────────────────────────────────────────────────────────────
   const [users,            setUsers]            = useState<AppUser[]>([]);
   const [events,           setEvents]           = useState<AppEvent[]>([]);
   const [books,            setBooks]            = useState<BookLibrary[]>([]);
@@ -243,41 +141,41 @@ const AdminDashboard: React.FC = () => {
   const [reservations,     setReservations]     = useState<AdminReservation[]>([]);
   const [news,             setNews]             = useState<NewsArticle[]>([]);
 
-  const [searchTerm,   setSearchTerm]   = useState("");
-  const [activeTab,    setActiveTab]    = useState<
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<
     "users"|"events"|"rooms"|"tickets"|"books"|"reservations"|"news"
   >("users");
 
-  const [selectedDate,         setSelectedDate]         = useState(new Date().toISOString().split("T")[0]);
-  const [editingCell,          setEditingCell]          = useState<{room:string;timeSlot:string;booking:BookingInfo|null}|null>(null);
-  const [addingEventFromCell,  setAddingEventFromCell]  = useState<{room:string;timeSlot:string}|null>(null);
-  const [isImportingSchedule,  setIsImportingSchedule]  = useState(false);
-  const [importData,           setImportData]           = useState("");
-  const [selectedRoomForImport,setSelectedRoomForImport]= useState("1303");
-  const [academicYear,         setAcademicYear]         = useState("2024-2025");
-  const [semester,             setSemester]             = useState<"winter"|"summer">("winter");
+  const [selectedDate,          setSelectedDate]          = useState(new Date().toISOString().split("T")[0]);
+  const [editingCell,           setEditingCell]           = useState<{room:string;timeSlot:string;booking:BookingInfo|null}|null>(null);
+  const [addingEventFromCell,   setAddingEventFromCell]   = useState<{room:string;timeSlot:string}|null>(null);
+  const [isImportingSchedule,   setIsImportingSchedule]  = useState(false);
+  const [importData,            setImportData]            = useState("");
+  const [selectedRoomForImport, setSelectedRoomForImport] = useState("1303");
+  const [academicYear,          setAcademicYear]          = useState("2024-2025");
+  const [semester,              setSemester]              = useState<"winter"|"summer">("winter");
 
-  const [cellEventTitle,         setCellEventTitle]          = useState("");
-  const [cellEventDesc,          setCellEventDesc]           = useState("");
-  const [cellEventStartTime,     setCellEventStartTime]      = useState("");
-  const [cellEventEndTime,       setCellEventEndTime]        = useState("");
-  const [cellEventMaxParticipants,setCellEventMaxParticipants]= useState(20);
-  const [cellEventOrganizer,     setCellEventOrganizer]      = useState("");
-  const [cellEventImageUrl,      setCellEventImageUrl]       = useState("");
+  const [cellEventTitle,          setCellEventTitle]           = useState("");
+  const [cellEventDesc,           setCellEventDesc]            = useState("");
+  const [cellEventStartTime,      setCellEventStartTime]       = useState("");
+  const [cellEventEndTime,        setCellEventEndTime]         = useState("");
+  const [cellEventMaxParticipants,setCellEventMaxParticipants] = useState(20);
+  const [cellEventOrganizer,      setCellEventOrganizer]       = useState("");
+  const [cellEventImageUrl,       setCellEventImageUrl]        = useState("");
 
-  const [showQrScanner,       setShowQrScanner]       = useState(false);
-  const [cameraError,         setCameraError]         = useState("");
-  const [showEventModal,      setShowEventModal]      = useState(false);
-  const [modalMode,           setModalMode]           = useState<"create"|"edit">("create");
-  const [showCheckTicketModal,setShowCheckTicketModal]= useState(false);
-  const [showTodayStats,      setShowTodayStats]      = useState(false);
-  const [showNewsModal,       setShowNewsModal]       = useState(false);
+  const [showQrScanner,        setShowQrScanner]        = useState(false);
+  const [cameraError,          setCameraError]          = useState("");
+  const [showEventModal,       setShowEventModal]       = useState(false);
+  const [modalMode,            setModalMode]            = useState<"create"|"edit">("create");
+  const [showCheckTicketModal, setShowCheckTicketModal] = useState(false);
+  const [showTodayStats,       setShowTodayStats]       = useState(false);
+  const [showNewsModal,        setShowNewsModal]        = useState(false);
 
-  const [ticketSearchTerm,    setTicketSearchTerm]    = useState("");
-  const [checkTicketModalData,setCheckTicketModalData]= useState<CheckTicketModalData|null>(null);
-  const [isCheckingTicket,    setIsCheckingTicket]    = useState(false);
-  const [ticketStatusMessage, setTicketStatusMessage] = useState("");
-  const [ticketStatusType,    setTicketStatusType]    = useState<"success"|"error"|"info"|"warning">("info");
+  const [ticketSearchTerm,     setTicketSearchTerm]     = useState("");
+  const [checkTicketModalData, setCheckTicketModalData] = useState<CheckTicketModalData|null>(null);
+  const [isCheckingTicket,     setIsCheckingTicket]     = useState(false);
+  const [ticketStatusMessage,  setTicketStatusMessage]  = useState("");
+  const [ticketStatusType,     setTicketStatusType]     = useState<"success"|"error"|"info"|"warning">("info");
 
   const [todayStats, setTodayStats] = useState<TodayStats>({
     totalTickets: 0, checkedInTickets: 0, pendingTickets: 0, todayScannedTickets: [],
@@ -295,14 +193,13 @@ const AdminDashboard: React.FC = () => {
     image:"", author:"Администратор", tags:[], featured:false,
   });
 
-  // ── TipTap editor ──────────────────────────────────────────────────────────
-const editor = useEditor({
-  extensions: [StarterKit, Image],  // Image добавен тук
-  content: modalEventData.description || "",
-  onUpdate: ({ editor: e }) => {
-    setModalEventData(prev => ({ ...prev, description: e.getHTML() }));
-  },
-});
+  const editor = useEditor({
+    extensions: [StarterKit, Image],
+    content: modalEventData.description || "",
+    onUpdate: ({ editor: e }) => {
+      setModalEventData(prev => ({ ...prev, description: e.getHTML() }));
+    },
+  });
 
   useEffect(() => {
     if (editor && modalEventData.description !== editor.getHTML()) {
@@ -310,7 +207,6 @@ const editor = useEditor({
     }
   }, [modalEventData.description, editor]);
 
-  // ── Constants ──────────────────────────────────────────────────────────────
   const locationOptions = [
     "1303","3310","3301-EOП","3305-АНП","библиотека","Зала Европа","Комп.каб.-ТЧ",
     "Физкултура3","1201","1202","1203","1206","1408-КК","1308-КК",
@@ -333,24 +229,14 @@ const editor = useEditor({
     return opts;
   })();
 
-  // ── Fetch functions ────────────────────────────────────────────────────────
-
   const fetchUsers = useCallback(async () => {
     const snap = await getDocs(collection(db, "users"));
     setUsers(snap.docs.map(d => {
       const data = d.data();
-      return {
-        id: d.id, uid: d.id,
-        email: data.email || "",
-        role: data.role || "reader",
-        events: data.events || [],
-        books: data.books || [],
-        createdAt: data.createdAt || null,
-        displayName: data.displayName || "",
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        profile: data.profile || {},
-      } as AppUser;
+      return { id:d.id, uid:d.id, email:data.email||"", role:data.role||"reader",
+        events:data.events||[], books:data.books||[], createdAt:data.createdAt||null,
+        displayName:data.displayName||"", firstName:data.firstName||"",
+        lastName:data.lastName||"", profile:data.profile||{} } as AppUser;
     }));
   }, []);
 
@@ -359,13 +245,9 @@ const editor = useEditor({
     const eventsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppEvent));
     setEvents(eventsData);
     setRoomBookings(
-      eventsData
-        .filter(e => e.date && e.time && e.endTime && e.location)
-        .map(e => ({
-          id: e.id, room: e.location, date: e.date,
-          time: e.time, endTime: e.endTime,
-          eventId: e.id, eventTitle: e.title, type: "event" as const,
-        }))
+      eventsData.filter(e => e.date && e.time && e.endTime && e.location)
+        .map(e => ({ id:e.id, room:e.location, date:e.date, time:e.time,
+          endTime:e.endTime, eventId:e.id, eventTitle:e.title, type:"event" as const }))
     );
   }, []);
 
@@ -391,23 +273,15 @@ const editor = useEditor({
     } catch (e) { console.error("Error fetching reservations:", e); }
   }, []);
 
-  // ── Initial load ───────────────────────────────────────────────────────────
   useEffect(() => {
-    fetchUsers();
-    fetchEvents();
-    fetchBooks();
-    fetchScheduleBookings();
-    fetchNews();
-    fetchReservations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchUsers(); fetchEvents(); fetchBooks();
+    fetchScheduleBookings(); fetchNews(); fetchReservations();
   }, []);
 
-  // ── loadTodayStats ─────────────────────────────────────────────────────────
   const loadTodayStats = useCallback(() => {
     const today = new Date().toISOString().split("T")[0];
     const scanned: TicketDetail[] = [];
     let total = 0, checkedIn = 0, pending = 0;
-
     events.forEach(event => {
       if (!event.tickets) return;
       Object.entries(event.tickets).forEach(([userId, ticket]) => {
@@ -415,23 +289,17 @@ const editor = useEditor({
         if (ticket.checkedIn) {
           checkedIn++;
           const checkedInDate =
-            typeof ticket.checkedInTime === "object" &&
-            ticket.checkedInTime &&
-            "toDate" in ticket.checkedInTime &&
-            typeof ticket.checkedInTime.toDate === "function"
-              ? ticket.checkedInTime.toDate()
-              : null;
+            typeof ticket.checkedInTime === "object" && ticket.checkedInTime &&
+            "toDate" in ticket.checkedInTime && typeof ticket.checkedInTime.toDate === "function"
+              ? ticket.checkedInTime.toDate() : null;
           if (checkedInDate && checkedInDate.toISOString().split("T")[0] === today) {
             const user = users.find(u => u.id === userId);
             scanned.push({
-              ticketId: ticket.ticketId,
-              eventTitle: event.title,
-              eventDate: event.date,
-              eventTime: event.time,
+              ticketId: ticket.ticketId, eventTitle: event.title,
+              eventDate: event.date, eventTime: event.time,
               userName: user?.displayName || user?.firstName || "Неизвестен",
               userEmail: user?.email || "Няма имейл",
-              scanTime: checkedInDate.toLocaleString("bg-BG"),
-              status: "checked",
+              scanTime: checkedInDate.toLocaleString("bg-BG"), status: "checked",
             });
           }
         } else {
@@ -439,35 +307,27 @@ const editor = useEditor({
           if (new Date(`${event.date}T${event.time}`) >= new Date()) {
             const user = users.find(u => u.id === userId);
             scanned.push({
-              ticketId: ticket.ticketId,
-              eventTitle: event.title,
-              eventDate: event.date,
-              eventTime: event.time,
+              ticketId: ticket.ticketId, eventTitle: event.title,
+              eventDate: event.date, eventTime: event.time,
               userName: user?.displayName || user?.firstName || "Неизвестен",
               userEmail: user?.email || "Няма имейл",
-              scanTime: "Очаква сканиране",
-              status: "pending",
+              scanTime: "Очаква сканиране", status: "pending",
             });
           }
         }
       });
     });
-
     scanned.sort((a, b) => {
       if (a.status === "pending" && b.status !== "pending") return -1;
       if (b.status === "pending" && a.status !== "pending") return 1;
       return new Date(`${a.eventDate}T${a.eventTime}`).getTime() -
              new Date(`${b.eventDate}T${b.eventTime}`).getTime();
     });
-
-    setTodayStats({ totalTickets: total, checkedInTickets: checkedIn, pendingTickets: pending, todayScannedTickets: scanned });
+    setTodayStats({ totalTickets:total, checkedInTickets:checkedIn, pendingTickets:pending, todayScannedTickets:scanned });
   }, [events, users]);
 
-  useEffect(() => {
-    if (showTodayStats) loadTodayStats();
-  }, [showTodayStats, loadTodayStats]);
+  useEffect(() => { if (showTodayStats) loadTodayStats(); }, [showTodayStats, loadTodayStats]);
 
-  // ── Validation helpers ─────────────────────────────────────────────────────
   const validateTime      = (t: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(t);
   const validateTimeRange = (s: string, e: string) => !s || !e || e > s;
   const convertToMinutes  = (t: string) => { const [h,m] = t.split(":").map(Number); return h*60+(m||0); };
@@ -483,38 +343,35 @@ const editor = useEditor({
       if (b.room !== room || b.date !== date) return false;
       return hasTimeOverlap(start, end, b.time, b.endTime);
     })) return true;
-
     const dow = new Date(date).getDay();
     if (dow >= 1 && dow <= 5) {
-      return scheduleBookings
-        .filter(s => s.room === room && s.dayOfWeek === dow)
+      return scheduleBookings.filter(s => s.room === room && s.dayOfWeek === dow)
         .some(s => hasTimeOverlap(start, end, s.startTime, s.endTime));
     }
     return false;
   };
 
   const isRoomBookedByEvent    = (room: string, date: string, h: string) =>
-    roomBookings.some(b => b.room === room && b.date === date && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, b.time, b.endTime));
+    roomBookings.some(b => b.room===room && b.date===date && hasTimeOverlap(`${h}:00`,`${parseInt(h)+1}:00`,b.time,b.endTime));
 
   const isRoomBookedInSchedule = (room: string, date: string, h: string) => {
     const dow = new Date(date).getDay();
     if (dow < 1 || dow > 5) return false;
-    return scheduleBookings.some(s => s.room === room && s.dayOfWeek === dow && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, s.startTime, s.endTime));
+    return scheduleBookings.some(s => s.room===room && s.dayOfWeek===dow && hasTimeOverlap(`${h}:00`,`${parseInt(h)+1}:00`,s.startTime,s.endTime));
   };
 
   const getEventInfo    = (room: string, date: string, h: string): RoomBooking | null =>
-    roomBookings.find(b => b.room === room && b.date === date && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, b.time, b.endTime)) ?? null;
+    roomBookings.find(b => b.room===room && b.date===date && hasTimeOverlap(`${h}:00`,`${parseInt(h)+1}:00`,b.time,b.endTime)) ?? null;
 
   const getScheduleInfo = (room: string, date: string, h: string): ScheduleBooking | null => {
     const dow = new Date(date).getDay();
     if (dow < 1 || dow > 5) return null;
-    return scheduleBookings.find(s => s.room === room && s.dayOfWeek === dow && hasTimeOverlap(`${h}:00`, `${parseInt(h)+1}:00`, s.startTime, s.endTime)) ?? null;
+    return scheduleBookings.find(s => s.room===room && s.dayOfWeek===dow && hasTimeOverlap(`${h}:00`,`${parseInt(h)+1}:00`,s.startTime,s.endTime)) ?? null;
   };
 
-  const getBookingInfo  = (room: string, date: string, h: string): BookingInfo | null =>
-    getEventInfo(room, date, h) ?? getScheduleInfo(room, date, h);
+  const getBookingInfo = (room: string, date: string, h: string): BookingInfo | null =>
+    getEventInfo(room,date,h) ?? getScheduleInfo(room,date,h);
 
-  // ── QR Scanner ─────────────────────────────────────────────────────────────
   const handleQrScan = async (detectedCodes: IDetectedBarcode[]) => {
     if (!detectedCodes?.length) return;
     const raw = detectedCodes[0].rawValue;
@@ -532,28 +389,33 @@ const editor = useEditor({
     setCameraError("Неуспешно зареждане на камерата. Проверете разрешенията.");
   };
 
-  const openQrScanner = () => { setShowQrScanner(true); setShowCheckTicketModal(false); setShowTodayStats(false); setCameraError(""); setTicketStatusMessage(""); setCheckTicketModalData(null); };
-  const closeQrScanner = () => { setShowQrScanner(false); setCameraError(""); if (!showCheckTicketModal) setShowCheckTicketModal(true); };
-  const openCheckTicketModal = () => { setShowCheckTicketModal(true); setShowQrScanner(false); setShowTodayStats(false); setTicketSearchTerm(""); setCheckTicketModalData(null); setTicketStatusMessage(""); };
-  const openTodayStats = () => { setShowTodayStats(true); setShowCheckTicketModal(false); loadTodayStats(); };
+  const openQrScanner = () => {
+    setShowQrScanner(true); setShowCheckTicketModal(false);
+    setShowTodayStats(false); setCameraError(""); setTicketStatusMessage(""); setCheckTicketModalData(null);
+  };
+  const closeQrScanner = () => {
+    setShowQrScanner(false); setCameraError("");
+    if (!showCheckTicketModal) setShowCheckTicketModal(true);
+  };
+  const openCheckTicketModal = () => {
+    setShowCheckTicketModal(true); setShowQrScanner(false); setShowTodayStats(false);
+    setTicketSearchTerm(""); setCheckTicketModalData(null); setTicketStatusMessage("");
+  };
+  const openTodayStats = () => {
+    setShowTodayStats(true); setShowCheckTicketModal(false); loadTodayStats();
+  };
 
-  // ── searchTicket ───────────────────────────────────────────────────────────
   const searchTicket = async (ticketIdParam?: string): Promise<boolean> => {
     const raw = ticketIdParam || ticketSearchTerm;
     if (!raw.trim()) { setTicketStatusMessage("Моля, въведете номер на билет!"); setTicketStatusType("error"); return false; }
-
     try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Търсене..."); setTicketStatusType("info");
-
+      setIsCheckingTicket(true); setTicketStatusMessage("Търсене..."); setTicketStatusType("info");
       let ticketId = raw.trim().toUpperCase();
       const m = ticketId.match(/TICKET-[A-Z0-9]+/);
       ticketId = m ? m[0] : `TICKET-${ticketId}`;
-
       let foundEvent: AppEvent | null = null;
       let foundUserId = "";
       let foundTicket: Ticket | null = null;
-
       for (const event of events) {
         if (!event.tickets) continue;
         for (const [userId, ticket] of Object.entries(event.tickets)) {
@@ -563,18 +425,14 @@ const editor = useEditor({
         }
         if (foundEvent) break;
       }
-
       if (!foundEvent || !foundTicket) {
         setTicketStatusMessage("❌ Билетът не е намерен!"); setTicketStatusType("error");
         return false;
       }
-
       const user = users.find(u => u.id === foundUserId);
       setCheckTicketModalData({
-        eventId: foundEvent.id,
-        eventTitle: foundEvent.title,
-        eventDate: foundEvent.date,
-        eventTime: foundEvent.time,
+        eventId: foundEvent.id, eventTitle: foundEvent.title,
+        eventDate: foundEvent.date, eventTime: foundEvent.time,
         ticketId: foundTicket.ticketId,
         userName: user?.displayName || user?.firstName || "Неизвестен",
         userEmail: user?.email || "Няма имейл",
@@ -586,8 +444,7 @@ const editor = useEditor({
       setTicketStatusMessage("✅ Билетът е намерен!"); setTicketStatusType("success");
       return true;
     } catch (e) {
-      console.error(e);
-      setTicketStatusMessage("Грешка при търсене!"); setTicketStatusType("error");
+      console.error(e); setTicketStatusMessage("Грешка при търсене!"); setTicketStatusType("error");
       return false;
     } finally { setIsCheckingTicket(false); }
   };
@@ -595,8 +452,7 @@ const editor = useEditor({
   const checkInTicket = async (): Promise<boolean> => {
     if (!checkTicketModalData) return false;
     try {
-      setIsCheckingTicket(true);
-      setTicketStatusMessage("Регистриране...");
+      setIsCheckingTicket(true); setTicketStatusMessage("Регистриране...");
       const eventRef = doc(db, "events", checkTicketModalData.eventId);
       const eventDoc = await getDoc(eventRef);
       if (!eventDoc.exists()) throw new Error("Събитието не е намерено");
@@ -611,7 +467,9 @@ const editor = useEditor({
         [`tickets.${userIdToUpdate}.checkedInTime`]: now,
       });
       await fetchEvents();
-      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: true, checkedInTime: now.toDate().toLocaleString("bg-BG") } : null);
+      setCheckTicketModalData(prev => prev
+        ? { ...prev, checkedIn:true, checkedInTime:now.toDate().toLocaleString("bg-BG") } : null);
+      setTicketStatusMessage("✅ Успешно регистриран!"); setTicketStatusType("success");
       return true;
     } catch (e) {
       console.error(e);
@@ -641,23 +499,21 @@ const editor = useEditor({
       setEvents(prev => prev.map(e => {
         if (e.id !== checkTicketModalData.eventId || !e.tickets) return e;
         const t = { ...e.tickets };
-        if (t[userIdToUpdate]) t[userIdToUpdate] = { ...t[userIdToUpdate], checkedIn: false, checkedInTime: undefined };
-        return { ...e, tickets: t };
+        if (t[userIdToUpdate]) t[userIdToUpdate] = { ...t[userIdToUpdate], checkedIn:false, checkedInTime:undefined };
+        return { ...e, tickets:t };
       }));
-      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn: false, checkedInTime: undefined } : null);
+      setCheckTicketModalData(prev => prev ? { ...prev, checkedIn:false, checkedInTime:undefined } : null);
       setTicketStatusMessage("Регистрацията е отменена!"); setTicketStatusType("success");
       loadTodayStats();
       setTimeout(() => setTicketStatusMessage(""), 3000);
     } catch (e) {
-      console.error(e);
-      setTicketStatusMessage("Грешка при отмяна!"); setTicketStatusType("error");
+      console.error(e); setTicketStatusMessage("Грешка при отмяна!"); setTicketStatusType("error");
     } finally { setIsCheckingTicket(false); }
   };
 
-  // ── Reservation actions ────────────────────────────────────────────────────
   const markReservationFulfilled = async (id: string) => {
     try {
-      await updateDoc(doc(db, "reservations", id), { status: "fulfilled", lastUpdated: Timestamp.now() });
+      await updateDoc(doc(db,"reservations",id), { status:"fulfilled", lastUpdated:Timestamp.now() });
       fetchReservations();
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
@@ -675,32 +531,35 @@ const editor = useEditor({
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
 
-  // ── User / Event / Book actions ────────────────────────────────────────────
   const changeUserRole = async (uid: string, role: string) => {
-    await updateDoc(doc(db, "users", uid), { role, updatedAt: new Date() });
-    fetchUsers();
+    await updateDoc(doc(db,"users",uid), { role, updatedAt:new Date() }); fetchUsers();
   };
-  const deleteUser  = async (uid: string) => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db, "users", uid)); fetchUsers(); };
-  const deleteEvent = async (id:  string) => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db, "events", id)); fetchEvents(); };
-  const deleteBook  = async (id:  string) => {
+  const deleteUser  = async (uid: string) => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db,"users",uid)); fetchUsers(); };
+  const deleteEvent = async (id: string)  => { if (!window.confirm("Изтрий?")) return; await deleteDoc(doc(db,"events",id)); fetchEvents(); };
+  const deleteBook  = async (id: string)  => {
     if (!window.confirm("Изтрий?")) return;
     try { await bookService.deleteBook(id); await fetchBooks(); }
     catch (e) { console.error(e); alert("Грешка!"); }
   };
-  const deleteNews  = async (id:  string) => {
+  const deleteNews  = async (id: string)  => {
     if (!window.confirm("Изтрий?")) return;
-    try { await deleteDoc(doc(db, "news", id)); await fetchNews(); }
+    try { await deleteDoc(doc(db,"news",id)); await fetchNews(); }
     catch (e) { console.error(e); alert("Грешка!"); }
   };
 
-  // ── Event modal helpers ────────────────────────────────────────────────────
   const handleModalInputChange = (field: keyof AppEvent, value: string | number | string[] | boolean) => {
     setModalEventData(prev => ({ ...prev, [field]: value }));
   };
 
   const openCreateEventModal = () => { setModalMode("create"); setModalEventData(EMPTY_EVENT); setShowEventModal(true); };
-  const openEditEventModal   = (e: AppEvent) => { setModalMode("edit"); setModalEventData({ id:e.id, title:e.title, description:e.description, date:e.date, time:e.time, endTime:e.endTime, location:e.location, maxParticipants:e.maxParticipants, organizer:e.organizer, allowedRoles:e.allowedRoles, currentParticipants:e.currentParticipants, imageUrl:e.imageUrl||"" }); setShowEventModal(true); };
-  const closeEventModal      = () => { setShowEventModal(false); setModalEventData({}); };
+  const openEditEventModal   = (e: AppEvent) => {
+    setModalMode("edit");
+    setModalEventData({ id:e.id, title:e.title, description:e.description, date:e.date,
+      time:e.time, endTime:e.endTime, location:e.location, maxParticipants:e.maxParticipants,
+      organizer:e.organizer, allowedRoles:e.allowedRoles, currentParticipants:e.currentParticipants, imageUrl:e.imageUrl||"" });
+    setShowEventModal(true);
+  };
+  const closeEventModal = () => { setShowEventModal(false); setModalEventData({}); };
 
   const handleCreateEvent = async () => {
     if (!modalEventData.title?.trim()||!modalEventData.date||!modalEventData.time||!modalEventData.endTime||!modalEventData.location) { alert("Попълнете задължителните полета!"); return; }
@@ -708,7 +567,12 @@ const editor = useEditor({
     if (!validateTimeRange(modalEventData.time,modalEventData.endTime)) { alert("Крайният час трябва да е след началния!"); return; }
     if (hasBookingConflict(modalEventData.location,modalEventData.date,modalEventData.time,modalEventData.endTime)) { alert("Стаята е заета!"); return; }
     try {
-      await addDoc(collection(db,"events"), { title:modalEventData.title, description:modalEventData.description||"", date:modalEventData.date, time:modalEventData.time, endTime:modalEventData.endTime, location:modalEventData.location, maxParticipants:modalEventData.maxParticipants||20, currentParticipants:0, allowedRoles:modalEventData.allowedRoles||["reader","librarian"], organizer:modalEventData.organizer||"", imageUrl:modalEventData.imageUrl||"", createdAt:new Date(), registrations:[] });
+      await addDoc(collection(db,"events"), { title:modalEventData.title, description:modalEventData.description||"",
+        date:modalEventData.date, time:modalEventData.time, endTime:modalEventData.endTime,
+        location:modalEventData.location, maxParticipants:modalEventData.maxParticipants||20,
+        currentParticipants:0, allowedRoles:modalEventData.allowedRoles||["reader","librarian"],
+        organizer:modalEventData.organizer||"", imageUrl:modalEventData.imageUrl||"",
+        createdAt:new Date(), registrations:[] });
       closeEventModal(); fetchEvents(); alert("Събитието е създадено!");
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
@@ -720,21 +584,36 @@ const editor = useEditor({
     if (!validateTimeRange(modalEventData.time,modalEventData.endTime)) { alert("Крайният час трябва да е след началния!"); return; }
     if (hasBookingConflict(modalEventData.location,modalEventData.date,modalEventData.time,modalEventData.endTime,modalEventData.id)) { alert("Стаята е заета!"); return; }
     try {
-      await updateDoc(doc(db,"events",modalEventData.id), { title:modalEventData.title, description:modalEventData.description||"", date:modalEventData.date, time:modalEventData.time, endTime:modalEventData.endTime, location:modalEventData.location, maxParticipants:modalEventData.maxParticipants||20, organizer:modalEventData.organizer||"", allowedRoles:modalEventData.allowedRoles||["reader","librarian"], imageUrl:modalEventData.imageUrl||"", updatedAt:new Date() });
+      await updateDoc(doc(db,"events",modalEventData.id), { title:modalEventData.title,
+        description:modalEventData.description||"", date:modalEventData.date,
+        time:modalEventData.time, endTime:modalEventData.endTime, location:modalEventData.location,
+        maxParticipants:modalEventData.maxParticipants||20, organizer:modalEventData.organizer||"",
+        allowedRoles:modalEventData.allowedRoles||["reader","librarian"],
+        imageUrl:modalEventData.imageUrl||"", updatedAt:new Date() });
       closeEventModal(); fetchEvents(); alert("Обновено!");
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
 
-  // ── News modal helpers ─────────────────────────────────────────────────────
-  const openCreateNewsModal = () => { setModalNewsData({ title:"", excerpt:"", content:"", category:"Общи", image:"", author:"Администратор", tags:[], featured:false }); setShowNewsModal(true); };
-  const openEditNewsModal   = (item: NewsArticle) => { setModalNewsData({ id:item.id, title:item.title, excerpt:item.excerpt, content:item.content, category:item.category, image:item.image, author:item.author, tags:item.tags||[], featured:item.featured||false }); setShowNewsModal(true); };
-  const closeNewsModal      = () => { setShowNewsModal(false); setModalNewsData({}); };
+  const openCreateNewsModal = () => {
+    setModalNewsData({ title:"", excerpt:"", content:"", category:"Общи", image:"", author:"Администратор", tags:[], featured:false });
+    setShowNewsModal(true);
+  };
+  const openEditNewsModal = (item: NewsArticle) => {
+    setModalNewsData({ id:item.id, title:item.title, excerpt:item.excerpt, content:item.content,
+      category:item.category, image:item.image, author:item.author, tags:item.tags||[], featured:item.featured||false });
+    setShowNewsModal(true);
+  };
+  const closeNewsModal = () => { setShowNewsModal(false); setModalNewsData({}); };
 
   const handleCreateNews = async () => {
     if (!modalNewsData.title?.trim()||!modalNewsData.excerpt?.trim()||!modalNewsData.content?.trim()||!modalNewsData.category?.trim()||!modalNewsData.image?.trim()) { alert("Попълнете задължителните полета!"); return; }
     try {
       const allImages = [modalNewsData.image, ...(modalNewsData.images||[]).filter(i=>i.trim())].filter((v,i,a)=>a.indexOf(v)===i);
-      await addDoc(collection(db,"news"), { title:modalNewsData.title, excerpt:modalNewsData.excerpt, content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image, images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор", date:Timestamp.now(), views:0, likes:0, tags:modalNewsData.tags||[], featured:modalNewsData.featured||false, createdAt:Timestamp.now(), updatedAt:Timestamp.now() });
+      await addDoc(collection(db,"news"), { title:modalNewsData.title, excerpt:modalNewsData.excerpt,
+        content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image,
+        images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор",
+        date:Timestamp.now(), views:0, likes:0, tags:modalNewsData.tags||[],
+        featured:modalNewsData.featured||false, createdAt:Timestamp.now(), updatedAt:Timestamp.now() });
       closeNewsModal(); await fetchNews(); alert("Новината е създадена!");
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
@@ -744,18 +623,19 @@ const editor = useEditor({
     if (!modalNewsData.title?.trim()||!modalNewsData.excerpt?.trim()||!modalNewsData.content?.trim()||!modalNewsData.category?.trim()||!modalNewsData.image?.trim()) { alert("Попълнете задължителните полета!"); return; }
     try {
       const allImages = [modalNewsData.image, ...(modalNewsData.images||[]).filter(i=>i.trim())].filter((v,i,a)=>a.indexOf(v)===i);
-      await updateDoc(doc(db,"news",modalNewsData.id), { title:modalNewsData.title, excerpt:modalNewsData.excerpt, content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image, images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор", tags:modalNewsData.tags||[], featured:modalNewsData.featured||false, updatedAt:Timestamp.now() });
+      await updateDoc(doc(db,"news",modalNewsData.id), { title:modalNewsData.title, excerpt:modalNewsData.excerpt,
+        content:modalNewsData.content, category:modalNewsData.category, image:modalNewsData.image,
+        images:allImages.length>1?allImages:[], author:modalNewsData.author||"Администратор",
+        tags:modalNewsData.tags||[], featured:modalNewsData.featured||false, updatedAt:Timestamp.now() });
       closeNewsModal(); await fetchNews(); alert("Обновено!");
     } catch (e) { console.error(e); alert("Грешка!"); }
   };
 
-  // ── Schedule import ────────────────────────────────────────────────────────
   const parseScheduleText = (text: string) => {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
     const dayMap: Record<string,number> = { Понеделник:1, Вторник:2, Сряда:3, Четвъртък:4, Петък:5 };
     const slots: { dayOfWeek:number; period:number; startTime:string; endTime:string; classSchedules:ClassSchedule[] }[] = [];
     let currentDay = 0, period = 1;
-
     for (const line of lines) {
       if (dayMap[line] !== undefined) { currentDay = dayMap[line]; period = 1; continue; }
       if (currentDay > 0 && line.includes("–")) {
@@ -766,7 +646,6 @@ const editor = useEditor({
           const classSchedules: ClassSchedule[] = [];
           if (schedText !== "—" && schedText.trim()) {
             schedText.split(",").map(p => p.trim()).filter(Boolean).forEach(part => {
-              // Fixed: removed unnecessary escape of dot inside character class
               const cm = part.match(/(\d+[а-яд.]+)$/);
               let cn = "", st2 = part;
               if (cm) { cn = cm[1]; st2 = part.slice(0, -cn.length).trim(); }
@@ -778,7 +657,7 @@ const editor = useEditor({
                 const lw = np[np.length-1];
                 if (lw?.match(/^[А-Я][а-я]+$/)) { teacher = lw; subject = np.slice(0,-1).join(" "); }
               }
-              classSchedules.push({ subject: subject||"Неизвестен предмет", teacher, className: cn||"Неизвестен клас" });
+              classSchedules.push({ subject:subject||"Неизвестен предмет", teacher, className:cn||"Неизвестен клас" });
             });
           }
           if (classSchedules.length > 0) slots.push({ dayOfWeek:currentDay, period, startTime:st, endTime:et, classSchedules });
@@ -802,7 +681,6 @@ const editor = useEditor({
     } catch (e) { console.error(e); alert("Грешка при импортиране!"); }
   };
 
-  // ── Cell events ────────────────────────────────────────────────────────────
   const startAddingEventFromCell = (room: string, timeSlot: string) => {
     const [h] = timeSlot.split("-");
     setCellEventStartTime(`${h}:00`);
@@ -815,9 +693,14 @@ const editor = useEditor({
     if (!validateTime(cellEventStartTime)||!validateTime(cellEventEndTime)) { alert("Невалиден час!"); return; }
     if (!validateTimeRange(cellEventStartTime,cellEventEndTime)) { alert("Крайният час трябва да е след началния!"); return; }
     if (hasBookingConflict(addingEventFromCell.room,selectedDate,cellEventStartTime,cellEventEndTime)) { alert("Стаята е заета!"); return; }
-    await addDoc(collection(db,"events"), { title:cellEventTitle, description:cellEventDesc, date:selectedDate, time:cellEventStartTime, endTime:cellEventEndTime, location:addingEventFromCell.room, maxParticipants:cellEventMaxParticipants, currentParticipants:0, allowedRoles:["reader","librarian"], organizer:cellEventOrganizer, imageUrl:cellEventImageUrl, createdAt:new Date(), registrations:[] });
-    setCellEventTitle(""); setCellEventDesc(""); setCellEventStartTime(""); setCellEventEndTime(""); setCellEventMaxParticipants(20); setCellEventOrganizer(""); setCellEventImageUrl(""); setAddingEventFromCell(null);
-    fetchEvents();
+    await addDoc(collection(db,"events"), { title:cellEventTitle, description:cellEventDesc,
+      date:selectedDate, time:cellEventStartTime, endTime:cellEventEndTime,
+      location:addingEventFromCell.room, maxParticipants:cellEventMaxParticipants,
+      currentParticipants:0, allowedRoles:["reader","librarian"],
+      organizer:cellEventOrganizer, imageUrl:cellEventImageUrl, createdAt:new Date(), registrations:[] });
+    setCellEventTitle(""); setCellEventDesc(""); setCellEventStartTime(""); setCellEventEndTime("");
+    setCellEventMaxParticipants(20); setCellEventOrganizer(""); setCellEventImageUrl("");
+    setAddingEventFromCell(null); fetchEvents();
   };
 
   const deleteBookingFromCell = async (booking: BookingInfo) => {
@@ -836,32 +719,22 @@ const editor = useEditor({
     else startAddingEventFromCell(room, timeSlot);
   };
 
-  // ── Filters ────────────────────────────────────────────────────────────────
   const getUserDisplayName = (u: AppUser) =>
     u.displayName || (u.firstName&&u.lastName ? `${u.firstName} ${u.lastName}` : u.email.split("@")[0]);
 
   const filteredUsers  = users.filter(u => u.email.toLowerCase().includes(searchTerm.toLowerCase())||u.role.includes(searchTerm)||(u.firstName?.toLowerCase()||"").includes(searchTerm.toLowerCase())||(u.lastName?.toLowerCase()||"").includes(searchTerm.toLowerCase()));
   const filteredEvents = events.filter(e => e.title.toLowerCase().includes(searchTerm.toLowerCase())||e.description.toLowerCase().includes(searchTerm.toLowerCase())||e.location.toLowerCase().includes(searchTerm.toLowerCase())||e.organizer.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredBooks  = books.filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase())||b.author.toLowerCase().includes(searchTerm.toLowerCase())||b.isbn.toLowerCase().includes(searchTerm.toLowerCase())||b.category.toLowerCase().includes(searchTerm.toLowerCase())||(b.genres?.some(g=>g.toLowerCase().includes(searchTerm.toLowerCase())))||( b.tags?.some(t=>t.toLowerCase().includes(searchTerm.toLowerCase()))));
+  const filteredBooks  = books.filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase())||b.author.toLowerCase().includes(searchTerm.toLowerCase())||b.isbn.toLowerCase().includes(searchTerm.toLowerCase())||b.category.toLowerCase().includes(searchTerm.toLowerCase())||(b.genres?.some(g=>g.toLowerCase().includes(searchTerm.toLowerCase())))||(b.tags?.some(t=>t.toLowerCase().includes(searchTerm.toLowerCase()))));
 
-  const isEventFull      = (e: AppEvent) => e.currentParticipants >= e.maxParticipants;
+  const isEventFull = (e: AppEvent) => e.currentParticipants >= e.maxParticipants;
 
-  // ── Image preview helper ───────────────────────────────────────────────────
   const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     img.style.display = "none";
     const p = img.parentElement;
-    if (p) {
-      const err = document.createElement("p");
-      err.className = "image-error";
-      err.textContent = "Невалиден линк";
-      p.appendChild(err);
-    }
+    if (p) { const err = document.createElement("p"); err.className = "image-error"; err.textContent = "Невалиден линк"; p.appendChild(err); }
   };
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="admin-dashboard">
       <div className="dashboard-container">
@@ -889,13 +762,13 @@ const editor = useEditor({
         {/* Tabs */}
         <div className="tabs-section">
           {([
-            { id:"users",        label:`Потребители (${users.length})`,          icon:<Users size={18}/> },
-            { id:"events",       label:`Събития (${events.length})`,             icon:<Calendar size={18}/> },
-            { id:"books",        label:`Книги (${books.length})`,                icon:<BookOpen size={18}/> },
-            { id:"reservations", label:`Резервирани книги (${reservations.length})`, icon:<Bookmark size={18}/> },
-            { id:"news",         label:`Новини (${news.length})`,                icon:<Newspaper size={18}/> },
-            { id:"rooms",        label:`Стаи (${locationOptions.length})`,       icon:<Building size={18}/> },
-            { id:"tickets",      label:"Проверка на билети",                     icon:<QrCode size={18}/> },
+            { id:"users",        label:`Потребители (${users.length})`,               icon:<Users size={18}/> },
+            { id:"events",       label:`Събития (${events.length})`,                  icon:<Calendar size={18}/> },
+            { id:"books",        label:`Книги (${books.length})`,                     icon:<BookOpen size={18}/> },
+            { id:"reservations", label:`Резервирани книги (${reservations.length})`,  icon:<Bookmark size={18}/> },
+            { id:"news",         label:`Новини (${news.length})`,                     icon:<Newspaper size={18}/> },
+            { id:"rooms",        label:`Стаи (${locationOptions.length})`,            icon:<Building size={18}/> },
+            { id:"tickets",      label:"Проверка на билети",                          icon:<QrCode size={18}/> },
           ] as const).map(t => (
             <button key={t.id}
               className={`tab-button ${activeTab===t.id?"active":""}`}
@@ -920,7 +793,7 @@ const editor = useEditor({
                 {cameraError ? (
                   <div className="camera-error">
                     <CameraOff size={48}/><p>{cameraError}</p>
-                    <button onClick={openQrScanner} className="secondary-btn retry-btn">Опитай отново</button>
+                    <button onClick={openQrScanner} className="primary-btn" style={{marginTop:16}}>Опитай отново</button>
                   </div>
                 ) : (
                   <>
@@ -942,6 +815,191 @@ const editor = useEditor({
                       </div>
                     </div>
                   </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Check Ticket Modal ───────────────────────────────────────────── */}
+        {showCheckTicketModal && !showQrScanner && !showTodayStats && (
+          <div className="modal-overlay">
+            <div className="modal-content ticket-check-modal">
+              <div className="modal-header">
+                <h3>Проверка на билети</h3>
+                <div className="modal-header-actions">
+                  <button onClick={openTodayStats} className="stats-btn">
+                    <BarChart3 size={16} />
+                    Статистика
+                  </button>
+                  <button onClick={() => setShowCheckTicketModal(false)} className="close-btn">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="modal-body">
+                <div className="ticket-search-section">
+                  <div className="search-box">
+                    <Search className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="TICKET-XXXX..."
+                      value={ticketSearchTerm}
+                      onChange={e => setTicketSearchTerm(e.target.value.toUpperCase())}
+                      onKeyPress={e => e.key === "Enter" && searchTicket()}
+                      className="search-input"
+                      disabled={isCheckingTicket}
+                    />
+                  </div>
+                  <div className="ticket-search-buttons">
+                    <button
+                      onClick={() => searchTicket()}
+                      disabled={isCheckingTicket || !ticketSearchTerm.trim()}
+                      className="primary-btn"
+                    >
+                      {isCheckingTicket ? "Търсене..." : "Търси билет"}
+                    </button>
+                    <button onClick={openQrScanner} className="primary-btn qr-scanner-btn">
+                      <QrCode size={16} />
+                      Сканирай QR
+                    </button>
+                  </div>
+                </div>
+
+                {ticketStatusMessage && (
+                  <div className={`ticket-status-message ${ticketStatusType}`}>
+                    {ticketStatusType === "success" && <Check size={16} />}
+                    {ticketStatusType === "error"   && <XCircle size={16} />}
+                    {ticketStatusMessage}
+                  </div>
+                )}
+
+                {checkTicketModalData && (
+                  <div className="ticket-details">
+                    <div className="ticket-details-header">
+                      <h4>Детайли за билета</h4>
+                      <div className={`ticket-status-badge ${checkTicketModalData.checkedIn ? "checked" : "pending"}`}>
+                        {checkTicketModalData.checkedIn ? "✓ Регистриран" : "⏳ Чака регистрация"}
+                      </div>
+                    </div>
+                    <div className="ticket-info-grid">
+                      <div className="ticket-info-item">
+                        <strong>Номер:</strong>
+                        <span className="ticket-id">{checkTicketModalData.ticketId}</span>
+                      </div>
+                      <div className="ticket-info-item">
+                        <strong>Събитие:</strong>
+                        <span>{checkTicketModalData.eventTitle}</span>
+                      </div>
+                      <div className="ticket-info-item">
+                        <strong>Дата и час:</strong>
+                        <span>{checkTicketModalData.eventDate} | {checkTicketModalData.eventTime}</span>
+                      </div>
+                      <div className="ticket-info-item">
+                        <strong>Потребител:</strong>
+                        <span>{checkTicketModalData.userName}</span>
+                      </div>
+                      <div className="ticket-info-item">
+                        <strong>Имейл:</strong>
+                        <span>{checkTicketModalData.userEmail}</span>
+                      </div>
+                      {checkTicketModalData.checkedInTime && (
+                        <div className="ticket-info-item">
+                          <strong>Регистриран на:</strong>
+                          <span>{checkTicketModalData.checkedInTime}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="ticket-actions">
+                      {!checkTicketModalData.checkedIn ? (
+                        <button onClick={checkInTicket} disabled={isCheckingTicket} className="primary-btn check-in-btn">
+                          <Check size={16} />
+                          Регистрирай
+                        </button>
+                      ) : (
+                        <button onClick={uncheckTicket} disabled={isCheckingTicket} className="uncheck-btn">
+                          <XCircle size={16} />
+                          Отмени регистрация
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Today Stats Modal ────────────────────────────────────────────── */}
+        {showTodayStats && !showQrScanner && (
+          <div className="modal-overlay">
+            <div className="modal-content stats-modal">
+              <div className="modal-header">
+                <h3>Статистика за днес ({new Date().toLocaleDateString("bg-BG")})</h3>
+                <button onClick={() => setShowTodayStats(false)} className="close-btn">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="stats-cards">
+                  <div className="stat-card">
+                    <div className="stat-icon"><BarChart3 size={22} /></div>
+                    <div className="stat-info">
+                      <div className="stat-number">{todayStats.totalTickets}</div>
+                      <div className="stat-label">Общо</div>
+                    </div>
+                  </div>
+                  <div className="stat-card success">
+                    <div className="stat-icon"><Check size={22} /></div>
+                    <div className="stat-info">
+                      <div className="stat-number">{todayStats.checkedInTickets}</div>
+                      <div className="stat-label">Регистрирани</div>
+                    </div>
+                  </div>
+                  <div className="stat-card warning">
+                    <div className="stat-icon"><Clock size={22} /></div>
+                    <div className="stat-info">
+                      <div className="stat-number">{todayStats.pendingTickets}</div>
+                      <div className="stat-label">Чакащи</div>
+                    </div>
+                  </div>
+                </div>
+
+                {todayStats.todayScannedTickets.length > 0 ? (
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Билет №</th><th>Събитие</th>
+                          <th>Потребител</th><th>Статус</th><th>Час</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {todayStats.todayScannedTickets.map((t, i) => (
+                          <tr key={i}>
+                            <td><span className="ticket-id-small">{t.ticketId}</span></td>
+                            <td>
+                              <div className="event-title">{t.eventTitle}</div>
+                              <div style={{ fontSize:".8rem", color:"var(--admin-text-secondary)" }}>{t.eventDate}</div>
+                            </td>
+                            <td>{t.userName}</td>
+                            <td>
+                              <span className={`status-badge ${t.status}`}>
+                                {t.status === "checked" ? "Регистриран" : "Очаква"}
+                              </span>
+                            </td>
+                            <td>{t.scanTime}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <QrCode size={48} />
+                    <p>Няма билети за днес</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1004,104 +1062,6 @@ const editor = useEditor({
                   </button>
                   <button onClick={closeNewsModal} className="secondary-btn">Отказ</button>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Check Ticket Modal ───────────────────────────────────────────── */}
-        {showCheckTicketModal && !showQrScanner && !showTodayStats && (
-          <div className="modal-overlay">
-            <div className="modal-content ticket-check-modal">
-              <div className="modal-header">
-                <h3>Проверка на билети</h3>
-                <div className="modal-header-actions">
-                  <button onClick={openTodayStats} className="stats-btn primary-btn"><BarChart3 size={18}/>Статистика</button>
-                  <button onClick={()=>setShowCheckTicketModal(false)} className="close-btn"><X size={20}/></button>
-                </div>
-              </div>
-              <div className="modal-body">
-                <div className="ticket-search-section">
-                  <div className="search-box">
-                    <Search className="search-icon"/>
-                    <input type="text" placeholder="TICKET-XXXX..." value={ticketSearchTerm}
-                      onChange={e=>setTicketSearchTerm(e.target.value.toUpperCase())}
-                      onKeyPress={e=>e.key==="Enter"&&searchTicket()} className="search-input" disabled={isCheckingTicket} />
-                  </div>
-                  <div className="ticket-search-buttons">
-                    <button onClick={()=>searchTicket()} disabled={isCheckingTicket||!ticketSearchTerm.trim()} className="primary-btn">{isCheckingTicket?"Търсене...":"Търси билет"}</button>
-                    <button onClick={openQrScanner} className="primary-btn qr-scanner-btn"><QrCode size={18}/>Сканирай QR</button>
-                  </div>
-                </div>
-                {ticketStatusMessage && (
-                  <div className={`ticket-status-message ${ticketStatusType}`}>
-                    {ticketStatusType==="success"&&<Check size={16}/>}
-                    {ticketStatusType==="error"&&<XCircle size={16}/>}
-                    {ticketStatusMessage}
-                  </div>
-                )}
-                {checkTicketModalData && (
-                  <div className="ticket-details">
-                    <div className="ticket-details-header">
-                      <h4>Детайли за билета</h4>
-                      <div className={`ticket-status-badge ${checkTicketModalData.checkedIn?"checked":"pending"}`}>
-                        {checkTicketModalData.checkedIn?"Регистриран":"Чака регистрация"}
-                      </div>
-                    </div>
-                    <div className="ticket-info-grid">
-                      <div className="ticket-info-item"><strong>Номер:</strong><span className="ticket-id">{checkTicketModalData.ticketId}</span></div>
-                      <div className="ticket-info-item"><strong>Събитие:</strong><span>{checkTicketModalData.eventTitle}</span></div>
-                      <div className="ticket-info-item"><strong>Дата:</strong><span>{checkTicketModalData.eventDate} | {checkTicketModalData.eventTime}</span></div>
-                      <div className="ticket-info-item"><strong>Потребител:</strong><span>{checkTicketModalData.userName}</span></div>
-                      <div className="ticket-info-item"><strong>Имейл:</strong><span>{checkTicketModalData.userEmail}</span></div>
-                      {checkTicketModalData.checkedInTime && <div className="ticket-info-item"><strong>Регистриран на:</strong><span>{checkTicketModalData.checkedInTime}</span></div>}
-                    </div>
-                    <div className="ticket-actions">
-                      {!checkTicketModalData.checkedIn
-                        ? <button onClick={checkInTicket} disabled={isCheckingTicket} className="primary-btn check-in-btn"><Check size={16}/>Регистрирай</button>
-                        : <button onClick={uncheckTicket} disabled={isCheckingTicket} className="secondary-btn uncheck-btn"><XCircle size={16}/>Отмени регистрация</button>
-                      }
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Today Stats Modal ────────────────────────────────────────────── */}
-        {showTodayStats && !showQrScanner && (
-          <div className="modal-overlay">
-            <div className="modal-content ticket-check-modal">
-              <div className="modal-header">
-                <h3>Статистика за днес ({new Date().toLocaleDateString("bg-BG")})</h3>
-              </div>
-              <div className="modal-body">
-                <div className="stats-cards">
-                  <div className="stat-card"><div className="stat-icon"><BarChart3 size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.totalTickets}</div><div className="stat-label">Общо</div></div></div>
-                  <div className="stat-card success"><div className="stat-icon"><Check size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.checkedInTickets}</div><div className="stat-label">Регистрирани</div></div></div>
-                  <div className="stat-card warning"><div className="stat-icon"><Clock size={24}/></div><div className="stat-info"><div className="stat-value">{todayStats.pendingTickets}</div><div className="stat-label">Чакащи</div></div></div>
-                </div>
-                {todayStats.todayScannedTickets.length > 0 ? (
-                  <div className="table-container" style={{marginTop:20}}>
-                    <table className="data-table">
-                      <thead><tr><th>Билет №</th><th>Събитие</th><th>Потребител</th><th>Статус</th><th>Час</th></tr></thead>
-                      <tbody>
-                        {todayStats.todayScannedTickets.map((t,i)=>(
-                          <tr key={i}>
-                            <td><span className="ticket-id-small">{t.ticketId}</span></td>
-                            <td><div className="event-title">{t.eventTitle}</div><div className="event-time">{t.eventDate}</div></td>
-                            <td>{t.userName}</td>
-                            <td><span className={`status-badge ${t.status}`}>{t.status==="checked"?"Регистриран":"Очаква"}</span></td>
-                            <td>{t.scanTime}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="empty-state"><QrCode size={48}/><p>Няма билети</p></div>
-                )}
               </div>
             </div>
           </div>
@@ -1186,7 +1146,7 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* ── Room Import / Cell modals (unchanged logic) ──────────────────── */}
+        {/* ── Room Import Modal ────────────────────────────────────────────── */}
         {isImportingSchedule && (
           <div className="modal-overlay">
             <div className="modal-content">
@@ -1261,16 +1221,15 @@ const editor = useEditor({
         {/* TAB CONTENT */}
         {/* ══════════════════════════════════════════════════════════════════ */}
 
-        {/* USERS TAB */}
         {activeTab==="users" && (
           <div className="content-section">
             <div className="rooms-header"><h2>Управление на потребители</h2></div>
             <div className="user-stats-cards">
               {[
-                { count:users.length,                              label:"Общо потребители",  cls:"total-users"  },
-                { count:users.filter(u=>u.role==="reader").length, label:"Читатели",          cls:"readers"      },
-                { count:users.filter(u=>u.role==="librarian").length,label:"Библиотекари",    cls:"librarians"   },
-                { count:users.filter(u=>u.role==="admin").length,  label:"Администратори",    cls:"admins"       },
+                { count:users.length,                                label:"Общо потребители", cls:"total-users" },
+                { count:users.filter(u=>u.role==="reader").length,   label:"Читатели",         cls:"readers"     },
+                { count:users.filter(u=>u.role==="librarian").length,label:"Библиотекари",     cls:"librarians"  },
+                { count:users.filter(u=>u.role==="admin").length,    label:"Администратори",   cls:"admins"      },
               ].map(s=>(
                 <div key={s.cls} className={`stat-card ${s.cls}`}>
                   <div className="stat-content"><div className="stat-label">{s.count}</div><div className="stat-label">{s.label}</div></div>
@@ -1298,24 +1257,17 @@ const editor = useEditor({
                           <option value="admin">Администратор</option>
                         </select>
                       </td>
-                      <td>
-                        <span className="events-count-badge">
-                          {events.filter(e=>e.participants?.includes(u.id)).length}
-                        </span>
-                      </td>
-                      <td>
-                        <button onClick={()=>deleteUser(u.id)} className="delete-btn"><Trash2 size={16}/></button>
-                      </td>
+                      <td><span className="events-count-badge">{events.filter(e=>e.participants?.includes(u.id)).length}</span></td>
+                      <td><button onClick={()=>deleteUser(u.id)} className="delete-btn"><Trash2 size={16}/></button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredUsers.length===0 && <div className="empty-state"><Users size={32}/><p>Няма потребители</p></div>}
+              {filteredUsers.length===0&&<div className="empty-state"><Users size={32}/><p>Няма потребители</p></div>}
             </div>
           </div>
         )}
 
-        {/* EVENTS TAB */}
         {activeTab==="events" && (
           <div className="content-section">
             <div className="rooms-header">
@@ -1350,12 +1302,9 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* BOOKS TAB */}
         {activeTab==="books" && (
           <div className="content-section">
-            <div className="rooms-header">
-              <h2>Управление на библиотека</h2>
-            </div>
+            <div className="rooms-header"><h2>Управление на библиотека</h2></div>
             <div className="books-grid-admin">
               {filteredBooks.map(book=>(
                 <div key={book.id} className="book-card-admin">
@@ -1389,7 +1338,6 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* RESERVATIONS TAB */}
         {activeTab==="reservations" && (
           <div className="content-section">
             <div className="rooms-header">
@@ -1398,10 +1346,10 @@ const editor = useEditor({
             </div>
             <div className="stats-grid">
               {[
-                { status:"active",    label:"Активни",   count:reservations.filter(r=>r.status==="active").length },
-                { status:"fulfilled", label:"Изпълнени", count:reservations.filter(r=>r.status==="fulfilled").length },
-                { status:"cancelled", label:"Отменени",  count:reservations.filter(r=>r.status==="cancelled").length },
-                { status:"total",     label:"Общо",       count:reservations.length },
+                { status:"active",    label:"Активни",    count:reservations.filter(r=>r.status==="active").length },
+                { status:"fulfilled", label:"Изпълнени",  count:reservations.filter(r=>r.status==="fulfilled").length },
+                { status:"cancelled", label:"Отменени",   count:reservations.filter(r=>r.status==="cancelled").length },
+                { status:"total",     label:"Общо",        count:reservations.length },
               ].map(s=>(
                 <div key={s.status} className="stat-card">
                   <div className="stat-icon"><Bookmark size={24}/></div>
@@ -1448,7 +1396,6 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* NEWS TAB */}
         {activeTab==="news" && (
           <div className="content-section">
             <div className="rooms-header">
@@ -1464,7 +1411,7 @@ const editor = useEditor({
                       <td className="news-info-cell">
                         <div className="news-title">{item.title}{item.featured&&<span className="featured-badge">★</span>}</div>
                         <div className="news-excerpt">{item.excerpt}</div>
-                        {item.tags?.length>0 && <div className="news-tags-preview">{item.tags.slice(0,3).map((t,i)=><span key={i} className="news-tag-small">#{t}</span>)}</div>}
+                        {item.tags?.length>0&&<div className="news-tags-preview">{item.tags.slice(0,3).map((t,i)=><span key={i} className="news-tag-small">#{t}</span>)}</div>}
                       </td>
                       <td><span className={`news-category-badge ${item.category.toLowerCase().replace(/\s+/g,"-")}`}>{item.category}</span></td>
                       <td>{item.author}</td>
@@ -1490,7 +1437,6 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* ROOMS TAB */}
         {activeTab==="rooms" && (
           <div className="content-section">
             <div className="rooms-header">
@@ -1512,9 +1458,9 @@ const editor = useEditor({
                     <div className="room-name-cell"><Building size={16}/><span>{room}</span></div>
                     {timeSlots.map(slot=>{
                       const [h] = slot.split("-");
-                      const isEvent    = isRoomBookedByEvent(room,selectedDate,h);
-                      const isSched    = isRoomBookedInSchedule(room,selectedDate,h);
-                      const info       = getBookingInfo(room,selectedDate,h);
+                      const isEvent = isRoomBookedByEvent(room,selectedDate,h);
+                      const isSched = isRoomBookedInSchedule(room,selectedDate,h);
+                      const info    = getBookingInfo(room,selectedDate,h);
                       return (
                         <div key={`${room}-${slot}`}
                           className={`time-slot-cell ${isSched?"scheduled":isEvent?"booked":"available"} ${editingCell?.room===room&&editingCell?.timeSlot===slot?"editing":""}`}
@@ -1537,10 +1483,9 @@ const editor = useEditor({
           </div>
         )}
 
-        {/* TICKETS TAB */}
         {activeTab==="tickets" && (
           <div className="content-section">
-            <div className="tickets-header"><h2>Проверка на билети</h2></div>
+            <div className="rooms-header"><h2>Проверка на билети</h2></div>
             <div className="ticket-options-grid">
               <div className="ticket-option-card" onClick={openCheckTicketModal}>
                 <div className="option-icon"><Search size={32}/></div>
@@ -1565,9 +1510,9 @@ const editor = useEditor({
               <h3>Обща статистика</h3>
               <div className="stats-grid">
                 {[
-                  { label:"Общо билети", value:events.reduce((t,e)=>t+(e.tickets?Object.keys(e.tickets).length:0),0) },
+                  { label:"Общо билети",  value:events.reduce((t,e)=>t+(e.tickets?Object.keys(e.tickets).length:0),0) },
                   { label:"Регистрирани", value:events.reduce((t,e)=>e.tickets?t+Object.values(e.tickets).filter(tk=>tk.checkedIn).length:t,0) },
-                  { label:"Очакващи",    value:events.reduce((t,e)=>e.tickets?t+Object.values(e.tickets).filter(tk=>!tk.checkedIn).length:t,0) },
+                  { label:"Очакващи",     value:events.reduce((t,e)=>e.tickets?t+Object.values(e.tickets).filter(tk=>!tk.checkedIn).length:t,0) },
                 ].map(s=>(
                   <div key={s.label} className="stat-card">
                     <div className="stat-label">{s.label}</div>

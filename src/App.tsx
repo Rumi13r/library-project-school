@@ -19,6 +19,9 @@ import AdminUserDashboard from "./components/Dashboard/AdminDashboard";
 import LibrarianUserDashboard from "./components/Dashboard/LibrarianDashboard"; 
 import TopProgressBar from "./components/TopProgressbar";
 import Cookies from "./components/Cookies";
+import AboutPage from "./pages/AboutPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 
 function App() {
   // Protected route за всички логнати потребители
@@ -140,6 +143,30 @@ function App() {
             element={
               <Layout>
                 <StudyMaterialsPage />
+              </Layout>
+            }
+          />
+          <Route
+           path="/about"
+            element={
+              <Layout>
+                <AboutPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <Layout>
+                <PrivacyPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <Layout>
+                <TermsPage />
               </Layout>
             }
           />

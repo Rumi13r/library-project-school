@@ -6,26 +6,28 @@ import {
   Mail,
   Heart,
   ArrowUp,
+  Calendar,
+  Home,
 } from 'lucide-react';
 import './Footer.css';
 
 const Footer: React.FC = () => {
   const quickLinks = [
-    { name: 'Начало', href: '/' },
-    { name: 'Каталог', href: '../pages/BookLibraryPage' },
+    { name: 'Начало',  href: '/', icon: Home },
+    { name: 'Каталог', href: '/catalog', icon: BookOpen }, 
     { name: 'Нови книги', href: '/new-books' },
-    { name: 'Събития', href: '/events' },
-    { name: 'За нас', href: '/about' },
+    { name: 'Събития', href: '/events',  icon: Calendar },
+    { name: 'За нас', href: '/about' }, 
   ];
 
   const resources = [
-    { name: 'Електронни книги', href: '/ebooks' },
-    { name: 'Учебни помагала', href: '/textbooks' },
-    { name: 'Читателски клуб', href: '/book-club' },
+    { name: 'Електронни книги', href: '/onlineBooks' },
+    { name: 'Учебни помагала', href: '/studyMaterials'},
+    { name: 'Читателски клуб', href: '/readersClub' },
   ];
 
   const services = [
-    { name: 'Онлайн ресурси', href: '/OnlineBooksPage' },
+    { name: 'ИИ ресурси', href: '/ai-resources' },
   ];
 
   const scrollToTop = () => {
@@ -128,7 +130,7 @@ const Footer: React.FC = () => {
         <div className="footer-bottom-container">
           <div className="copyright">
             <p>
-              © 2024 Smart School Library. Всички права запазени.
+              © 2025 Smart School Library. Всички права запазени.
               Създадено с <Heart className="heart-icon" /> към образованието
             </p>
           </div>

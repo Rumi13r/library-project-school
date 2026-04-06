@@ -90,8 +90,6 @@ const Header: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Close dropdowns on outside click
-  // FIX: removed `styles` from dependency array — object ref is stable, no need to list it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -104,7 +102,7 @@ const Header: React.FC = () => {
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, []); // styles is a stable CSS module object — no need to list as dep
+  }, []); 
 
   const navigation: NavigationItem[] = [
     { name: 'Начало',  href: '/',        icon: Home },

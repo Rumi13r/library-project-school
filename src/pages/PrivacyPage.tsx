@@ -11,8 +11,6 @@ import {
   ChevronDown,
   FileText,
 } from 'lucide-react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import './PrivacyPage.css';
 
 /* ─── Типове ─────────────────────────────────────────────── */
@@ -184,7 +182,6 @@ const PrivacyPage: React.FC = () => {
 
   return (
     <>
-      <Header />
 
       <main className="prv-page">
 
@@ -278,7 +275,6 @@ const PrivacyPage: React.FC = () => {
 
       </main>
 
-      <Footer />
     </>
   );
 };

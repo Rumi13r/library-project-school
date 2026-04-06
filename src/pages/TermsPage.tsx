@@ -3,8 +3,6 @@ import {
   FileText, BookOpen, UserCheck, Ban, RefreshCw, Scale, Mail,
   ChevronDown, CheckCircle, AlertTriangle,
 } from 'lucide-react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import './TermsPage.css';
 
 interface Section {
@@ -213,102 +211,96 @@ const TermsPage: React.FC = () => {
   ];
 
   return (
-    <>
-      <Header />
+    <main className="trm-page">
 
-      <main className="trm-page">
-
-        {/* ── HERO ────────────────────────────────────── */}
-        <section className="trm-hero">
-          <div className="trm-hero-bg" aria-hidden="true" />
-          <div className="trm-container">
-            <div className="trm-hero-badge">
-              <FileText size={14} />
-              <span>Правна информация</span>
+      {/* ── HERO ────────────────────────────────────── */}
+      <section className="trm-hero">
+        <div className="trm-hero-bg" aria-hidden="true" />
+        <div className="trm-container">
+          <div className="trm-hero-badge">
+            <FileText size={14} />
+            <span>Правна информация</span>
+          </div>
+          <h1 className="trm-hero-title">
+            Условия за<br />
+            <span className="trm-hero-accent">ползване</span>
+          </h1>
+          <p className="trm-hero-description">
+            Прочетете правилата и условията за използване на платформата
+            Smart School Library преди да продължите.
+          </p>
+          <div className="trm-hero-meta">
+            <div className="trm-meta-item">
+              <FileText size={15} />
+              <span>Последна актуализация: 1 март 2025 г.</span>
             </div>
-            <h1 className="trm-hero-title">
-              Условия за<br />
-              <span className="trm-hero-accent">ползване</span>
-            </h1>
-            <p className="trm-hero-description">
-              Прочетете правилата и условията за използване на платформата
-              Smart School Library преди да продължите.
+            <div className="trm-meta-item">
+              <Scale size={15} />
+              <span>Съгласно българското законодателство</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── СЪДЪРЖАНИЕ ──────────────────────────────── */}
+      <section className="trm-section">
+        <div className="trm-container trm-layout">
+
+          {/* Sticky навигация */}
+          <aside className="trm-nav">
+            <p className="trm-nav-label">Съдържание</p>
+            <nav>
+              {sections.map(s => (
+                <button
+                  key={s.id}
+                  className={`trm-nav-link ${openId === s.id ? 'trm-nav-link--active' : ''}`}
+                  onClick={() => {
+                    setOpenId(s.id);
+                    document
+                      .getElementById(`section-${s.id}`)
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  <span className="trm-nav-icon">{s.icon}</span>
+                  {s.title}
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Accordion секции */}
+          <div className="trm-content">
+            <p className="trm-intro">
+              Добре дошли в Smart School Library. Тези условия регулират използването
+              на нашата платформа. Моля, прочетете ги внимателно — те описват вашите
+              права и задължения като потребител на системата.
             </p>
-            <div className="trm-hero-meta">
-              <div className="trm-meta-item">
-                <FileText size={15} />
-                <span>Последна актуализация: 1 март 2025 г.</span>
-              </div>
-              <div className="trm-meta-item">
-                <Scale size={15} />
-                <span>Съгласно българското законодателство</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* ── СЪДЪРЖАНИЕ ──────────────────────────────── */}
-        <section className="trm-section">
-          <div className="trm-container trm-layout">
-
-            {/* Sticky навигация */}
-            <aside className="trm-nav">
-              <p className="trm-nav-label">Съдържание</p>
-              <nav>
-                {sections.map(s => (
-                  <button
-                    key={s.id}
-                    className={`trm-nav-link ${openId === s.id ? 'trm-nav-link--active' : ''}`}
-                    onClick={() => {
-                      setOpenId(s.id);
-                      document
-                        .getElementById(`section-${s.id}`)
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                  >
-                    <span className="trm-nav-icon">{s.icon}</span>
-                    {s.title}
-                  </button>
-                ))}
-              </nav>
-            </aside>
-
-            {/* Accordion секции */}
-            <div className="trm-content">
-              <p className="trm-intro">
-                Добре дошли в Smart School Library. Тези условия регулират използването
-                на нашата платформа. Моля, прочетете ги внимателно — те описват вашите
-                права и задължения като потребител на системата.
-              </p>
-
-              <div className="trm-accordion-list">
-                {sections.map(s => (
-                  <div id={`section-${s.id}`} key={s.id}>
-                    <AccordionItem
-                      section={s}
-                      isOpen={openId === s.id}
-                      onToggle={() => toggle(s.id)}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="trm-cta">
-                <p className="trm-cta-text">Имате въпрос относно условията?</p>
-                <a href="mailto:biblioteka@uchilishte.bg" className="trm-cta-btn">
-                  <Mail size={16} />
-                  Свържете се с нас
-                </a>
-              </div>
+            <div className="trm-accordion-list">
+              {sections.map(s => (
+                <div id={`section-${s.id}`} key={s.id}>
+                  <AccordionItem
+                    section={s}
+                    isOpen={openId === s.id}
+                    onToggle={() => toggle(s.id)}
+                  />
+                </div>
+              ))}
             </div>
 
+            <div className="trm-cta">
+              <p className="trm-cta-text">Имате въпрос относно условията?</p>
+              <a href="mailto:biblioteka@uchilishte.bg" className="trm-cta-btn">
+                <Mail size={16} />
+                Свържете се с нас
+              </a>
+            </div>
           </div>
-        </section>
 
-      </main>
+        </div>
+      </section>
 
-      <Footer />
-    </>
+    </main>
   );
 };
 

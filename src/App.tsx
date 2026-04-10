@@ -170,7 +170,7 @@ function App() {
               </Layout>
             }
           />
-          {/* Auto-redirect route based on role */}
+{/* Auto-redirect route based on role */}
           <Route path="/redirect" element={<RoleBasedRedirect />} />
 
           {/* Стари маршрути (за обратна съвместимост) */}

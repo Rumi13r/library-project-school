@@ -272,7 +272,7 @@ const EventsPage: React.FC = () => {
                 <p className="events-subtitle">Всички предстоящи събития в библиотеката</p>
               </div>
             </div>
-            {user&&(user.role==='admin'||user.role==='librarian')&&(
+            {user&&(user.role==='librarian')&&(
               <div className="events-actions">
                 <button className="add-event-btn" onClick={()=>navigate('/events/add')}><Plus size={18}/><span>Добави събитие</span></button>
               </div>

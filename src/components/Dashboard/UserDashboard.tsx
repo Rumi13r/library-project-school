@@ -5,7 +5,7 @@ import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc, T
 import {
   BookOpen, Calendar, Search, Clock, CheckCircle, Ticket, History, Heart, Bookmark,
   RotateCcw, XCircle, Eye, MapPin, X, Printer, Book, Sparkles, Loader2, Home, Bell,
-  ArrowRight, ChevronRight, User, Library, Star, Settings,
+  ArrowRight, ChevronRight, User, Library, Star, Settings, Tag, Copy,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -87,6 +87,208 @@ type ActiveTab =
   | 'activeEvents'|'pastEvents'|'tickets'
   | 'recommendations'|'settings';
 
+// ── BookDetailsModal ──────────────────────────────────────────────────────────
+interface BookDetailsModalProps {
+  book: BookLibrary;
+  onClose: () => void;
+}
+
+const BookDetailsModal: React.FC<BookDetailsModalProps> = ({ book, onClose }) => {
+  const formatFSDate = (d: FSDate): string => {
+    if (!d) return '—';
+    try {
+      if (typeof d === 'string') return new Date(d).toLocaleDateString('bg-BG');
+      if (d instanceof Date) return d.toLocaleDateString('bg-BG');
+      if (typeof d === 'object') {
+        if ('toDate' in d && typeof d.toDate === 'function') return d.toDate().toLocaleDateString('bg-BG');
+        if ('seconds' in d && typeof d.seconds === 'number') return new Date(d.seconds * 1000).toLocaleDateString('bg-BG');
+      }
+    } catch { /* ignore */ }
+    return '—';
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.55)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', padding: '16px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-primary, #fff)', borderRadius: '16px',
+          width: '100%', maxWidth: '640px', maxHeight: '90vh',
+          overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          display: 'flex', flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '20px 24px 0', gap: '12px',
+        }}>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary, #111)', lineHeight: 1.3 }}>
+            {book.title}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              padding: '4px', color: 'var(--text-secondary, #555)', flexShrink: 0,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Cover + quick info */}
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+            {book.coverUrl ? (
+              <img
+                src={book.coverUrl}
+                alt={book.title}
+                style={{ width: '100px', height: '140px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+              />
+            ) : (
+              <div style={{
+                width: '100px', height: '140px', borderRadius: '8px', flexShrink: 0,
+                background: 'var(--bg-secondary, #f3f4f6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <BookOpen size={36} style={{ color: 'var(--text-secondary, #9ca3af)' }} />
+              </div>
+            )}
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-secondary, #555)' }}>
+                <strong>Автор:</strong> {book.author}
+              </div>
+              {book.isbn && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Copy size={14} /> ISBN: {book.isbn}
+                </div>
+              )}
+              {book.category && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Tag size={14} /> {book.category}
+                </div>
+              )}
+              {book.location && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={14} /> {book.location}
+                </div>
+              )}
+              {/* Availability badge */}
+              <div style={{ marginTop: '4px' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '4px 10px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600,
+                  background: book.availableCopies > 0 ? '#dcfce7' : '#fee2e2',
+                  color: book.availableCopies > 0 ? '#16a34a' : '#dc2626',
+                }}>
+                  <Copy size={12} />
+                  {book.availableCopies}/{book.copies} налични копия
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Genres / Tags */}
+          {(book.genres?.length || book.tags?.length) ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {book.genres?.map(g => (
+                <span key={g} style={{
+                  padding: '3px 10px', borderRadius: '999px', fontSize: '0.78rem',
+                  background: 'var(--primary-light, #dbeafe)', color: 'var(--primary, #1d4ed8)',
+                  fontWeight: 500,
+                }}>{g}</span>
+              ))}
+              {book.tags?.map(t => (
+                <span key={t} style={{
+                  padding: '3px 10px', borderRadius: '999px', fontSize: '0.78rem',
+                  background: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-secondary, #555)',
+                }}># {t}</span>
+              ))}
+            </div>
+          ) : null}
+
+          {/* Description */}
+          {book.description && (
+            <div>
+              <h4 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 600 }}>Описание</h4>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary, #555)', lineHeight: 1.6 }}>
+                {book.description}
+              </p>
+            </div>
+          )}
+
+          {/* Extra details */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+            background: 'var(--bg-secondary, #f9fafb)', borderRadius: '10px', padding: '14px',
+          }}>
+            {book.createdAt && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Година</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{formatFSDate(book.createdAt as FSDate)}</div>
+              </div>
+            )}
+            {book.publisher && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Издателство</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{book.publisher}</div>
+              </div>
+            )}
+            {book.pages && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Страници</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{book.pages}</div>
+              </div>
+            )}
+            {book.language && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Език</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{book.language}</div>
+              </div>
+            )}
+            {book.borrowPeriod && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Период на заем</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{book.borrowPeriod} дни</div>
+              </div>
+            )}
+            {book.createdAt && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #888)', marginBottom: '2px' }}>Добавена на</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{formatFSDate(book.createdAt as FSDate)}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            style={{
+              alignSelf: 'flex-end', padding: '9px 22px', borderRadius: '8px',
+              border: '1px solid var(--border, #e5e7eb)', background: 'transparent',
+              cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500,
+              color: 'var(--text-primary, #111)',
+            }}
+          >
+            Затвори
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ═════════════════════════════════════════════════════════════════════════════
 const UserDashboard: React.FC = () => {
   const [userBooks,       setUserBooks]       = useState<UserBook[]>([]);
@@ -108,6 +310,13 @@ const UserDashboard: React.FC = () => {
   const [currentTicket,         setCurrentTicket]         = useState<UserTicket|null>(null);
   const [showEventModal,        setShowEventModal]        = useState(false);
   const [selectedEventId,       setSelectedEventId]       = useState<string|null>(null);
+
+  // ── Book Details Modal state ──────────────────────────────────────────────
+  const [showBookModal,   setShowBookModal]   = useState(false);
+  const [selectedBook,    setSelectedBook]    = useState<BookLibrary|null>(null);
+
+  const openBookModal  = (book: BookLibrary) => { setSelectedBook(book); setShowBookModal(true); };
+  const closeBookModal = () => { setShowBookModal(false); setSelectedBook(null); };
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -416,7 +625,7 @@ const UserDashboard: React.FC = () => {
             </div>
             <div className={styles.quickActions}>
               {[
-                {icon:<Library size={24}/>,  title:'Разгледайте каталога', desc:'Открийте нови книги',        action:()=>navigate('/books'),             btn:'Прегледайте'},
+                {icon:<Library size={24}/>,  title:'Разгледайте каталога', desc:'Открийте нови книги',        action:()=>navigate('/catalog'),             btn:'Прегледайте'},
                 {icon:<Calendar size={24}/>, title:'Предстоящи събития',   desc:'Запишете се за мероприятия', action:()=>navigate('/events'),            btn:'Вижте всички'},
                 {icon:<Star size={24}/>,     title:'Препоръки',             desc:'Книги, които може да харесате',action:()=>setActiveTab('recommendations'),btn:'Вижте всички'},
                 {icon:<Settings size={24}/>, title:'Настройки',             desc:'Поверителност и съгласия',   action:()=>setActiveTab('settings'),       btn:'Настройки'},
@@ -530,7 +739,8 @@ const UserDashboard: React.FC = () => {
                                 {!isBorrowed&&ub.status==='reserved'&&actRes&&<button onClick={()=>cancelReservation(actRes.id,book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><XCircle size={16}/><span>Откажи</span></button>}
                                 {!isBorrowed&&ub.status==='wishlist'&&<button onClick={()=>toggleWishlist(book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><Heart size={16} fill="currentColor"/><span>Премахни</span></button>}
                                 {!isBorrowed&&ub.status==='viewed'&&<><button onClick={()=>toggleWishlist(book.id)} className={`${styles.btn} ${styles.btnPrimary}`} disabled={isProc}><Heart size={16}/><span>Желая</span></button><button onClick={()=>reserveBook(book.id)} className={`${styles.btn} ${styles.btnPrimary}`} disabled={isProc||book.availableCopies<=0}><Bookmark size={16}/><span>Резервирай</span></button></>}
-                                <button onClick={()=>navigate(`/books/${book.id}`)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button>
+                                {/* ✅ FIXED: opens modal instead of navigating */}
+                                <button onClick={()=>openBookModal(book)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button>
                               </div>
                             </td>
                           </tr>
@@ -648,13 +858,17 @@ const UserDashboard: React.FC = () => {
                           <td><div className={styles.bookAuthor}>{book.author}</div></td>
                           <td>{expiresStr?<div className={styles.dueDate}><Clock size={14}/>{formatDate(expiresStr)}</div>:<div className={styles.dueDate}>Няма срок</div>}</td>
                           <td><span className={`${styles.badge} ${styles.expiringBadge}`}>Резервирана</span></td>
-                          <td><div className={styles.actionButtons}><button onClick={()=>cancelReservation(r.id,book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><XCircle size={16}/><span>Откажи</span></button><button onClick={()=>navigate(`/books/${book.id}`)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button></div></td>
+                          <td><div className={styles.actionButtons}>
+                            <button onClick={()=>cancelReservation(r.id,book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><XCircle size={16}/><span>Откажи</span></button>
+                            {/* ✅ FIXED: opens modal instead of navigating */}
+                            <button onClick={()=>openBookModal(book)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button>
+                          </div></td>
                         </tr>
                       );})}
                     </tbody>
                   </table>
                 </div>
-              ):<div className={styles.empty}><Bookmark className={styles.emptyIcon} size={48}/><p>Нямате резервации</p><button onClick={()=>navigate('/books')} className={styles.registerBtn} style={{marginTop:16}}><Book size={16}/>Каталог</button></div>
+              ):<div className={styles.empty}><Bookmark className={styles.emptyIcon} size={48}/><p>Нямате резервации</p><button onClick={()=>navigate('/catalog')} className={styles.registerBtn} style={{marginTop:16}}><Book size={16}/>Каталог</button></div>
             )}
           </div>
         )}
@@ -675,7 +889,12 @@ const UserDashboard: React.FC = () => {
                           <td><div className={styles.bookAuthor}>{book.author}</div></td>
                           <td><span className={`${styles.spotsCount} ${book.availableCopies<=0?styles.spotsFull:''}`}>{book.availableCopies} налични</span></td>
                           <td><span className={`${styles.badge} ${styles.wishlistBadge}`}>В желани</span></td>
-                          <td><div className={styles.actionButtons}><button onClick={()=>toggleWishlist(book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><Heart size={16} fill="currentColor"/><span>Премахни</span></button>{book.availableCopies>0&&<button onClick={()=>reserveBook(book.id)} className={`${styles.btn} ${styles.btnPrimary}`} disabled={isProc}><Bookmark size={16}/><span>Резервирай</span></button>}<button onClick={()=>navigate(`/books/${book.id}`)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button></div></td>
+                          <td><div className={styles.actionButtons}>
+                            <button onClick={()=>toggleWishlist(book.id)} className={`${styles.btn} ${styles.btnDanger}`} disabled={isProc}><Heart size={16} fill="currentColor"/><span>Премахни</span></button>
+                            {book.availableCopies>0&&<button onClick={()=>reserveBook(book.id)} className={`${styles.btn} ${styles.btnPrimary}`} disabled={isProc}><Bookmark size={16}/><span>Резервирай</span></button>}
+                            {/* ✅ FIXED: opens modal instead of navigating */}
+                            <button onClick={()=>openBookModal(book)} className={`${styles.btn} ${styles.btnPrimary}`}><Eye size={16}/><span>Детайли</span></button>
+                          </div></td>
                         </tr>
                       );})}
                     </tbody>
@@ -728,6 +947,11 @@ const UserDashboard: React.FC = () => {
       {/* Event Details Modal */}
       {showEventModal&&(
         <EventDetailsModal eventId={selectedEventId} onClose={()=>{setShowEventModal(false);setSelectedEventId(null);}} onRegistrationSuccess={(td)=>{const nt: UserTicket={eventId:selectedEventId||'',ticketId:td.ticketId,eventTitle:td.eventTitle,eventDate:td.eventDate,eventTime:td.eventTime,endTime:td.endTime,eventLocation:td.eventLocation,registrationDate:new Date().toLocaleDateString('bg-BG'),checkedIn:false,eventImageUrl:td.eventImageUrl};setUserTickets(prev=>[...prev,nt]);setCurrentTicket(nt);setTimeout(()=>setShowTicket(true),500);}}/>
+      )}
+
+      {/* ✅ Book Details Modal */}
+      {showBookModal && selectedBook && (
+        <BookDetailsModal book={selectedBook} onClose={closeBookModal} />
       )}
     </div>
   );

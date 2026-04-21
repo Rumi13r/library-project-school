@@ -258,7 +258,7 @@ const AIResourcesPage: React.FC = () => {
             <div key={t} className="stat-card ai">
               <div className="stat-content">
                 <div className="stat-number">{resources.filter(r=>r.type===t).length}</div>
-                <div className="stat-label">{getTypeLabel(t)}{'е'}</div>
+                <div className="stat-label">{getTypeLabel(t)}</div>
               </div>
             </div>
           ))}

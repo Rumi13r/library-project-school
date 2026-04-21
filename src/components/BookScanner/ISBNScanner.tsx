@@ -10,12 +10,19 @@ interface ISBNScannerProps {
 const SCANNER_ID = 'isbn-scanner-viewport';
 
 const ISBNScanner: React.FC<ISBNScannerProps> = ({ onDetected, onClose }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const detectedRef  = useRef(false);
+  const containerRef    = useRef<HTMLDivElement>(null);
+  const detectedRef     = useRef(false);
+  // Съхраняваме последната версия на callback-а в ref, за да не рестартираме Quagga
+  const onDetectedRef   = useRef(onDetected);
 
   const [ready,   setReady]   = useState(false);
   const [error,   setError]   = useState<string | null>(null);
   const [flashed, setFlashed] = useState(false);
+
+  // Обновяваме ref при всяка промяна на prop-а — без рестартиране на ефекта
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -53,13 +60,14 @@ const ISBNScanner: React.FC<ISBNScannerProps> = ({ onDetected, onClose }) => {
         setFlashed(true);
         setTimeout(() => {
           Quagga.stop();
-          onDetected(code);
+          onDetectedRef.current(code);
         }, 400);
       }
     });
 
     return () => { Quagga.stop(); };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Умишлено празен — Quagga се инициализира само веднъж; callback-ът се чете през ref
 
   return (
     <>

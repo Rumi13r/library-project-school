@@ -7,6 +7,7 @@ import Register from "./components/LoginSystem/Register";
 import AdminDashboard from "./components/Dashboard/AdminDashboard";
 import LibrarianDashboard from "./components/Dashboard/LibrarianDashboard";
 import UserDashboard from "./components/Dashboard/UserDashboard";
+import ForgotPassword from "./pages/Forgotpassword";
 import EventsPage from "./pages/EventsPage"; 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AIResourcesPage from "./pages/AIResourcesPage"; 
@@ -89,6 +90,14 @@ function App() {
                 <Register />
               </Layout>
             }
+          />
+          <Route
+           path="/forgot-password"
+           element={
+            <Layout>
+               <ForgotPassword />
+            </Layout>
+           }
           />
           <Route
             path="/events"

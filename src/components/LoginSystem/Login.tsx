@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { auth, db } from "../../firebase/firebase";
 import {
   BookOpen, Eye, EyeOff, ArrowRight,
@@ -310,9 +310,9 @@ const Login: React.FC = () => {
                   <RememberCheckbox />
                   <span className={styles.checkboxText}>Запомни ме</span>
                 </label>
-                <a href="/forgot-password" className={styles.forgot}>
-                  Забравена парола?
-                </a>
+                <Link to="/forgot-password"     className={styles.forgot}>
+                 Забравена парола?
+                </Link>
               </div>
 
               {/* ── Бутон ──────────────────────────── */}
